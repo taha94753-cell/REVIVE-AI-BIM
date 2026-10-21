@@ -1,0 +1,24 @@
+id,name,wbs,duration_days,predecessors,crash_max_days,crash_cost_per_day_pkr,crash_method,trade,ifc_storey,ifc_types,weather_sensitive
+A01,Mobilisation and site setup,1.1,20,,4,90000,Additional site crew,Preliminaries,,,no
+A02,Excavation and earthworks,1.2,25,A01,6,140000,Second excavator on a night shift,Earthworks,,,yes
+A03,Pad footings,2.1,40,A02,9,210000,Extra formwork sets and an extended shift,Structure,Foundation,IfcFooting,yes
+A04,Ground slab on grade,2.2,15,A03,3,160000,Additional pour crew,Structure,Ground,IfcSlab,yes
+A05,Ground floor columns,2.3,18,A03,4,180000,Extra column formwork,Structure,Ground,IfcColumn,yes
+A06,Level 1 beams and slab,2.4,28,A05,7,230000,Second formwork set with overtime,Structure,Level 1,IfcBeam;IfcSlab,yes
+A07,Level 1 columns,2.5,15,A06,4,180000,Extra column formwork,Structure,Level 1,IfcColumn,yes
+A08,Level 2 beams and slab,2.6,25,A07,6,230000,Second formwork set with overtime,Structure,Level 2,IfcBeam;IfcSlab,yes
+A09,Level 2 columns,2.7,15,A08,4,180000,Extra column formwork,Structure,Level 2,IfcColumn,yes
+A10,Level 3 beams and slab,2.8,25,A09,6,230000,Second formwork set with overtime,Structure,Level 3,IfcBeam;IfcSlab,yes
+A11,Level 3 columns,2.9,15,A10,4,180000,Extra column formwork,Structure,Level 3,IfcColumn,yes
+A12,Roof beams and slab,2.10,25,A11,6,240000,Second formwork set with overtime,Structure,Roof,IfcBeam;IfcSlab,yes
+A13,Ground floor masonry,3.1,22,A06,6,110000,Additional mason gangs,Envelope,Ground,IfcWall,yes
+A14,Level 1 masonry,3.2,20,A08;A13,5,110000,Additional mason gangs,Envelope,Level 1,IfcWall,yes
+A15,Level 2 masonry,3.3,20,A10;A14,5,110000,Additional mason gangs,Envelope,Level 2,IfcWall,yes
+A16,Level 3 masonry,3.4,20,A12;A15,5,110000,Additional mason gangs,Envelope,Level 3,IfcWall,yes
+A17,Roof waterproofing,3.5,14,A12,3,150000,Second applicator team,Envelope,Roof,IfcCovering,yes
+A18,MEP rough-in,4.1,75,A08,15,320000,Additional MEP subcontractor crew,MEP,,,no
+A19,Finishes ground and level 1,5.1,55,A14;A18,14,170000,Parallel finishing gangs,Finishes,Ground;Level 1,IfcCovering,no
+A20,Finishes levels 2 and 3,5.2,55,A16;A19,14,170000,Parallel finishing gangs,Finishes,Level 2;Level 3,IfcCovering,no
+A21,External works and landscaping,6.1,35,A16,8,95000,Additional external crew,External works,,,yes
+A22,Testing and commissioning,7.1,18,A20;A17,4,260000,Specialist overtime,MEP,,,no
+A23,Handover and snagging,7.2,10,A22;A21,2,120000,Extended snagging team,Close-out,,,no

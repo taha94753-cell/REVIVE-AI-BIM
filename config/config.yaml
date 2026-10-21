@@ -1,0 +1,165 @@
+# ---------------------------------------------------------------------------
+# REVIVE — central configuration
+# Every threshold, assumption and factor the product uses lives here, so the
+# team can defend (or change) each number without touching code.
+# Lines marked VERIFY are assumptions that must be checked against a cited
+# source before they appear in the report or the defence.
+# ---------------------------------------------------------------------------
+
+app:
+  name: REVIVE
+  tagline: See the delay before it happens, and the cheapest way back.
+  currency: PKR
+  host: 0.0.0.0
+  port: 8000
+
+data:
+  raw_file: data/raw/AI-BIM_FYDP_120_projects_v3.xlsx
+  raw_sheet: FORM ORDER (88 cols)
+  clean_file: data/processed/projects_clean.csv
+  database: data/app.db
+
+training:
+  # You asked to train on the entire dataset. Both switches are ON.
+  # Turning include_ongoing off trains only on projects with a real
+  # completion date (recommended once more completed projects arrive).
+  include_ongoing: true
+  include_hypothetical: true
+  time_overrun_clip_pct: 150       # winsorise the single extreme (~398 %) record
+  cost_overrun_clip_pct: [-40, 100]
+  high_risk_threshold_pct: 40      # "high risk" = forecast time overrun above this
+  cv_folds: 5
+  cv_repeats: 3
+  random_state: 42
+  xgb_regressor:              # shallow trees: small dataset, many weak signals
+    n_estimators: 600
+    max_depth: 2
+    learning_rate: 0.03
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 1
+    reg_lambda: 1.0
+    objective: reg:pseudohubererror
+    huber_slope: 15
+  xgb_classifier:
+    n_estimators: 300
+    max_depth: 3
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 1
+    reg_lambda: 1.0
+
+# Checkpoints ("gates") at which a prediction can be made. Each gate uses
+# only information that genuinely exists at that point in the project.
+gates:
+  G25:
+    label: 25% of contract time elapsed
+    elapsed_fraction: 0.25
+    stages: [award, q1, evm25]
+  G50:
+    label: 50% of contract time elapsed
+    elapsed_fraction: 0.50
+    stages: [award, q1, evm25, evm50]
+
+risk_bands:            # applied to the forecast time overrun (%)
+  - {name: On track, max: 10,  color: "#3DD68C"}
+  - {name: Watch,    max: 30,  color: "#F2C94C"}
+  - {name: At risk,  max: 50,  color: "#FF8A3D"}
+  - {name: Critical, max: 100000, color: "#FF4D5E"}
+
+delay:                 # current delay analysis (revive/delay.py): delay to date as % of planned duration
+  bands:
+    - {name: On programme,     max_pct: 2,      color: "#3DD68C"}
+    - {name: Minor slip,       max_pct: 5,      color: "#F2C94C"}
+    - {name: Significant slip, max_pct: 10,     color: "#FF8A3D"}
+    - {name: Critical slip,    max_pct: 100000, color: "#FF4D5E"}
+
+health_score:          # Project Health Score, 0-100 (composite index, not learned)
+  weights: {spi: 0.35, cpi: 0.25, forecast: 0.40}
+  spi_floor: 0.60      # SPI at or below this scores 0; SPI >= 1.0 scores 1
+  cpi_floor: 0.60
+  forecast_ceiling_pct: 100   # a forecast overrun >= this scores 0
+  recovery_trigger: {phs_below: 60, spi_below: 0.80, cpi_below: 0.90}
+
+optimizer:
+  default_crash_fraction: 0.30      # max share of an activity that can be compressed
+  default_ld_per_day_pkr: 250000    # VERIFY: use the liquidated-damages rate in your contract
+  criticality_tau_days: 12          # float at which an activity's risk weight falls to ~37 %
+  curve_points: 12
+
+simulation:            # Monte Carlo finish-date risk (recovery sheet)
+  samples: 2000
+  seed: 7
+  activity_spread: [0.92, 1.00, 1.12]   # VERIFY: triangular min / mode / max multiplier on each remaining activity
+
+live:
+  # Between checkpoints the latest reading is mapped onto the nearest checkpoint the
+  # model was trained on; event counts are expressed per quarter of contract time.
+  alert_on_band_worsening: true
+  # Fixed address for the phone link, e.g. a tunnel such as https://revive-demo.trycloudflare.com.
+  # Leave empty to use this computer's Wi-Fi / hotspot address (the normal case).
+  # The environment variable REVIVE_PUBLIC_URL overrides this.
+  public_url: ""
+
+sustainability:
+  # VERIFY every factor below against the source you cite (e.g. RICS WLCA 2023,
+  # ICE database, DEFRA). Values shown are the ones in your proposal / common defaults.
+  diesel_l_per_site_day: 180        # VERIFY: generators + idle plant on a mid-size site
+  ef_diesel_kgco2_per_l: 2.68       # VERIFY
+  ef_concrete_kgco2e_per_kg: 0.159  # VERIFY (proposal value)
+  concrete_density_kg_m3: 2400
+  ef_steel_kgco2e_per_kg: 1.77      # VERIFY (proposal value)
+  rebar_kg_per_m3_concrete: 120     # VERIFY: typical RC frame reinforcement rate
+  site_overhead_pkr_per_day: 350000 # VERIFY: time-related site overheads
+  rework_share_by_band: {None: 0.0, "Under 2%": 0.01, "2-5%": 0.035, "Over 5%": 0.06}
+
+schedule:
+  # The baseline schedule is the backbone of the app; BIM is an optional visual layer.
+  hours_per_day: 8                        # converts P6 .xer durations (hours) to days
+  default_crash_cost_per_day_pkr: 150000  # VERIFY: used for imported P6 schedules that carry no crash data
+
+weather:
+  provider: open-meteo        # free for non-commercial use, no API key (CC BY 4.0): https://open-meteo.com
+  past_days: 14
+  forecast_days: 16
+  timeout_s: 8
+  cache_minutes: 30
+  lost_day_rules:             # VERIFY against your specification and site practice
+    rain_mm: 10               # daily rainfall at or above this stops earthworks, pours, roofing
+    wind_kmh: 50              # crane and formwork limit
+    heat_c: 45                # concreting restrictions in extreme heat
+    cold_c: 2                 # frost risk for fresh concrete
+  weather_sensitive_trades: [Earthworks, Structure, Envelope, External works]
+
+bim:
+  start_with_demo_model: true        # false = the app starts with no BIM model connected
+  ifc_file: bim/sample_building.ifc
+  schedule_file: bim/schedule.csv
+  wbs_property: WBS_Code             # Revit shared parameter / IFC property holding the WBS code
+  concrete_classes: [IfcFooting, IfcColumn, IfcBeam, IfcSlab]
+  cache_dir: models/bim_cache
+
+alerts:
+  enabled: false        # set true and fill SMTP_* environment variables to send e-mail
+  send_on_bands: [Critical]
+  outbox_dir: data/outbox       # one sub-folder per company
+  to_company_users: true        # alert the users of the company that owns the project (else ALERT_TO)
+
+workspace:
+  dir: data/workspaces          # per-company, per-project uploads and exports (REVIVE_WORKSPACES overrides)
+
+security:
+  allow_registration: true      # false = only `python -m revive create-company` can add a company
+  session_days: 7               # sign-in lasts this long on a device
+  cookie_secure: auto           # auto = Secure cookie when served over HTTPS (set true behind an HTTPS proxy)
+  api_docs: false               # true (or REVIVE_API_DOCS=1) exposes /docs; keep false on a shared network
+  max_ifc_mb: 150
+  max_schedule_mb: 20
+  max_json_kb: 1024
+  rate_limits:
+    login_per_15min: 10         # per IP; plus 5 failed attempts per e-mail
+    register_per_hour: 5        # per IP
+    site_updates_per_min: 30    # per phone link
+    predict_per_min: 400        # what-if sliders fire many requests while dragging
+    recovery_per_min: 240

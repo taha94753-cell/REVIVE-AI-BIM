@@ -1,0 +1,451 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REVIVE workspace</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0E12'/%3E%3Cpath d='M23.78 8.22A11 11 0 1 0 27 16M23.6 18.4 27 15l3.4 3.4' fill='none' stroke='%23FFB81C' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.5 21.5v-4M16 21.5v-7M20.5 21.5v-10' stroke='%23EEF1F4' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/app.css?v=4.0.1">
+  <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js", "three/addons/": "/vendor/three/addons/"}}</script>
+  <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
+  <script type="module" src="/assets/js/app.js?v=4.0.1"></script>
+</head>
+<body class="app">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="topbar">
+  <a class="wordmark" href="/" aria-label="REVIVE home"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><span>REVIVE</span></a>
+  <div class="proj-switch">
+    <button type="button" id="proj-btn" aria-haspopup="listbox" aria-expanded="false">
+      <span class="ps-label">Project</span><b id="proj-name">Choose a project</b><i aria-hidden="true"></i></button>
+    <div class="menu" id="proj-menu" role="listbox" hidden></div>
+  </div>
+  <span class="grow"></span>
+  <a class="live-pill" id="live-pill" href="#live" hidden><span class="dot on"></span><span id="live-pill-text">Live</span></a>
+  <span class="conn" id="conn" data-state="connecting" role="status"><i aria-hidden="true"></i><span id="status">Connecting</span></span>
+  <div class="user">
+    <button type="button" id="user-btn" aria-haspopup="menu" aria-expanded="false"><span id="user-initials">?</span></button>
+    <div class="menu right" id="user-menu" role="menu" hidden>
+      <p class="menu-head"><b id="user-company"></b><span id="user-email"></span></p>
+      <button type="button" role="menuitem" id="team-open">Team and access</button>
+      <a role="menuitem" href="/">Product page</a>
+      <button type="button" role="menuitem" id="signout">Sign out</button>
+    </div>
+  </div>
+</header>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sheets">
+  <span class="tabs-mark" aria-hidden="true"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg></span>
+  <a href="#projects" role="tab" data-tab="projects" id="tab-projects" aria-controls="projects" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect pathLength="1" x="3" y="3" width="7" height="7" rx="1.5"/><rect pathLength="1" x="14" y="3" width="7" height="7" rx="1.5"/><rect pathLength="1" x="3" y="14" width="7" height="7" rx="1.5"/><rect pathLength="1" x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Projects</span></a>
+  <a href="#delay" role="tab" data-tab="delay" id="tab-delay" aria-controls="delay" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="13" r="8"/><path pathLength="1" d="M12 9v4l2.5 2"/><path pathLength="1" d="M9 2h6"/></svg><span>Current delay</span></a>
+  <a href="#assess" role="tab" data-tab="assess" id="tab-assess" aria-controls="assess" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M3 17l6-6 4 4 8-8"/><path pathLength="1" d="M15 7h6v6"/></svg><span>Forecast</span></a>
+  <a href="#live" role="tab" data-tab="live" id="tab-live" aria-controls="live" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="12" r="2"/><path pathLength="1" d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path pathLength="1" d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path pathLength="1" d="M19.1 4.9a10 10 0 0 1 0 14.2"/><path pathLength="1" d="M4.9 19.1a10 10 0 0 1 0-14.2"/></svg><span>Live site</span></a>
+  <a href="#twin" role="tab" data-tab="twin" id="tab-twin" aria-controls="twin" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path pathLength="1" d="M3.5 7.25L12 12l8.5-4.75"/><path pathLength="1" d="M12 12v9.5"/></svg><span>BIM</span></a>
+  <a href="#recover" role="tab" data-tab="recover" id="tab-recover" aria-controls="recover" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path pathLength="1" d="M3 3v5h5"/></svg><span>Recovery</span></a>
+  <a href="#impact" role="tab" data-tab="impact" id="tab-impact" aria-controls="impact" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path pathLength="1" d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg><span>Impact</span></a>
+  <a href="#portfolio" role="tab" data-tab="portfolio" id="tab-portfolio" aria-controls="portfolio" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M4 20V10"/><path pathLength="1" d="M10 20V4"/><path pathLength="1" d="M16 20v-7"/><path pathLength="1" d="M22 20H2"/></svg><span>Benchmark</span></a>
+  <a href="#evidence" role="tab" data-tab="evidence" id="tab-evidence" aria-controls="evidence" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path pathLength="1" d="M9 12l2 2 4-4"/></svg><span>Evidence</span></a>
+  <b class="tab-hover" id="tab-hover" aria-hidden="true"></b>
+  <b class="tab-ind" id="tab-ind" aria-hidden="true"><em></em></b>
+</nav>
+<div class="conn-banner" id="conn-banner" role="alert" hidden>
+  <strong>Server not reachable.</strong> <span id="conn-banner-msg">Retrying automatically.</span>
+  <span class="fine">Is the black REVIVE window still open? If not, double-click <b>run.bat</b>. The dashboard resumes by itself.</span>
+</div>
+<div class="conn-overlay" id="conn-overlay" hidden>
+  <div class="conn-card">
+    <svg class="rv loading" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg>
+    <h2>Waiting for the REVIVE server</h2>
+    <p>The forecasts come from a Python server on this computer. It is not answering yet.</p>
+    <ol>
+      <li>Double-click <b>run.bat</b> in the <b>revive-aibim</b> folder (macOS / Linux: <code>./run.sh</code>) and keep the black window open.</li>
+      <li>The first start takes 10 to 30 seconds while the models load.</li>
+    </ol>
+    <p class="fine" id="conn-try">Checking</p>
+  </div>
+</div>
+
+<main id="main">
+  <section id="projects" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-projects" tabindex="-1">
+    <header class="ws-head">
+      <div>
+        <h2>Projects</h2>
+        <p class="muted"><b class="ws-company" id="ws-company">Your company</b>. Every project you run, with where it stands today and where it is heading. Open one to analyse it; everything you upload stays inside your company workspace.</p>
+      </div>
+      <button type="button" class="btn primary lg" id="new-project">New project</button>
+    </header>
+    <dl class="ws-kpis" id="ws-kpis"></dl>
+    <div class="ws-tools">
+      <label class="search"><span class="sr">Search projects</span><input id="ws-search" type="search" placeholder="Search name, client or city"></label>
+      <div class="seg small" role="group" aria-label="Sort projects" id="ws-sort">
+        <button type="button" data-s="recent" aria-pressed="true">Recent</button>
+        <button type="button" data-s="delay" aria-pressed="false">Most delayed</button>
+        <button type="button" data-s="name" aria-pressed="false">Name</button>
+      </div>
+    </div>
+    <div class="cards" id="cards"><div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div></div>
+  </section>
+
+  <section id="delay" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-delay" tabindex="-1" hidden>
+    <header class="sheet-head">
+      <div><h2>Current delay</h2>
+        <p>How late the project is today, measured from the baseline schedule and the latest site data. It does not use the machine-learning model, so it is an independent check on the forecast.</p></div>
+      <div class="titleblock"><span>Sheet 01</span><span>of 08</span><span id="tb-delay" class="tb-proj">No project</span></div>
+    </header>
+    <div id="delay-empty" class="empty-state" hidden></div>
+    <div id="delay-body" hidden>
+      <div class="dl-hero">
+        <div class="dl-big" data-tilt>
+          <span class="chip" id="dl-band" data-z="30"></span>
+          <p class="big" id="dl-days" data-z="50">0</p>
+          <p class="big-cap" id="dl-cap"></p>
+          <p class="dl-source" id="dl-source"></p>
+        </div>
+        <dl class="dl-kpis" id="dl-kpis"></dl>
+      </div>
+      <div class="dl-notes" id="dl-notes"></div>
+      <div class="dl-grid">
+        <div class="panel">
+          <div class="row-head"><h3>Planned against earned</h3><span class="fine" style="margin:0">S-curve of the baseline</span></div>
+          <div id="scurve" class="chart"></div>
+          <p class="fine">The line is the work planned by each point in time. The gap between where the project is (AT, actual time) and where its earned work sits on the plan (ES, earned schedule) is the delay to date.</p>
+        </div>
+        <div class="panel">
+          <h3>Where it is heading, three ways</h3>
+          <div id="finish3" class="chart"></div>
+          <p class="fine">Remaining work to plan is the best case. Current pace assumes performance continues (earned schedule method). The ML forecast is the REVIVE model. When they disagree, ask why.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row-head"><h3>Delay by window</h3><span class="fine" style="margin:0" id="win-note"></span></div>
+        <div id="windows" class="chart wide"></div>
+        <div class="appo" id="appo"></div>
+      </div>
+      <div class="dl-grid">
+        <div class="panel">
+          <h3>Activities behind programme</h3>
+          <div class="table-wrap"><table class="grid" id="dl-acts"><thead><tr><th>Activity</th><th class="n">Planned</th><th class="n">Done</th><th class="n">Behind</th><th class="n">Float</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="row-head"><h3>Activity progress</h3><button type="button" class="btn ghost sm" id="prog-open">Enter progress</button></div>
+          <p class="muted" id="prog-note">Site reports give one SPI for the whole project. For a sharper analysis the planner can enter actual % complete for the activities under way; REVIVE then re-networks the remaining work from the status date and picks up out-of-sequence progress.</p>
+          <form id="prog-form" hidden>
+            <div class="prog-top">
+              <label>Status date<input type="date" id="prog-date"></label>
+              <label>Contract time elapsed (%)<input type="number" id="prog-elapsed" min="0" max="100" step="1"></label>
+            </div>
+            <div class="prog-list" id="prog-list"></div>
+            <div class="form-actions"><button class="btn primary" type="submit">Analyse with this progress</button><button class="btn ghost" type="button" id="prog-clear">Clear progress</button></div>
+          </form>
+        </div>
+      </div>
+      <details class="formulation"><summary>How the current delay is measured</summary><div id="dl-method"></div></details>
+    </div>
+  </section>
+
+<section id="assess" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-assess" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Forecast</h2>
+        <p>Where the project is heading. Enter what is known at the checkpoint; leave anything you do not know blank, the model handles missing answers without inventing them.</p></div>
+      <div class="titleblock"><span>Sheet 02</span><span>of 08</span><span id="tb-assess" class="tb-proj">No project</span></div>
+    </header>
+    <div class="assess-grid reveal">
+      <form id="assess-form" novalidate>
+        <div class="form-top">
+          <div class="seg" role="radiogroup" aria-label="Checkpoint" id="gate-switch">
+            <button type="button" role="radio" data-gate="G25" aria-checked="true">At 25% of contract time</button>
+            <button type="button" role="radio" data-gate="G50" aria-checked="false">At 50% of contract time</button>
+          </div>
+          <label class="inline">Load an example <select id="preset-select"><option value="">Choose</option></select></label>
+        </div>
+        <p class="fine" id="source-note"></p>
+        <div id="form-groups"></div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" id="run-btn">Run forecast</button>
+          <button class="btn ghost" type="button" id="bim-fill">Fill size and duration from the BIM model</button>
+          <label class="switch"><input type="checkbox" id="auto-run" checked><span></span>Recalculate as I edit</label>
+        </div>
+      </form>
+      <aside id="result" class="result">
+        <div id="result-body" aria-live="polite"><p class="empty">Run a forecast to see the overrun, the project health score and the recovery trigger.</p></div>
+        <div class="whatif" id="whatif" hidden>
+          <div class="row-head"><h3>What if</h3><button type="button" class="linkbtn" id="whatif-reset">Back to the entered values</button></div>
+          <p class="fine" style="margin-top:0">Drag to test a scenario. The forecast, explanation, recovery plan and BIM colours follow instantly.</p>
+          <div id="whatif-sliders"></div>
+        </div>
+        <div class="save-row" id="save-row" hidden><label class="sr" for="save-name">Assessment name</label><input id="save-name" placeholder="Name this assessment"><button class="btn primary" id="save-btn" type="button">Save to project</button></div>
+      </aside>
+    </div>
+    <div class="explain reveal">
+      <div class="explain-head"><h3>Why the model says this</h3>
+        <p>TreeSHAP splits the gap between the average project and this one into exact contributions, in percentage points of time overrun. Orange pushes the overrun up, green pulls it down.</p></div>
+      <div id="waterfall" class="chart"></div>
+    </div>
+  </section>
+<section id="live" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-live" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Live site link</h2>
+        <p>Turn an assessment into a monitored project. Site staff send updates from a phone; every open dashboard re-forecasts, re-colours the model and re-plans the recovery the moment an update lands.</p></div>
+      <div class="titleblock"><span>Sheet 03</span><span>of 08</span><span id="tb-live" class="tb-proj">No project</span></div>
+    </header>
+    <div class="live-grid reveal">
+      <div>
+        <div class="live-controls">
+          <button class="btn primary" type="button" id="live-start">Start the site link for this project</button>
+          <label class="inline" hidden>or follow <select id="live-select"><option value="">a monitored project</option></select></label><button type="button" class="btn ghost sm" id="live-rotate" hidden>Revoke and reissue the phone link</button>
+        </div>
+        <div id="live-link" class="live-link" hidden>
+          <div class="qr" id="live-qr"></div>
+          <div>
+            <p class="live-state"><span class="dot" id="live-dot"></span><span id="live-status">Connecting</span></p>
+            <p class="presence" id="live-presence"><span class="phone-ico" aria-hidden="true"></span><span id="live-presence-text">No site phone connected yet</span></p>
+            <p class="muted">Scan with a phone on the same Wi-Fi or hotspot, or open:</p>
+            <p><a id="live-url" target="_blank" rel="noopener"></a></p>
+            <label class="inline small" id="live-base-wrap" hidden>Address for the phone <select id="live-base"></select></label>
+            <div class="live-actions"><button type="button" class="btn ghost sm" id="live-copy">Copy link</button><a class="btn ghost sm" id="live-open" target="_blank" rel="noopener">Open the phone page here</a></div>
+            <p class="fine">Phone cannot open it? It must be on the same Wi-Fi or hotspot as this computer. On Windows run <b>phone-access.bat</b> once to allow it through the firewall, or try another address above.</p>
+          </div>
+        </div>
+        <div class="live-board" id="live-board" hidden>
+          <div class="lb-head"><b id="lb-name"></b><span class="muted" id="lb-last"></span></div>
+          <dl class="lb-cells">
+            <div><dt>Forecast overrun</dt><dd id="lb-fc">&mdash;</dd><div class="spark chart" id="sp-fc"></div></div>
+            <div><dt>Project health score</dt><dd id="lb-hs">&mdash;</dd><div class="spark chart" id="sp-hs"></div></div>
+            <div><dt>SPI reported</dt><dd id="lb-spi">&mdash;</dd><div class="spark chart" id="sp-spi"></div></div>
+            <div><dt>Chance of meeting the target, with the plan</dt><dd id="lb-pot">&mdash;</dd><div class="spark chart" id="sp-pot"></div></div>
+          </dl>
+        </div>
+        <ol class="feed" id="live-feed"><li class="muted">No monitored project yet. Run a forecast, then start monitoring.</li></ol>
+      </div>
+      <div>
+        <h3>Forecast trajectory</h3>
+        <div id="trajectory" class="chart"></div>
+        <p class="fine" id="traj-note">Each point is one site update, scored by the checkpoint model nearest to the time elapsed. The shaded band is the 80% range.</p>
+        <div class="weather">
+          <div class="row-head"><h3>Live site weather</h3><label class="inline">Location <select id="wx-loc"></select></label></div>
+          <div id="wx-strip" class="chart"></div>
+          <p class="fine" id="wx-note">Loading live weather</p>
+          <label class="check"><input type="checkbox" id="wx-apply"> Add forecast lost days to weather-sensitive work before planning the recovery</label>
+        </div>
+      </div>
+    </div>
+  </section>
+<section id="twin" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-twin" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>BIM view <span class="muted">(optional)</span></h2>
+        <p>Everything else in REVIVE runs on the baseline schedule and site reports. Connect an IFC model and the same forecast, float and recovery appear on the columns, slabs and walls each activity builds.</p></div>
+      <div class="titleblock"><span>Sheet 04</span><span>of 08</span><span id="tb-twin" class="tb-proj">No project</span></div>
+    </header>
+    <div class="stage reveal" id="stage">
+      <canvas id="twin-canvas" aria-label="Interactive 3D model. Drag to orbit, scroll to zoom, select an element for details."></canvas>
+      <div class="bim-off" id="bim-off" hidden>
+        <h3>No BIM model connected</h3>
+        <p>Forecasts, recovery planning, live monitoring and reports are running on the baseline schedule. Connect an IFC model to see them on the building.</p>
+        <div class="twin-actions"><label class="btn primary file">Upload IFC model<input type="file" id="ifc-file-2" accept=".ifc" hidden></label>
+          <button type="button" class="btn ghost" id="bim-demo-2">Use the demo model</button></div>
+      </div>
+      <div class="hud-modes seg" role="tablist" aria-label="Twin view">
+        <button type="button" role="tab" data-mode="risk" aria-selected="true">Risk</button>
+        <button type="button" role="tab" data-mode="build" aria-selected="false">Build sequence</button>
+        <button type="button" role="tab" data-mode="recovery" aria-selected="false">Recovery</button>
+      </div>
+      <aside class="inspector" id="inspector"><p class="muted">Select an element to see its activity, float and recovery.</p></aside>
+      <div class="legend" id="legend"></div>
+      <div class="timeline" id="timeline">
+        <button type="button" class="play" id="play" aria-label="Play build sequence">Play</button>
+        <div class="track-wrap">
+          <input type="range" id="scrub" min="0" max="400" value="0" step="1" aria-label="Project day">
+          <div class="marks" id="marks"></div>
+        </div>
+        <output id="readout">Day 0</output>
+        <div class="seg small" role="group" aria-label="Schedule shown" id="sched-switch">
+          <button type="button" data-s="baseline" aria-pressed="false">Baseline</button>
+          <button type="button" data-s="forecast" aria-pressed="true">Forecast</button>
+          <button type="button" data-s="recovered" aria-pressed="false">Recovered</button>
+        </div>
+      </div>
+    </div>
+    <div class="twin-bar">
+      <p id="bim-summary" class="muted">Reading the model</p>
+      <div class="twin-actions">
+        <label class="btn ghost file">Upload IFC model<input type="file" id="ifc-file" accept=".ifc" hidden></label>
+        <button type="button" class="btn ghost" id="bim-demo">Use the demo model</button>
+        <button type="button" class="btn ghost" id="bim-disconnect">Disconnect the model</button>
+        <button type="button" class="btn primary" id="export-ifc">Download IFC with risk data</button>
+      </div>
+    </div>
+  </section>
+<section id="recover" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-recover" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Recovery plan</h2>
+        <p id="recover-intro">A linear programme chooses which activities to accelerate, and by how many days, so that every day bought costs less than a day of liquidated damages.</p></div>
+      <div class="titleblock"><span>Sheet 05</span><span>of 08</span><span id="tb-recover" class="tb-proj">No project</span></div>
+    </header>
+    <div class="sched-bar">
+      <p id="sched-summary" class="muted">Reading the baseline schedule</p>
+      <div class="twin-actions">
+        <label class="btn ghost file">Upload baseline schedule (P6 .xer or CSV)<input type="file" id="sched-file" accept=".xer,.csv" hidden></label>
+        <button type="button" class="btn ghost" id="reset-sched">Use the demo schedule</button>
+      </div>
+    </div>
+    <form class="controls" id="rec-form">
+      <label>Liquidated damages per day (PKR)<input type="number" id="ld" min="0" step="10000"></label>
+      <label>Recovery budget cap (PKR, optional)<input type="number" id="budget" min="0" step="100000" placeholder="No cap"></label>
+      <label>Target completion day (optional)<input type="number" id="deadline" min="1" step="1" placeholder="Contract completion"></label>
+      <button class="btn mark" type="submit">Optimise recovery</button>
+    </form>
+    <p class="lede" id="rec-summary"></p>
+    <dl class="kpis" id="rec-kpis"></dl>
+    <div class="sim" id="sim" hidden>
+      <div><h3>Finish-date risk</h3><p class="sim-big" id="sim-big"></p><p class="fine" id="sim-note"></p></div>
+      <div id="dist" class="chart"></div>
+    </div>
+    <div class="rec-grid reveal">
+      <div><h3>Cost of finishing earlier</h3><p class="fine">Each point is the cheapest way to finish on that day, solved as its own LP. The optimum balances crash cost against liquidated damages.</p><div id="curve" class="chart"></div></div>
+      <div><h3>Activities to accelerate</h3><div class="table-wrap"><table class="grid" id="plan-table"><thead><tr><th>Activity</th><th>How</th><th class="n">Days</th><th class="n">Cost</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+    <h3 class="gap">Schedule: baseline, forecast and recovered</h3>
+    <div id="gantt" class="chart wide"></div>
+    <details class="formulation"><summary>How the optimiser decides</summary><div id="formulation"></div></details>
+  </section>
+<section id="impact" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-impact" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Time, cost and carbon</h2>
+        <p>What finishing earlier is worth. Avoided figures come from the days recovered; the rework figure is exposure, not a saving.</p></div>
+      <div class="titleblock"><span>Sheet 06</span><span>of 08</span><span id="tb-impact" class="tb-proj">No project</span></div>
+    </header>
+    <dl class="impact reveal" id="impact-figs"></dl>
+    <h3 class="gap">Cost of the delay, with and without the recovery plan</h3>
+    <div id="cost-compare" class="chart"></div>
+    <h3 class="gap">Assumptions to verify before citing</h3>
+    <div class="table-wrap"><table class="grid" id="assumptions"><thead><tr><th>Factor</th><th class="n">Value</th><th>Unit</th><th>Source</th></tr></thead><tbody></tbody></table></div>
+  </section>
+<section id="portfolio" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-portfolio" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Benchmark data</h2>
+        <p>The anonymised projects the model learned from, each with its cross-validated forecast (scored by a model that never saw it). Use them to compare your project, or open one in the Forecast sheet as a worked example.</p></div>
+      <div class="titleblock"><span>Sheet 07</span><span>of 08</span><span id="tb-portfolio" class="tb-proj">No project</span></div>
+    </header>
+    <div class="overview reveal">
+      <dl class="ov-kpis" id="ov-kpis"></dl>
+      <div class="ov-donut">
+        <h3>Forecast risk bands</h3>
+        <div id="donut" class="chart"></div>
+        <ul class="donut-legend" id="donut-legend"></ul>
+      </div>
+      <div class="ov-map">
+        <div class="row-head"><h3>Risk map</h3><span class="fine" style="margin:0">Hover a point for details, click to open it</span></div>
+        <div id="riskmap" class="chart skeleton"></div>
+      </div>
+    </div>
+    
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Filter projects" id="filters">
+        <button type="button" data-f="all" aria-pressed="true">All</button>
+        <button type="button" data-f="ongoing" aria-pressed="false">Ongoing</button>
+        <button type="button" data-f="completed" aria-pressed="false">Completed</button>
+        <button type="button" data-f="risk" aria-pressed="false">At risk or critical</button>
+      </div>
+      <span class="band-filter" id="band-filter" hidden></span>
+      <label class="search"><span class="sr">Search projects</span><input id="search" type="search" placeholder="Search type or province"></label>
+    </div>
+    <div class="table-wrap"><table class="grid" id="portfolio-table">
+      <thead><tr><th>Project</th><th>Province</th><th>Status</th><th>Checkpoint</th><th class="n">SPI</th><th>Forecast overrun</th><th class="n">Actual</th></tr></thead>
+      <tbody></tbody></table></div>
+    <p class="fine" id="portfolio-note"></p>
+  </section>
+<section id="evidence" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-evidence" tabindex="-1" hidden>
+    <header class="sheet-head reveal">
+      <div><h2>Evidence</h2>
+        <p>How well the model performs, what it learned from, and what it deliberately ignores. This is the page to open when an examiner asks how you know it works.</p></div>
+      <div class="titleblock"><span>Sheet 08</span><span>of 08</span><span id="tb-evidence" class="tb-proj">No project</span></div>
+    </header>
+    <div class="ev-grid reveal">
+      <div><h3>Cross-validated performance</h3><div class="table-wrap"><table class="grid" id="metrics"></table></div><p class="fine" id="validation-note"></p></div>
+      <div><h3>What the data is made of</h3><div id="composition"></div></div>
+    </div>
+    <div class="ev-grid reveal">
+      <div><div class="row-head"><h3>Predicted against actual</h3><div class="seg small" data-evgate></div></div><div id="scatter" class="chart"></div></div>
+      <div><div class="row-head"><h3>What drives the forecast</h3><div class="seg small" data-evgate></div></div><div id="beeswarm" class="chart"></div></div>
+    </div>
+    <div class="ev-grid reveal">
+      <div><h3>Model comparison</h3><div class="table-wrap"><table class="grid" id="comparison"></table></div></div>
+      <div><h3>Robustness checks</h3><div class="table-wrap"><table class="grid" id="sensitivity"></table></div><p class="fine">Run <code>python -m revive train --sensitivity</code> to refresh.</p></div>
+    </div>
+    <div class="ev-grid reveal">
+      <div><h3>Delay causes ranked by practitioners</h3><p class="fine">Relative Importance Index from survey items G1 to G14. Descriptive only: these ratings are retrospective, so they are not model inputs.</p><div id="rii" class="chart"></div></div>
+      <div><h3>Deliberately left out of the model</h3><ul class="plain" id="excluded"></ul>
+        <h3 class="gap">Limitations</h3><ul class="plain" id="limits"></ul></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>REVIVE, final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
+  <p id="foot-company"></p>
+</footer>
+
+<dialog class="modal" id="project-modal" aria-labelledby="pm-title">
+  <form method="dialog" id="pm-form" novalidate>
+    <header class="pm-head"><h2 id="pm-title">New project</h2><button type="button" class="x" id="pm-close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button></header>
+    <div class="seg pm-tabs" role="tablist" aria-label="Project setup">
+      <button type="button" role="tab" data-pt="details" aria-selected="true"><i>1</i> Details</button>
+      <button type="button" role="tab" data-pt="schedule" aria-selected="false"><i>2</i> Baseline schedule</button>
+      <button type="button" role="tab" data-pt="bim" aria-selected="false"><i>3</i> BIM model</button>
+    </div>
+    <div class="pm-panel" data-pp="details">
+      <div class="fields">
+        <label class="field wide"><span>Project name</span><input id="pm-name" required maxlength="120" placeholder="e.g. Blue Area office tower, Block C"></label>
+        <label class="field"><span>Client</span><input id="pm-client" maxlength="160" placeholder="e.g. CDA"></label>
+        <label class="field"><span>Contract reference</span><input id="pm-code" maxlength="40" placeholder="e.g. CDA/2026/114"></label>
+        <label class="field"><span>Project type</span><select id="pm-type"></select></label>
+        <label class="field"><span>Province</span><select id="pm-province"></select></label>
+        <label class="field"><span>Site location (for live weather)</span><select id="pm-city"></select></label>
+        <label class="field"><span>Contract value</span><select id="pm-value"></select></label>
+        <label class="field"><span>Commencement date</span><input type="date" id="pm-start"></label>
+        <label class="field"><span>Contract duration (months)</span><input type="number" id="pm-months" min="1" max="120" step="1"></label>
+      </div>
+      <p class="fine">The start date and duration turn schedule days into calendar dates and tell REVIVE when a site report is out of date.</p>
+    </div>
+    <div class="pm-panel" data-pp="schedule" hidden>
+      <div class="drop" id="pm-sched-drop"><input type="file" id="pm-sched" accept=".xer,.csv"><b>Drop the baseline schedule here</b><span>Primavera P6 .xer export or a REVIVE .csv (max 20 MB). Without one, the demo G+3 schedule is used so you can try everything first.</span><em id="pm-sched-name"></em></div>
+    </div>
+    <div class="pm-panel" data-pp="bim" hidden>
+      <div class="pm-choice" role="radiogroup" aria-label="BIM model">
+        <label><input type="radio" name="pm-bim" value="none" checked><b>No model</b><span>Run on the schedule and site reports. You can connect one later.</span></label>
+        <label><input type="radio" name="pm-bim" value="demo"><b>Demo model</b><span>The illustrative G+3 IFC model linked to the demo schedule.</span></label>
+        <label><input type="radio" name="pm-bim" value="file"><b>Upload IFC</b><span>Export IFC4 from Revit with a WBS_Code parameter (max 150 MB).</span></label>
+      </div>
+      <div class="drop" id="pm-ifc-drop" hidden><input type="file" id="pm-ifc" accept=".ifc"><b>Drop the .ifc file here</b><span>Elements link to schedule activities through WBS_Code, or by storey and IFC class.</span><em id="pm-ifc-name"></em></div>
+    </div>
+    <p class="pm-err" id="pm-err" role="alert"></p>
+    <footer class="pm-foot">
+      <button type="button" class="btn ghost" id="pm-back" hidden>Back</button>
+      <span class="grow"></span>
+      <button type="button" class="btn ghost" id="pm-next">Next</button>
+      <button type="submit" class="btn primary" id="pm-create">Create project</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="modal" id="team-modal" aria-labelledby="tm-title">
+  <div>
+    <header class="pm-head"><h2 id="tm-title">Team and access</h2><button type="button" class="x" id="tm-close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button></header>
+    <p class="muted">Everyone listed here sees all of your company's projects and nothing else. Admins can add people and delete projects.</p>
+    <ul class="team" id="team-list"></ul>
+    <form id="tm-form" class="tm-form" hidden>
+      <h3>Add a person</h3>
+      <div class="fields">
+        <label class="field"><span>Name</span><input id="tm-name" required maxlength="80"></label>
+        <label class="field"><span>E-mail</span><input id="tm-email" type="email" required maxlength="254"></label>
+        <label class="field"><span>Temporary password (10+ characters)</span><input id="tm-pass" type="password" required minlength="10" autocomplete="new-password"></label>
+        <label class="field"><span>Role</span><select id="tm-role"><option value="member">Member</option><option value="admin">Admin</option></select></label>
+      </div>
+      <div class="form-actions"><button class="btn primary" type="submit">Add to the company</button></div>
+    </form>
+  </div>
+</dialog>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+</body>
+</html>

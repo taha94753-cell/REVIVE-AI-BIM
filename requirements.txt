@@ -1,0 +1,16 @@
+# REVIVE runtime dependencies (tested versions in requirements-lock.txt). Python 3.12 recommended;
+# 3.13 and 3.14 use the same tested versions; 3.11 resolves slightly older xgboost/shap from these ranges.
+numpy>=1.26
+pandas>=2.1
+openpyxl>=3.1
+pyyaml>=6.0
+scikit-learn>=1.4
+xgboost>=2.0,<4
+shap>=0.45
+matplotlib>=3.8
+pulp>=2.7,<3          # PuLP 3+/4 no longer bundles the CBC solver
+ifcopenshell>=0.8
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+segno>=1.5            # QR code for the live site link

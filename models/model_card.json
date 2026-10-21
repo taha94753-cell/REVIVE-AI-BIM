@@ -1,0 +1,356 @@
+{
+  "trained_at": "2026-09-30T13:51:03+00:00",
+  "training_scope": {
+    "include_ongoing": true,
+    "include_hypothetical": true
+  },
+  "dataset": {
+    "n_projects": 120,
+    "by_source": {
+      "SYN": 32,
+      "C01": 26,
+      "C02": 25,
+      "C03": 24,
+      "EXT": 12,
+      "UNCODED": 1
+    },
+    "hypothetical": 32,
+    "by_status": {
+      "Completed": 81,
+      "Still ongoing": 39
+    },
+    "by_type": {
+      "Highway": 47,
+      "Commercial building": 17,
+      "Industrial": 14,
+      "Water & sanitation": 13,
+      "Public building": 12,
+      "Bridge": 9,
+      "Residential building": 8
+    },
+    "time_overrun_pct": {
+      "mean": 42.3,
+      "50%": 33.8,
+      "min": 0.0,
+      "max": 397.8
+    },
+    "cost_overrun_pct": {
+      "mean": 24.5,
+      "50%": 27.3,
+      "min": 0.7,
+      "max": 55.0
+    }
+  },
+  "high_risk_threshold_pct": 40,
+  "validation": "Repeated 5-fold cross-validation x 3 repeats (out-of-fold predictions); final models refitted on all records.",
+  "excluded_for_leakage": {
+    "D*_tot": "whole-project totals are only known at completion",
+    "D10": "biggest cause of delay is judged after the fact",
+    "G1-G14": "retrospective ratings of what caused the delay",
+    "C3/C3b": "extension of time granted is a consequence of delay",
+    "C5/C7/C8": "status, final cost and disputes are outcomes",
+    "E4/E7": "SPI/CPI at 75% sit too close to completion to be an early warning",
+    "F1-F5": "BIM case-study eligibility, not project performance",
+    "A1-A8": "respondent information, not project attributes",
+    "B8a/B8b": "award date mainly identifies the data batch, not a cause"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "xgboost": "3.4.1",
+    "scikit-learn": "1.8.0",
+    "shap": "0.52.0"
+  },
+  "gates": {
+    "G25": {
+      "label": "25% of contract time elapsed",
+      "n_projects": 120,
+      "n_encoded_columns": 54,
+      "time_overrun": {
+        "mae": {
+          "mean": 6.793,
+          "std": 0.303
+        },
+        "rmse": {
+          "mean": 13.76,
+          "std": 0.973
+        },
+        "r2": {
+          "mean": 0.765,
+          "std": 0.034
+        },
+        "baseline_median_mae": 16.22,
+        "interval_80pct_residuals": [
+          -7.89,
+          7.02
+        ]
+      },
+      "cost_overrun": {
+        "mae": {
+          "mean": 3.652,
+          "std": 0.167
+        },
+        "rmse": {
+          "mean": 4.74,
+          "std": 0.157
+        },
+        "r2": {
+          "mean": 0.821,
+          "std": 0.012
+        }
+      },
+      "high_risk": {
+        "auc": {
+          "mean": 0.907,
+          "std": 0.011
+        },
+        "f1": {
+          "mean": 0.738,
+          "std": 0.018
+        },
+        "accuracy": {
+          "mean": 0.85,
+          "std": 0.014
+        },
+        "precision": {
+          "mean": 0.778,
+          "std": 0.041
+        },
+        "recall": {
+          "mean": 0.704,
+          "std": 0.013
+        },
+        "positives": 36,
+        "majority_class_accuracy": 0.7
+      },
+      "top_drivers": [
+        {
+          "key": "spi_25",
+          "label": "SPI at 25% of time",
+          "mean_abs_shap": 9.838
+        },
+        {
+          "key": "duration_setting",
+          "label": "How the duration was set",
+          "mean_abs_shap": 5.144
+        },
+        {
+          "key": "late_payments_q1",
+          "label": "IPCs paid more than 30 days late",
+          "mean_abs_shap": 2.235
+        },
+        {
+          "key": "cpi_25",
+          "label": "CPI at 25% of time",
+          "mean_abs_shap": 1.729
+        },
+        {
+          "key": "cert_25",
+          "label": "Value certified at 25% of time",
+          "mean_abs_shap": 1.372
+        },
+        {
+          "key": "subcontractor_q1",
+          "label": "Subcontractor performance",
+          "mean_abs_shap": 1.341
+        },
+        {
+          "key": "rework_q1",
+          "label": "Rework so far (share of contract value)",
+          "mean_abs_shap": 0.711
+        },
+        {
+          "key": "contract_type",
+          "label": "Contract type",
+          "mean_abs_shap": 0.694
+        }
+      ]
+    },
+    "G50": {
+      "label": "50% of contract time elapsed",
+      "n_projects": 120,
+      "n_encoded_columns": 57,
+      "time_overrun": {
+        "mae": {
+          "mean": 5.858,
+          "std": 0.294
+        },
+        "rmse": {
+          "mean": 12.372,
+          "std": 0.662
+        },
+        "r2": {
+          "mean": 0.81,
+          "std": 0.02
+        },
+        "baseline_median_mae": 16.22,
+        "interval_80pct_residuals": [
+          -6.21,
+          5.51
+        ]
+      },
+      "cost_overrun": {
+        "mae": {
+          "mean": 2.18,
+          "std": 0.05
+        },
+        "rmse": {
+          "mean": 2.849,
+          "std": 0.067
+        },
+        "r2": {
+          "mean": 0.935,
+          "std": 0.003
+        }
+      },
+      "high_risk": {
+        "auc": {
+          "mean": 0.943,
+          "std": 0.003
+        },
+        "f1": {
+          "mean": 0.811,
+          "std": 0.012
+        },
+        "accuracy": {
+          "mean": 0.889,
+          "std": 0.008
+        },
+        "precision": {
+          "mean": 0.827,
+          "std": 0.02
+        },
+        "recall": {
+          "mean": 0.796,
+          "std": 0.013
+        },
+        "positives": 36,
+        "majority_class_accuracy": 0.7
+      },
+      "top_drivers": [
+        {
+          "key": "spi_50",
+          "label": "SPI at 50% of time",
+          "mean_abs_shap": 14.456
+        },
+        {
+          "key": "spi_25",
+          "label": "SPI at 25% of time",
+          "mean_abs_shap": 3.324
+        },
+        {
+          "key": "cert_50",
+          "label": "Value certified at 50% of time",
+          "mean_abs_shap": 0.818
+        },
+        {
+          "key": "late_payments_q1",
+          "label": "IPCs paid more than 30 days late",
+          "mean_abs_shap": 0.802
+        },
+        {
+          "key": "cpi_50",
+          "label": "CPI at 50% of time",
+          "mean_abs_shap": 0.674
+        },
+        {
+          "key": "cert_25",
+          "label": "Value certified at 25% of time",
+          "mean_abs_shap": 0.627
+        },
+        {
+          "key": "planned_months",
+          "label": "Original contract duration",
+          "mean_abs_shap": 0.627
+        },
+        {
+          "key": "cpi_25",
+          "label": "CPI at 25% of time",
+          "mean_abs_shap": 0.574
+        }
+      ]
+    }
+  },
+  "model_comparison": [
+    {
+      "gate": "G25",
+      "model": "Median baseline",
+      "time_MAE": 16.22,
+      "time_R2": NaN,
+      "risk_AUC": NaN,
+      "risk_F1": NaN
+    },
+    {
+      "gate": "G25",
+      "model": "XGBoost (production)",
+      "time_MAE": 6.79,
+      "time_R2": 0.765,
+      "risk_AUC": 0.907,
+      "risk_F1": 0.738
+    },
+    {
+      "gate": "G25",
+      "model": "Random Forest",
+      "time_MAE": 7.49,
+      "time_R2": 0.698,
+      "risk_AUC": 0.929,
+      "risk_F1": 0.721
+    },
+    {
+      "gate": "G25",
+      "model": "SVM (RBF)",
+      "time_MAE": 10.41,
+      "time_R2": 0.452,
+      "risk_AUC": 0.891,
+      "risk_F1": 0.698
+    },
+    {
+      "gate": "G25",
+      "model": "Linear (Ridge / Logistic)",
+      "time_MAE": 12.45,
+      "time_R2": 0.616,
+      "risk_AUC": 0.904,
+      "risk_F1": 0.716
+    },
+    {
+      "gate": "G50",
+      "model": "Median baseline",
+      "time_MAE": 16.22,
+      "time_R2": NaN,
+      "risk_AUC": NaN,
+      "risk_F1": NaN
+    },
+    {
+      "gate": "G50",
+      "model": "XGBoost (production)",
+      "time_MAE": 5.86,
+      "time_R2": 0.81,
+      "risk_AUC": 0.943,
+      "risk_F1": 0.811
+    },
+    {
+      "gate": "G50",
+      "model": "Random Forest",
+      "time_MAE": 5.76,
+      "time_R2": 0.804,
+      "risk_AUC": 0.946,
+      "risk_F1": 0.831
+    },
+    {
+      "gate": "G50",
+      "model": "SVM (RBF)",
+      "time_MAE": 9.53,
+      "time_R2": 0.499,
+      "risk_AUC": 0.924,
+      "risk_F1": 0.836
+    },
+    {
+      "gate": "G50",
+      "model": "Linear (Ridge / Logistic)",
+      "time_MAE": 10.04,
+      "time_R2": 0.722,
+      "risk_AUC": 0.92,
+      "risk_F1": 0.806
+    }
+  ],
+  "training_seconds": 16.7
+}

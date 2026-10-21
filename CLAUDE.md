@@ -1,0 +1,68 @@
+# CLAUDE.md — working on REVIVE
+
+REVIVE is a final-year design project (NUST, civil engineering). It is an AI-BIM decision-support app that:
+- forecasts construction time/cost overrun at 25% or 50% of contract time (XGBoost), and explains each forecast with TreeSHAP;
+- links the forecast to an IFC model through the schedule (IfcOpenShell);
+- optimises recovery with a linear programme (PuLP/CBC).
+
+The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js.
+
+## Commands
+- Setup: `pip install -r requirements-dev.txt && python -m revive setup`
+- Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
+- Test: `python -m pytest -q` (must stay green; 46 tests)
+- Security scan: `bandit -r revive` (must report no issues)
+- Retrain: `python -m revive train --sensitivity`
+- External test: `python -m revive evaluate --file <xlsx>`
+- JS syntax check: `cp web/assets/js/app.js /tmp/a.mjs && node --check /tmp/a.mjs` (same for charts.js, twin.js, landing.js, tilt.js)
+
+## Architecture (data flow)
+`schema.py` → `data.py` → `features.py` → `modeling.py` → `inference.py` → `recovery.py`
+
+`recovery.py` combines `scheduling.py` (CPM, forecast), `optimizer.py` (LP), `simulation.py` (Monte Carlo), `bim.py` (IFC) and `sustainability.py`. `weather.py` fetches Open-Meteo site weather and classifies lost days; `schedule_import.py` imports Primavera P6 `.xer` or CSV baseline schedules. `live.py` holds monitored projects, phone updates and the in-process SSE `Broker`; the phone page is `web/site.html` + `web/assets/js/site.js`. `server.py` exposes all of it under /api/*. The frontend lives in `web/assets/js/`:
+- `app.js`: state and rendering
+- `conn.js`: every API call goes through `api()`/`post()`, which raise `ApiError` (`.network` = server unreachable); the monitor reconnects by itself
+- `live.js`: `LiveChannel`, one SSE connection to `/api/live/stream` plus catch-up polling of `/api/live/{pid}/updates?after=`
+- `fx.js`: tweens, count-ups, reveal, `[data-tip]` tooltips, toasts
+- `charts.js`: hand-drawn SVG charts (entry animations are CSS classes; `animate(false)` while a slider is dragged)
+- `twin.js`: Three.js viewer
+
+## Ground rules
+1. **schema.py is the single source of truth** for model inputs. When you add a field, add it there (key, survey code, stage, kind, options). The form, encoder and API all follow automatically. Then retrain.
+2. **No outcome leakage.** Never add whole-project totals (D*_tot), EOT granted, final cost, status, D10 or G1-G14 as model inputs. See `LEAKAGE_EXCLUDED` in schema.py.
+3. **Honest numbers only.**
+   - Performance figures come from `models/model_card.json` (cross-validated). Never report in-sample accuracy.
+   - Never invent results.
+   - When a dataset project is scored in the UI, the out-of-fold value is the honest one (the app already shows it).
+4. **Hypothetical data stays labelled.** 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs.
+5. **Never commit `data/raw/`.** It contains a private company/project key and an e-mail address.
+6. **Assumptions live in config.yaml.** Keep carbon factors, liquidated damages and crash assumptions there, marked VERIFY; do not hard-code them.
+7. **Pin PuLP below 3.** PuLP 3+/4 no longer ships the CBC solver; `optimizer.py` has a compatibility shim.
+8. **BIM is optional.** Every feature except the 3D view, quantities and IFC export must work when `get_bim()` returns None. Test both modes (`tests/test_weather_schedule_bim.py`).
+9. **Never block on the network.** Weather calls must fail soft (`available: false`) and stay out of the forecast unless a person confirms them.
+10. **The live channel is in-process.** Run a single uvicorn worker. Changing that means moving `Broker` to Redis. Publish only from async handlers (event-loop thread). Never send SSE through GZip (`StreamSafeGZip` excludes `/stream`).
+12. **Never report a network failure as a bug, or a bug as "server not reachable".** Use `report(e)` in app.js: it routes `e.network` to the connection banner and everything else to an error toast.
+11. **Frontend needs no build step and must work offline.** Do not add CDN links; vendor any library into `web/vendor/` (Three.js and GSAP are vendored).
+13. **Every company-owned row carries company_id and every query filters on it.** New tables follow the same rule. A wrong id must answer 404, never 403 (do not reveal that it exists).
+14. **Project files only through the scope.** Use `projects.scope(project)` (or `config.use_scope`) around engine calls; never reintroduce a global "active" model or schedule.
+15. **Every state-changing request needs the X-Revive-Request header** (conn.js and site.js add it). Do not exempt routes from `CsrfGuard`.
+16. **Phones use the site token, never a row id.** `/api/site/<token>/*` is the only unauthenticated write path.
+17. **Inline scripts are allowed only by hash.** The CSP hashes the import maps at start-up; any other inline `<script>` will be blocked. Put code in `web/assets/js/`.
+18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
+
+## Design language (frontend)
+The look is "site grade": structural-steel graphite with construction-yellow actions (v3).
+- Archivo (variable width, `font-variation-settings:"wdth" N`) for headings and figures, Inter for body text, JetBrains Mono for codes and labels. All three are vendored variable fonts in `web/assets/fonts/`.
+- Graphite surfaces (`--ink-*`, `--surface`), steel-blue `--cyan` for data linework; construction yellow (`--amber`) for primary actions only; hazard stripes (`--hazard`) as a small accent.
+- Green/amber/orange/red for risk only, and survey-marking pink (`--mark`) only for the recovery plan.
+- The REVIVE mark (recovery arrow around three rising columns, `.rv`) is the logo, the tab-bar emblem, the loader (`.rv.loading`) and the landing tab progress ring. Add `.rv-go` to replay its draw-in (not `.play`, which is the BIM timeline button).
+- 3D hover cards: `tilt.js`; mark a container `data-tilt` and its layers `data-z="40"`.
+- Sentence-case copy, no all-caps labels in the workspace.
+
+Keep charts as SVG in `charts.js`.
+
+## Useful next tasks
+- Collect more completed projects, run `evaluate`, then merge and retrain.
+- Replace `bim/sample_building.ifc` and `bim/schedule.csv` with the real case-study model and baseline programme.
+- Calibrate crash rates and the liquidated-damages rate from the case-study contract.
+- Pilot the live link on one real ongoing project: weekly updates from the site engineer, then collect a practitioner rating.

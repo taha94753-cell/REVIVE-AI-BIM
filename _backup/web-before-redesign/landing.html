@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REVIVE · See the delay you have, and the one that is coming</title>
+  <meta name="description" content="REVIVE measures how late a construction project is today, forecasts where it is heading, explains why, and finds the cheapest recovery on the baseline schedule and the BIM model.">
+  <meta name="theme-color" content="#06121C">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2306121C'/%3E%3Cpath d='M7 25V8h10a5 5 0 0 1 0 10H7m9 0 7 7' fill='none' stroke='%23FFB547' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="preload" href="/assets/fonts/big-shoulders-display-latin-900-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/landing.css?v=2.0.0">
+  <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js"}}</script>
+  <script src="/vendor/gsap/gsap.min.js" defer></script>
+  <script src="/vendor/gsap/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="/assets/js/landing.js?v=2.0.0"></script>
+</head>
+<body>
+<a class="skip" href="#start">Skip to sign in</a>
+<header class="nav" id="nav">
+  <a class="mark" href="/" aria-label="REVIVE">REVIVE<i></i></a>
+  <nav aria-label="Page">
+    <a href="#how">How it works</a><a href="#now">Pipeline</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a>
+  </nav>
+  <span class="grow"></span>
+  <a class="btn ghost" href="#start" data-auth="signin" id="nav-signin">Sign in</a>
+  <a class="btn amber" href="#start" data-auth="register" id="nav-cta">Create workspace</a>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="hero-vignette" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="kicker"><span class="blip"></span>AI &middot; BIM &middot; construction delay</p>
+      <h1 class="h-split"><span>See the delay</span><span>you already have.</span><span class="amber-t">And the one</span><span class="amber-t">that is coming.</span></h1>
+      <p class="lede">REVIVE reads a project from its baseline schedule and site reports, measures how late it is today, forecasts where it is heading, explains why, and finds the cheapest way back. Connect a BIM model and you see it all on the building.</p>
+      <div class="cta-row">
+        <a class="btn amber lg" href="#start" data-auth="register">Create a company workspace</a>
+        <a class="btn ghost lg" href="#how">See how it works</a>
+      </div>
+    </div>
+    <aside class="hud" aria-label="Illustrative readout">
+      <p class="hud-t">Status readout <em>illustrative</em></p>
+      <dl>
+        <div><dt>Actual time</dt><dd data-hud="at">day 0</dd></div>
+        <div><dt>Earned schedule</dt><dd data-hud="es">day 0</dd></div>
+        <div><dt>SPI(t)</dt><dd data-hud="spi">1.00</dd></div>
+        <div class="hot"><dt>Delay to date</dt><dd data-hud="dl">0 d</dd></div>
+      </dl>
+      <div class="hud-bar"><i id="hud-scan"></i></div>
+      <p class="hud-f" id="hud-phase">Assembling the baseline</p>
+    </aside>
+    <a class="scroll-cue" href="#numbers" aria-label="Scroll down"><span></span></a>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="track"><span>Primavera P6 .xer</span><span>IFC4 write-back</span><span>Earned Schedule</span><span>Critical path update</span><span>XGBoost</span><span>TreeSHAP</span><span>Linear programming</span><span>Monte Carlo P80</span><span>Live site link</span><span>Open-Meteo weather</span><span>Company workspaces</span><span>Primavera P6 .xer</span><span>IFC4 write-back</span><span>Earned Schedule</span><span>Critical path update</span><span>XGBoost</span><span>TreeSHAP</span><span>Linear programming</span><span>Monte Carlo P80</span><span>Live site link</span><span>Open-Meteo weather</span><span>Company workspaces</span></div>
+  </div>
+
+  <section class="band numbers" id="numbers">
+    <div class="wrap">
+      <p class="eyebrow">The problem, in our own survey data</p>
+      <h2 class="reveal-up">Most projects find out they are late when it is too late to be cheap.</h2>
+      <div class="stats">
+        <div class="stat reveal-up"><b data-count="projects">&mdash;</b><span>Pakistani construction projects in the training data</span></div>
+        <div class="stat reveal-up"><b data-count="over10" data-suffix="%">&mdash;</b><span>of them overran their contract time by more than 10%</span></div>
+        <div class="stat reveal-up"><b data-count="median" data-suffix="%">&mdash;</b><span>median time overrun across the records with an outcome</span></div>
+        <div class="stat reveal-up"><b data-count="mae" data-suffix=" pts" data-dec="1">&mdash;</b><span>cross-validated forecast error at 25% of contract time, against <em data-fill="base">&mdash;</em> pts for guessing the median</span></div>
+      </div>
+      <p class="fine" id="numbers-note">Figures load from the trained model card. Some records are hypothetical scenarios; they are labelled in the app and in every result.</p>
+    </div>
+  </section>
+
+  <section class="band how" id="how">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h2 class="reveal-up">One project. Six questions a project manager actually asks.</h2>
+      <div class="xtabs" role="tablist" aria-label="What REVIVE answers" id="xtabs">
+        <button role="tab" aria-selected="true" aria-controls="xp-now" id="xt-now" data-x="now"><i>01</i><span>How late are we now?</span><b class="prog"></b></button>
+        <button role="tab" aria-selected="false" aria-controls="xp-next" id="xt-next" data-x="next" tabindex="-1"><i>02</i><span>Where is it heading?</span><b class="prog"></b></button>
+        <button role="tab" aria-selected="false" aria-controls="xp-why" id="xt-why" data-x="why" tabindex="-1"><i>03</i><span>Why?</span><b class="prog"></b></button>
+        <button role="tab" aria-selected="false" aria-controls="xp-fix" id="xt-fix" data-x="fix" tabindex="-1"><i>04</i><span>Cheapest way back?</span><b class="prog"></b></button>
+        <button role="tab" aria-selected="false" aria-controls="xp-live" id="xt-live" data-x="live" tabindex="-1"><i>05</i><span>What changed on site?</span><b class="prog"></b></button>
+        <button role="tab" aria-selected="false" aria-controls="xp-bim" id="xt-bim" data-x="bim" tabindex="-1"><i>06</i><span>Where on the building?</span><b class="prog"></b></button>
+      </div>
+      <div class="xpanels">
+        <article class="xpanel" role="tabpanel" id="xp-now" aria-labelledby="xt-now" data-x="now">
+          <div class="xtext"><h3>Current delay, measured, not guessed</h3>
+            <p>From the baseline and the latest SPI, REVIVE finds the earned schedule: the day on which the plan had reached the work actually done. The gap to today is the delay to date, confirmed by re-networking the remaining work from the status date.</p>
+            <ul><li>Earned Schedule on your own P6 baseline</li><li>Activity progress picks up out-of-sequence work</li><li>Slip per window, split by client, weather and contractor events</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" aria-hidden="true">
+            <path class="axis" d="M30 30 V290 H500"/>
+            <path class="pv" d="M30 290 C 120 280, 170 230, 230 180 S 360 70, 490 40"/>
+            <rect class="gap" x="205" y="30" width="57" height="260"/>
+            <line class="vl es" x1="205" x2="205" y1="30" y2="290"/><line class="vl at" x1="262" x2="262" y1="30" y2="290"/>
+            <line class="gapline" x1="205" x2="262" y1="199" y2="199"/>
+            <circle class="ev" cx="262" cy="199" r="7"/>
+            <text x="200" y="22" class="lbl es-t" text-anchor="end">ES day 131</text><text x="268" y="22" class="lbl at-t">AT day 150</text>
+            <text x="233" y="185" class="big-t" text-anchor="middle">+18 d</text></svg></div>
+        </article>
+        <article class="xpanel" role="tabpanel" id="xp-next" aria-labelledby="xt-next" data-x="next" hidden>
+          <div class="xtext"><h3>Three finish dates, side by side</h3>
+            <p>If the remaining work goes to plan. If the current pace continues. And the machine-learning forecast, trained on Pakistani projects at 25% and 50% of contract time. When they disagree, that is the conversation to have.</p>
+            <ul><li>XGBoost with an 80% range, cross-validated</li><li>Monte Carlo P50 and P80 finish dates</li><li>Risk band and a project health score</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" aria-hidden="true">
+            <text x="160" y="73" class="lbl" text-anchor="end">Planned</text><rect class="bar b0" x="170" y="56" width="220" height="24"/>
+            <text x="160" y="133" class="lbl" text-anchor="end">To plan</text><rect class="bar b1" x="170" y="116" width="238" height="24"/>
+            <text x="160" y="193" class="lbl" text-anchor="end">Current pace</text><rect class="bar b2" x="170" y="176" width="270" height="24"/>
+            <text x="160" y="253" class="lbl" text-anchor="end">ML forecast</text><rect class="bar b3" x="170" y="236" width="300" height="24"/>
+            <line x1="390" x2="390" y1="40" y2="280" class="vl"/><text x="390" y="300" class="lbl" text-anchor="middle">planned completion</text></svg></div>
+        </article>
+        <article class="xpanel" role="tabpanel" id="xp-why" aria-labelledby="xt-why" data-x="why" hidden>
+          <div class="xtext"><h3>Every forecast explains itself</h3>
+            <p>TreeSHAP splits the gap between the average project and this one into exact contributions. No black box in front of a client or an examiner.</p>
+            <ul><li>Contributions add up exactly to the forecast</li><li>What-if sliders re-forecast as you drag</li><li>Outcome-leaking fields deliberately excluded</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" aria-hidden="true">
+            <text x="52" y="56" class="lbl" text-anchor="end">base</text><rect x="60" y="40" width="120" height="22" class="w0"/>
+            <text x="52" y="92" class="lbl" text-anchor="end">SPI</text><rect x="180" y="76" width="90" height="22" class="up"/>
+            <text x="52" y="128" class="lbl" text-anchor="end">IPCs</text><rect x="270" y="112" width="70" height="22" class="up"/>
+            <text x="52" y="164" class="lbl" text-anchor="end">bidders</text><rect x="300" y="148" width="40" height="22" class="dn"/>
+            <text x="52" y="200" class="lbl" text-anchor="end">material</text><rect x="300" y="184" width="55" height="22" class="up"/>
+            <text x="52" y="236" class="lbl" text-anchor="end">design</text><rect x="355" y="220" width="30" height="22" class="up"/>
+            <text x="52" y="280" class="lbl" text-anchor="end">forecast</text><rect x="60" y="262" width="325" height="26" class="tot"/></svg></div>
+        </article>
+        <article class="xpanel" role="tabpanel" id="xp-fix" aria-labelledby="xt-fix" data-x="fix" hidden>
+          <div class="xtext"><h3>The cheapest recovery, by linear programming</h3>
+            <p>Which activities to accelerate, by how many days, so every day bought costs less than a day of liquidated damages. Weather-sensitive work and budget caps included.</p>
+            <ul><li>Time-cost curve, solved point by point</li><li>Before and after Gantt, finish-date risk</li><li>Carbon and overheads avoided</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" aria-hidden="true">
+            <path class="axis" d="M30 30 V290 H500"/>
+            <path class="tc" d="M40 70 C 140 120, 190 200, 260 230 S 400 250, 480 120"/>
+            <circle class="opt-ring" cx="292" cy="236" r="9"/><circle class="opt" cx="292" cy="236" r="9"/>
+            <text x="292" y="272" class="lbl" text-anchor="middle">optimum: crash cost meets damages avoided</text></svg></div>
+        </article>
+        <article class="xpanel" role="tabpanel" id="xp-live" aria-labelledby="xt-live" data-x="live" hidden>
+          <div class="xtext"><h3>A phone on site, a dashboard in the office</h3>
+            <p>Scan a QR code. Tap what happened: late IPCs, material stoppages, variations, weather days. Every open dashboard of that company re-measures, re-forecasts and re-plans within a second.</p>
+            <ul><li>Revocable, unguessable phone links</li><li>Keeps the update offline, sends when signal returns</li><li>Observed lost weather days suggested automatically</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" aria-hidden="true">
+            <rect x="40" y="60" width="110" height="200" rx="16" class="phone"/><rect x="54" y="84" width="82" height="20" rx="3" class="pbtn"/><rect x="54" y="112" width="82" height="20" rx="3" class="pbtn"/><rect x="54" y="140" width="82" height="20" rx="3" class="pbtn"/><rect x="54" y="214" width="82" height="26" rx="4" class="psend"/>
+            <rect x="300" y="50" width="190" height="220" rx="6" class="dash"/><rect x="316" y="66" width="70" height="10" rx="2" class="pbtn"/><path class="spark" d="M320 220 L 360 200 L 400 205 L 440 170 L 470 150"/>
+            <path class="wire" d="M150 160 C 210 160, 240 160, 300 160"/><circle r="6" class="packet" cx="150" cy="160"/></svg></div>
+        </article>
+        <article class="xpanel" role="tabpanel" id="xp-bim" aria-labelledby="xt-bim" data-x="bim" hidden>
+          <div class="xtext"><h3>Optional, but it shows</h3>
+            <p>Connect an IFC model and every column, slab and wall takes the risk of the activity that builds it. The forecast and recovery are written back into the IFC as a property set that opens in Revit and Navisworks.</p>
+            <ul><li>Links by WBS_Code, or by storey and IFC class</li><li>4D build sequence: baseline, forecast, recovered</li><li>Floor area and storeys fill the forecast form</li></ul></div>
+          <div class="xvis"><svg viewBox="0 0 520 320" class="vis" id="v-bim" aria-hidden="true"></svg></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="pipe" id="now">
+    <div class="pipe-pin">
+      <div class="wrap">
+        <p class="eyebrow">From site report to decision</p>
+        <h2>Seven steps. One second. Every update.</h2>
+        <ol class="steps" id="steps">
+          <li><i>01</i><b>Baseline</b><span>P6 .xer or CSV, CPM network</span></li>
+          <li><i>02</i><b>Site update</b><span>phone: SPI, events, weather</span></li>
+          <li><i>03</i><b>Current delay</b><span>earned schedule, CPM update</span></li>
+          <li><i>04</i><b>Forecast</b><span>XGBoost at the nearest checkpoint</span></li>
+          <li><i>05</i><b>Explain</b><span>TreeSHAP drivers</span></li>
+          <li><i>06</i><b>Recover</b><span>LP crash plan, Monte Carlo</span></li>
+          <li><i>07</i><b>Show</b><span>dashboard, IFC, alerts</span></li>
+        </ol>
+        <div class="pipe-line"><i id="pipe-fill"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band companies" id="companies">
+    <div class="wrap">
+      <p class="eyebrow">Built for companies</p>
+      <h2 class="reveal-up">Your projects. Your people. Nobody else's.</h2>
+      <div class="feat">
+        <article class="reveal-up"><span class="ic">01</span><h3>Company workspaces</h3><p>Each company signs up once and runs as many projects as it has, each with its own schedule, model and history.</p></article>
+        <article class="reveal-up"><span class="ic">02</span><h3>Isolated by design</h3><p>Every record carries its company and every read filters on it. Another company's ids simply do not exist for you, and the tests prove it.</p></article>
+        <article class="reveal-up"><span class="ic">03</span><h3>Roles</h3><p>Admins add people and delete projects; members analyse. Passwords are scrypt-hashed and sessions expire.</p></article>
+        <article class="reveal-up"><span class="ic">04</span><h3>Revocable site links</h3><p>Phones get an unguessable link, never an account. Lost a phone? Reissue the link and the old one stops working.</p></article>
+        <article class="reveal-up"><span class="ic">05</span><h3>Hardened</h3><p>Content Security Policy, CSRF checks, upload type and size limits, login throttling, bounded inputs.</p></article>
+        <article class="reveal-up"><span class="ic">06</span><h3>Runs on your network</h3><p>Everything is vendored, so it works offline in a site office or a defence room. Live weather is optional and fails soft.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band evidence" id="evidence">
+    <div class="wrap two">
+      <div>
+        <p class="eyebrow">Evidence, stated plainly</p>
+        <h2 class="reveal-up">Numbers you can defend.</h2>
+        <p class="muted">Every figure is cross-validated: each project was scored by a model that never saw it. In the app, the Evidence sheet shows the comparison with other models, robustness checks and the limits.</p>
+      </div>
+      <div class="ev-table reveal-up">
+        <table><thead><tr><th>Checkpoint</th><th>Error</th><th>Median guess</th><th>R&sup2;</th><th>AUC</th></tr></thead><tbody id="ev-rows"><tr><td colspan="5">Loading the model card</td></tr></tbody></table>
+        <p class="fine">Error is mean absolute error in percentage points of time overrun. Current delay uses no machine learning at all: it is measured from the schedule, which is why it can check the forecast.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band start" id="start">
+    <div class="wrap two">
+      <div class="start-copy">
+        <p class="eyebrow">Start</p>
+        <h2>Open your company's workspace.</h2>
+        <p class="muted">Create a workspace in under a minute, then add your first project or load a sample one. Site staff never need an account: they use the link you give them.</p>
+        <p class="fine" id="reg-closed" hidden>New sign-ups are closed on this server. Ask its administrator for an account.</p>
+      </div>
+      <div class="auth" id="auth">
+        <div class="auth-tabs" role="tablist" aria-label="Account">
+          <button type="button" role="tab" aria-selected="true" data-a="register" id="at-register">Create workspace</button>
+          <button type="button" role="tab" aria-selected="false" data-a="signin" id="at-signin">Sign in</button>
+          <b class="auth-ind" aria-hidden="true"></b>
+        </div>
+        <form id="f-register" data-a="register" novalidate>
+          <label>Company name<input name="company" required maxlength="120" autocomplete="organization" placeholder="e.g. Habib Rafiq (Pvt) Ltd"></label>
+          <label>Your name<input name="name" required maxlength="80" autocomplete="name"></label>
+          <label>Work e-mail<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+          <label>Password <small>10 characters or more</small><input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
+          <div class="pw" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <button class="btn amber lg" type="submit">Create workspace</button>
+          <p class="err" role="alert"></p>
+        </form>
+        <form id="f-signin" data-a="signin" novalidate hidden>
+          <label>E-mail<input name="email" type="email" required maxlength="254" autocomplete="username"></label>
+          <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+          <button class="btn amber lg" type="submit">Sign in</button>
+          <p class="err" role="alert"></p>
+        </form>
+        <div id="signed-in" hidden><p>Signed in as <b id="si-who"></b>.</p><a class="btn amber lg" href="/app">Open the workspace</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span class="mark small">REVIVE<i></i></span>
+  <p>Final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
+  <p class="fine">Weather: Open-Meteo (CC BY 4.0). 3D: Three.js. Motion: GSAP.</p>
+</footer>
+</body>
+</html>

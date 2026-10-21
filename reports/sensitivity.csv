@@ -1,0 +1,9 @@
+scope,gate,n,time_MAE,time_R2,baseline_MAE,risk_AUC
+All records (production setting),G25,120,6.9,0.752,16.22,0.906
+All records (production setting),G50,120,6.06,0.798,16.22,0.942
+Completed projects only,G25,81,6.27,0.654,9.75,0.829
+Completed projects only,G50,81,5.31,0.763,9.75,0.875
+Without hypothetical rows,G25,88,8.55,0.649,13.68,0.856
+Without hypothetical rows,G50,88,6.21,0.804,13.68,0.891
+"All records, SPI/CPI removed",G25,120,8.56,0.713,16.22,0.826
+"All records, SPI/CPI removed",G50,120,7.42,0.784,16.22,0.86

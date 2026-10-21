@@ -1,0 +1,14 @@
+services:
+  revive:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      - PORT=8000
+      # - SMTP_HOST=smtp.gmail.com
+      # - SMTP_USER=you@example.com
+      # - SMTP_PASSWORD=app-password
+      # - ALERT_TO=project.manager@example.com
+    volumes:
+      - ./data:/app/data
+      - ./bim:/app/bim
+    restart: unless-stopped

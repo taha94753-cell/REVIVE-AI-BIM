@@ -1,0 +1,17 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+# raw survey data contains a private project-code key and contact details: never commit it
+data/raw/*
+!data/raw/README.md
+data/app.db
+data/app.db-*
+data/outbox/
+data/workspaces/
+models/bim_cache/
+models/exports/
+bim/uploads/
+reports/external_test_*

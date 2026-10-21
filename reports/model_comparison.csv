@@ -1,0 +1,11 @@
+gate,model,time_MAE,time_R2,risk_AUC,risk_F1
+G25,Median baseline,16.22,,,
+G25,XGBoost (production),6.79,0.765,0.907,0.738
+G25,Random Forest,7.49,0.698,0.929,0.721
+G25,SVM (RBF),10.41,0.452,0.891,0.698
+G25,Linear (Ridge / Logistic),12.45,0.616,0.904,0.716
+G50,Median baseline,16.22,,,
+G50,XGBoost (production),5.86,0.81,0.943,0.811
+G50,Random Forest,5.76,0.804,0.946,0.831
+G50,SVM (RBF),9.53,0.499,0.924,0.836
+G50,Linear (Ridge / Logistic),10.04,0.722,0.92,0.806
