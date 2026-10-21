@@ -1,9 +1,11 @@
 """
-Inference: one project in -> forecast, risk, health score and TreeSHAP explanation out.
+Inference: one project in -> forecast, risk, health score and explanation out.
 
-TreeSHAP is exact for tree ensembles: for every prediction it splits
-(prediction - average prediction) into one contribution per input field, in
-percentage points of time overrun, and the contributions add up exactly.
+Every prediction is split into (average prediction) + one contribution per
+input field, in percentage points of time overrun, and the contributions add
+up exactly. For the linear production model that is coefficient x
+standardised input; for an XGBoost model (training.model: xgboost) it is
+TreeSHAP. Both are SHAP values, so the panels read the same either way.
 One-hot columns of the same field (e.g. all "project_type=..." columns) are
 summed so a manager sees one line per question, not per encoded column.
 """
@@ -15,12 +17,10 @@ from functools import lru_cache
 
 import numpy as np
 import pandas as pd
-import shap
-import xgboost as xgb
-
 from .config import load_config, models_dir
 from .data import load_clean
 from .features import column_to_field, display_value, encode_one, gate_fields
+from .modeling import contributions, load_model
 from .schema import FIELD_BY_KEY, FIELDS
 
 
@@ -68,15 +68,12 @@ class Predictor:
         self.gates = {}
         for gate in load_config()["gates"]:
             gdir = root / gate
-            time_m, cost_m, risk_m = xgb.XGBRegressor(), xgb.XGBRegressor(), xgb.XGBClassifier()
-            time_m.load_model(gdir / "time.json")
-            cost_m.load_model(gdir / "cost.json")
-            risk_m.load_model(gdir / "risk.json")
+            time_m = load_model(gdir / "time.json", "reg")
+            cost_m = load_model(gdir / "cost.json", "reg")
+            risk_m = load_model(gdir / "risk.json", "clf")
             meta = json.loads((gdir / "meta.json").read_text())
             self.gates[gate] = {
                 "time": time_m, "cost": cost_m, "risk": risk_m, "meta": meta,
-                "explainer": shap.TreeExplainer(time_m),
-                "cost_explainer": shap.TreeExplainer(cost_m),
                 "global": json.loads((gdir / "shap_global.json").read_text()),
             }
         oof_path = root / "oof_predictions.csv"
@@ -92,9 +89,9 @@ class Predictor:
         v = inputs.get("spi_50")
         return "G50" if v not in (None, "") else "G25"
 
-    def _explain(self, explainer, X, inputs, top=8) -> dict:
-        sv = np.asarray(explainer.shap_values(X))[0]
-        base = float(np.ravel(explainer.expected_value)[0])
+    def _explain(self, model, X, inputs, top=8) -> dict:
+        base, sv = contributions(model, X)
+        sv = np.asarray(sv)[0]
         agg: dict[str, float] = {}
         for col, val in zip(X.columns, sv):
             k = column_to_field(col)
@@ -139,8 +136,8 @@ class Predictor:
             "recovery_triggers": recovery_triggers(phs["score"], spi, cpi),
             "planned_months": planned,
             "forecast_months": round(forecast_months, 1) if forecast_months else None,
-            "explanation": self._explain(g["explainer"], X, inputs),
-            "cost_explanation": self._explain(g["cost_explainer"], X, inputs, top=5),
+            "explanation": self._explain(g["time"], X, inputs),
+            "cost_explanation": self._explain(g["cost"], X, inputs, top=5),
             "missing_inputs": missing,
         }
         result["recovery_recommended"] = bool(result["recovery_triggers"]) or result["band"]["name"] in ("At risk", "Critical")
@@ -166,6 +163,14 @@ class Predictor:
         for _, r in df.iterrows():
             gate = "G50" if pd.notna(r.get("spi_50")) else "G25"
             pred = _safe(r.get(f"{gate}_time"))
+            in_training = pred is not None
+            prob = _safe(r.get(f"{gate}_prob"))
+            if not in_training:
+                # Not used for training (ongoing or hypothetical): the production model never saw
+                # it, so its plain prediction is already an out-of-sample forecast.
+                X = encode_one({f["key"]: r.get(f["key"]) for f in FIELDS}, gate)
+                pred = _safe(float(self.gates[gate]["time"].predict(X)[0]))
+                prob = _safe(float(self.gates[gate]["risk"].predict_proba(X)[0, 1]))
             rows.append({
                 "project_id": r["project_id"], "project_type": r.get("project_type"),
                 "province": r.get("province"), "contract_value": r.get("contract_value"),
@@ -173,7 +178,7 @@ class Predictor:
                 "spi": _safe(r.get("spi_50") if gate == "G50" else r.get("spi_25")),
                 "cpi": _safe(r.get("cpi_50") if gate == "G50" else r.get("cpi_25")),
                 "gate": gate, "predicted_time_overrun_pct": pred,
-                "high_risk_probability": _safe(r.get(f"{gate}_prob")),
+                "high_risk_probability": prob, "in_training": in_training,
                 "actual_time_overrun_pct": _safe(r.get("time_overrun_pct")),
                 "band": risk_band(pred) if pred is not None else None,
                 "hypothetical": bool(r.get("is_hypothetical")), "source_group": r.get("source_group"),

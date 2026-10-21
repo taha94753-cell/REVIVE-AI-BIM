@@ -128,7 +128,7 @@ class FreshFrontend:
 _docs = bool(sec_cfg().get("api_docs")) or os.environ.get("REVIVE_API_DOCS") == "1"
 app = FastAPI(title="REVIVE API", version=__version__, lifespan=lifespan,
               docs_url="/docs" if _docs else None, redoc_url=None, openapi_url="/openapi.json" if _docs else None,
-              description="AI-BIM early warning, current delay analysis, TreeSHAP explanation and LP recovery.")
+              description="AI-BIM early warning, current delay analysis, explained forecasts and LP recovery.")
 # added last = runs first: headers wrap everything, then CSRF, then size limits
 app.add_middleware(FreshFrontend)
 app.add_middleware(StreamSafeGZip, minimum_size=1000)
@@ -323,12 +323,16 @@ def public_overview():
     comp = insights(P.dataset).get("composition", {}) if not P.dataset.empty else {}
     return clean_json({
         "projects": card.get("dataset", {}).get("n_projects"),
-        "hypothetical": card.get("dataset", {}).get("hypothetical"),
+        "records": int(len(P.dataset)),
+        "hypothetical": int(P.dataset["is_hypothetical"].astype(bool).sum()) if not P.dataset.empty else 0,
+        "trained_on_hypothetical": card.get("dataset", {}).get("hypothetical"),
         "share_over_10pct": comp.get("share_over_10pct"),
         "median_time_overrun_pct": comp.get("median_time_overrun_pct"),
         "gates": {g: {"label": v.get("label"), "mae": v["time_overrun"]["mae"]["mean"],
                       "baseline_mae": v["time_overrun"]["baseline_median_mae"],
-                      "r2": v["time_overrun"]["r2"]["mean"], "auc": v["high_risk"]["auc"]["mean"]}
+                      "r2": v["time_overrun"]["r2"]["mean"], "auc": v["high_risk"]["auc"]["mean"],
+                      "loco_r2": (v.get("leave_company_out") or {}).get("time_overrun", {}).get("r2"),
+                      "loco_auc": (v.get("leave_company_out") or {}).get("high_risk_auc")}
                   for g, v in card.get("gates", {}).items()},
         "registration_open": bool(sec_cfg().get("allow_registration", True)),
     })
@@ -424,7 +428,7 @@ def team_remove(uid: int, admin: Admin):
 @app.get("/api/schema")
 def schema(user: User):
     cfg = load_config()
-    return ok({**public_schema(cfg["gates"]), "risk_bands": cfg["risk_bands"],
+    return ok({**public_schema(cfg["gates"], cfg["training"].get("feature_set", "all")), "risk_bands": cfg["risk_bands"],
                "high_risk_threshold_pct": cfg["training"]["high_risk_threshold_pct"],
                "optimizer": cfg["optimizer"], "app": cfg["app"],
                "delay_bands": (cfg.get("delay") or {}).get("bands") or delay.DEFAULT_BANDS})

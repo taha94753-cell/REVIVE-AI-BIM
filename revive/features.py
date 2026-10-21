@@ -19,14 +19,19 @@ from .config import load_config
 from .schema import FIELD_BY_KEY, fields_for_stages, match_option, ordinal_value
 
 
-def gate_fields(gate: str) -> list[dict]:
+def feature_set() -> str:
+    """'core' (the compact question set in schema.CORE_KEYS) or 'all'."""
+    return load_config()["training"].get("feature_set", "all")
+
+
+def gate_fields(gate: str, fset: str | None = None) -> list[dict]:
     stages = load_config()["gates"][gate]["stages"]
-    return fields_for_stages(stages)
+    return fields_for_stages(stages, fset or feature_set())
 
 
-def gate_columns(gate: str) -> list[str]:
+def gate_columns(gate: str, fset: str | None = None) -> list[str]:
     cols = []
-    for f in gate_fields(gate):
+    for f in gate_fields(gate, fset):
         if f["kind"] == "category":
             cols += [f"{f['key']}={opt}" for opt in f["options"]]
         else:
@@ -47,11 +52,12 @@ def _as_float(v):
         return np.nan
 
 
-def encode(df: pd.DataFrame, gate: str) -> pd.DataFrame:
-    """Encode a DataFrame whose columns are schema keys holding labels/numbers."""
+def encode(df: pd.DataFrame, gate: str, feature_set: str | None = None) -> pd.DataFrame:
+    """Encode a DataFrame whose columns are schema keys holding labels/numbers.
+    feature_set overrides the configured one (used to compare against all answers)."""
     data = {}
     n = len(df)
-    for f in gate_fields(gate):
+    for f in gate_fields(gate, feature_set):
         key = f["key"]
         col = df[key] if key in df else pd.Series([None] * n, index=df.index)
         if f["kind"] == "category":
@@ -64,7 +70,7 @@ def encode(df: pd.DataFrame, gate: str) -> pd.DataFrame:
         else:
             data[key] = col.map(_as_float).astype(float)
     X = pd.DataFrame(data, index=df.index)
-    return X[gate_columns(gate)]
+    return X[gate_columns(gate, feature_set)]
 
 
 def encode_one(inputs: dict, gate: str) -> pd.DataFrame:

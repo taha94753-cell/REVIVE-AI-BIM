@@ -1,48 +1,54 @@
 {
-  "trained_at": "2026-09-30T13:51:03+00:00",
+  "trained_at": "2026-10-21T19:04:42+00:00",
   "training_scope": {
-    "include_ongoing": true,
-    "include_hypothetical": true
+    "include_ongoing": false,
+    "include_hypothetical": false
   },
   "dataset": {
-    "n_projects": 120,
+    "n_projects": 81,
     "by_source": {
-      "SYN": 32,
       "C01": 26,
-      "C02": 25,
+      "C02": 24,
       "C03": 24,
-      "EXT": 12,
+      "EXT": 6,
       "UNCODED": 1
     },
-    "hypothetical": 32,
+    "hypothetical": 0,
     "by_status": {
-      "Completed": 81,
-      "Still ongoing": 39
+      "Completed": 81
     },
     "by_type": {
-      "Highway": 47,
-      "Commercial building": 17,
-      "Industrial": 14,
-      "Water & sanitation": 13,
-      "Public building": 12,
-      "Bridge": 9,
-      "Residential building": 8
+      "Highway": 36,
+      "Public building": 11,
+      "Water & sanitation": 11,
+      "Industrial": 8,
+      "Commercial building": 7,
+      "Residential building": 5,
+      "Bridge": 3
     },
     "time_overrun_pct": {
-      "mean": 42.3,
-      "50%": 33.8,
-      "min": 0.0,
-      "max": 397.8
+      "mean": 41.0,
+      "50%": 35.8,
+      "min": 6.8,
+      "max": 222.4
     },
     "cost_overrun_pct": {
-      "mean": 24.5,
-      "50%": 27.3,
-      "min": 0.7,
-      "max": 55.0
-    }
+      "mean": 27.5,
+      "50%": 28.1,
+      "min": 5.5,
+      "max": 45.5
+    },
+    "companies": [
+      "C01",
+      "C02",
+      "C03",
+      "EXT"
+    ]
   },
   "high_risk_threshold_pct": 40,
-  "validation": "Repeated 5-fold cross-validation x 3 repeats (out-of-fold predictions); final models refitted on all records.",
+  "model": "linear",
+  "feature_set": "core",
+  "validation": "Repeated 5-fold cross-validation x 3 repeats (out-of-fold predictions), plus leave-one-company-out; final models refitted on all records.",
   "excluded_for_leakage": {
     "D*_tot": "whole-project totals are only known at completion",
     "D10": "biggest cause of delay is judged after the fact",
@@ -57,215 +63,251 @@
   "versions": {
     "python": "3.12.3",
     "xgboost": "3.4.1",
-    "scikit-learn": "1.8.0",
-    "shap": "0.52.0"
+    "scikit-learn": "1.9.1",
+    "shap": "0.54.1"
   },
   "gates": {
     "G25": {
       "label": "25% of contract time elapsed",
-      "n_projects": 120,
-      "n_encoded_columns": 54,
+      "n_projects": 81,
+      "n_encoded_columns": 10,
       "time_overrun": {
         "mae": {
-          "mean": 6.793,
-          "std": 0.303
+          "mean": 6.307,
+          "std": 0.154
         },
         "rmse": {
-          "mean": 13.76,
-          "std": 0.973
+          "mean": 8.548,
+          "std": 0.179
         },
         "r2": {
-          "mean": 0.765,
-          "std": 0.034
+          "mean": 0.817,
+          "std": 0.008
         },
-        "baseline_median_mae": 16.22,
+        "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -7.89,
-          7.02
+          -10.56,
+          9.89
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 3.652,
-          "std": 0.167
+          "mean": 4.41,
+          "std": 0.341
         },
         "rmse": {
-          "mean": 4.74,
-          "std": 0.157
+          "mean": 6.577,
+          "std": 0.568
         },
         "r2": {
-          "mean": 0.821,
-          "std": 0.012
+          "mean": 0.033,
+          "std": 0.17
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.907,
-          "std": 0.011
+          "mean": 0.899,
+          "std": 0.009
         },
         "f1": {
-          "mean": 0.738,
-          "std": 0.018
+          "mean": 0.727,
+          "std": 0.021
         },
         "accuracy": {
-          "mean": 0.85,
-          "std": 0.014
+          "mean": 0.864,
+          "std": 0.01
         },
         "precision": {
-          "mean": 0.778,
-          "std": 0.041
+          "mean": 0.898,
+          "std": 0.028
         },
         "recall": {
-          "mean": 0.704,
-          "std": 0.013
+          "mean": 0.611,
+          "std": 0.02
         },
-        "positives": 36,
-        "majority_class_accuracy": 0.7
+        "positives": 24,
+        "majority_class_accuracy": 0.704
+      },
+      "leave_company_out": {
+        "time_overrun": {
+          "mae": 8.273,
+          "rmse": 15.16,
+          "r2": 0.425
+        },
+        "high_risk_auc": 0.909,
+        "spi_only_linear": {
+          "mae": 7.545,
+          "rmse": 12.934,
+          "r2": 0.582
+        }
+      },
+      "spi_only_linear": {
+        "mae": 6.807,
+        "rmse": 10.156,
+        "r2": 0.742
       },
       "top_drivers": [
         {
           "key": "spi_25",
           "label": "SPI at 25% of time",
-          "mean_abs_shap": 9.838
-        },
-        {
-          "key": "duration_setting",
-          "label": "How the duration was set",
-          "mean_abs_shap": 5.144
+          "mean_abs_shap": 6.037
         },
         {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 2.235
+          "mean_abs_shap": 4.026
         },
         {
-          "key": "cpi_25",
-          "label": "CPI at 25% of time",
-          "mean_abs_shap": 1.729
+          "key": "duration_setting",
+          "label": "How the duration was set",
+          "mean_abs_shap": 2.422
         },
         {
           "key": "cert_25",
           "label": "Value certified at 25% of time",
-          "mean_abs_shap": 1.372
+          "mean_abs_shap": 2.115
         },
         {
-          "key": "subcontractor_q1",
-          "label": "Subcontractor performance",
-          "mean_abs_shap": 1.341
+          "key": "variations_q1",
+          "label": "Variation orders so far",
+          "mean_abs_shap": 1.57
         },
         {
-          "key": "rework_q1",
-          "label": "Rework so far (share of contract value)",
-          "mean_abs_shap": 0.711
+          "key": "design_status",
+          "label": "Design status at award",
+          "mean_abs_shap": 1.494
         },
         {
-          "key": "contract_type",
-          "label": "Contract type",
-          "mean_abs_shap": 0.694
+          "key": "cpi_25",
+          "label": "CPI at 25% of time",
+          "mean_abs_shap": 0.789
+        },
+        {
+          "key": "planned_months",
+          "label": "Original contract duration",
+          "mean_abs_shap": 0.738
         }
       ]
     },
     "G50": {
       "label": "50% of contract time elapsed",
-      "n_projects": 120,
-      "n_encoded_columns": 57,
+      "n_projects": 81,
+      "n_encoded_columns": 13,
       "time_overrun": {
         "mae": {
-          "mean": 5.858,
-          "std": 0.294
+          "mean": 3.681,
+          "std": 0.106
         },
         "rmse": {
-          "mean": 12.372,
-          "std": 0.662
+          "mean": 5.263,
+          "std": 0.121
         },
         "r2": {
-          "mean": 0.81,
-          "std": 0.02
+          "mean": 0.931,
+          "std": 0.003
         },
-        "baseline_median_mae": 16.22,
+        "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -6.21,
-          5.51
+          -4.86,
+          5.23
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 2.18,
-          "std": 0.05
+          "mean": 2.43,
+          "std": 0.104
         },
         "rmse": {
-          "mean": 2.849,
-          "std": 0.067
+          "mean": 3.098,
+          "std": 0.124
         },
         "r2": {
-          "mean": 0.935,
-          "std": 0.003
+          "mean": 0.787,
+          "std": 0.017
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.943,
-          "std": 0.003
+          "mean": 0.918,
+          "std": 0.002
         },
         "f1": {
-          "mean": 0.811,
-          "std": 0.012
-        },
-        "accuracy": {
-          "mean": 0.889,
+          "mean": 0.75,
           "std": 0.008
         },
+        "accuracy": {
+          "mean": 0.868,
+          "std": 0.006
+        },
         "precision": {
-          "mean": 0.827,
-          "std": 0.02
+          "mean": 0.858,
+          "std": 0.022
         },
         "recall": {
-          "mean": 0.796,
-          "std": 0.013
+          "mean": 0.667,
+          "std": 0.0
         },
-        "positives": 36,
-        "majority_class_accuracy": 0.7
+        "positives": 24,
+        "majority_class_accuracy": 0.704
+      },
+      "leave_company_out": {
+        "time_overrun": {
+          "mae": 5.412,
+          "rmse": 10.84,
+          "r2": 0.706
+        },
+        "high_risk_auc": 0.92,
+        "spi_only_linear": {
+          "mae": 4.564,
+          "rmse": 8.284,
+          "r2": 0.828
+        }
+      },
+      "spi_only_linear": {
+        "mae": 3.987,
+        "rmse": 5.964,
+        "r2": 0.911
       },
       "top_drivers": [
         {
           "key": "spi_50",
           "label": "SPI at 50% of time",
-          "mean_abs_shap": 14.456
+          "mean_abs_shap": 6.457
         },
         {
           "key": "spi_25",
           "label": "SPI at 25% of time",
-          "mean_abs_shap": 3.324
-        },
-        {
-          "key": "cert_50",
-          "label": "Value certified at 50% of time",
-          "mean_abs_shap": 0.818
+          "mean_abs_shap": 2.657
         },
         {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 0.802
+          "mean_abs_shap": 2.464
         },
         {
           "key": "cpi_50",
           "label": "CPI at 50% of time",
-          "mean_abs_shap": 0.674
+          "mean_abs_shap": 1.864
+        },
+        {
+          "key": "design_status",
+          "label": "Design status at award",
+          "mean_abs_shap": 1.144
         },
         {
           "key": "cert_25",
           "label": "Value certified at 25% of time",
-          "mean_abs_shap": 0.627
+          "mean_abs_shap": 1.132
         },
         {
-          "key": "planned_months",
-          "label": "Original contract duration",
-          "mean_abs_shap": 0.627
+          "key": "cert_50",
+          "label": "Value certified at 50% of time",
+          "mean_abs_shap": 0.846
         },
         {
-          "key": "cpi_25",
-          "label": "CPI at 25% of time",
-          "mean_abs_shap": 0.574
+          "key": "duration_setting",
+          "label": "How the duration was set",
+          "mean_abs_shap": 0.796
         }
       ]
     }
@@ -274,83 +316,157 @@
     {
       "gate": "G25",
       "model": "Median baseline",
-      "time_MAE": 16.22,
+      "time_MAE": 9.75,
       "time_R2": NaN,
       "risk_AUC": NaN,
-      "risk_F1": NaN
+      "risk_F1": NaN,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G25",
-      "model": "XGBoost (production)",
-      "time_MAE": 6.79,
-      "time_R2": 0.765,
-      "risk_AUC": 0.907,
-      "risk_F1": 0.738
+      "model": "Linear, core questions (production)",
+      "time_MAE": 6.31,
+      "time_R2": 0.817,
+      "risk_AUC": 0.899,
+      "risk_F1": 0.727,
+      "loco_time_MAE": 8.27,
+      "loco_time_R2": 0.425,
+      "loco_risk_AUC": 0.909
+    },
+    {
+      "gate": "G25",
+      "model": "Linear, SPI only",
+      "time_MAE": 6.81,
+      "time_R2": 0.742,
+      "risk_AUC": NaN,
+      "risk_F1": NaN,
+      "loco_time_MAE": 7.55,
+      "loco_time_R2": 0.582,
+      "loco_risk_AUC": NaN
+    },
+    {
+      "gate": "G25",
+      "model": "XGBoost, all 33 answers",
+      "time_MAE": 6.28,
+      "time_R2": 0.64,
+      "risk_AUC": 0.803,
+      "risk_F1": 0.545,
+      "loco_time_MAE": 7.83,
+      "loco_time_R2": 0.28,
+      "loco_risk_AUC": 0.752
+    },
+    {
+      "gate": "G25",
+      "model": "XGBoost, core questions",
+      "time_MAE": 6.57,
+      "time_R2": 0.633,
+      "risk_AUC": 0.822,
+      "risk_F1": 0.636,
+      "loco_time_MAE": 7.73,
+      "loco_time_R2": 0.289,
+      "loco_risk_AUC": 0.817
     },
     {
       "gate": "G25",
       "model": "Random Forest",
-      "time_MAE": 7.49,
-      "time_R2": 0.698,
-      "risk_AUC": 0.929,
-      "risk_F1": 0.721
+      "time_MAE": 5.95,
+      "time_R2": 0.667,
+      "risk_AUC": 0.897,
+      "risk_F1": 0.75,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G25",
       "model": "SVM (RBF)",
-      "time_MAE": 10.41,
-      "time_R2": 0.452,
-      "risk_AUC": 0.891,
-      "risk_F1": 0.698
-    },
-    {
-      "gate": "G25",
-      "model": "Linear (Ridge / Logistic)",
-      "time_MAE": 12.45,
-      "time_R2": 0.616,
-      "risk_AUC": 0.904,
-      "risk_F1": 0.716
+      "time_MAE": 6.9,
+      "time_R2": 0.251,
+      "risk_AUC": 0.836,
+      "risk_F1": 0.564,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G50",
       "model": "Median baseline",
-      "time_MAE": 16.22,
+      "time_MAE": 9.75,
       "time_R2": NaN,
       "risk_AUC": NaN,
-      "risk_F1": NaN
+      "risk_F1": NaN,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G50",
-      "model": "XGBoost (production)",
-      "time_MAE": 5.86,
-      "time_R2": 0.81,
-      "risk_AUC": 0.943,
-      "risk_F1": 0.811
+      "model": "Linear, core questions (production)",
+      "time_MAE": 3.68,
+      "time_R2": 0.931,
+      "risk_AUC": 0.918,
+      "risk_F1": 0.75,
+      "loco_time_MAE": 5.41,
+      "loco_time_R2": 0.706,
+      "loco_risk_AUC": 0.92
+    },
+    {
+      "gate": "G50",
+      "model": "Linear, SPI only",
+      "time_MAE": 3.99,
+      "time_R2": 0.911,
+      "risk_AUC": NaN,
+      "risk_F1": NaN,
+      "loco_time_MAE": 4.56,
+      "loco_time_R2": 0.828,
+      "loco_risk_AUC": NaN
+    },
+    {
+      "gate": "G50",
+      "model": "XGBoost, all 36 answers",
+      "time_MAE": 5.27,
+      "time_R2": 0.768,
+      "risk_AUC": 0.878,
+      "risk_F1": 0.837,
+      "loco_time_MAE": 6.99,
+      "loco_time_R2": 0.347,
+      "loco_risk_AUC": 0.872
+    },
+    {
+      "gate": "G50",
+      "model": "XGBoost, core questions",
+      "time_MAE": 4.72,
+      "time_R2": 0.791,
+      "risk_AUC": 0.891,
+      "risk_F1": 0.791,
+      "loco_time_MAE": 6.59,
+      "loco_time_R2": 0.382,
+      "loco_risk_AUC": 0.879
     },
     {
       "gate": "G50",
       "model": "Random Forest",
-      "time_MAE": 5.76,
-      "time_R2": 0.804,
-      "risk_AUC": 0.946,
-      "risk_F1": 0.831
+      "time_MAE": 4.53,
+      "time_R2": 0.732,
+      "risk_AUC": 0.922,
+      "risk_F1": 0.829,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G50",
       "model": "SVM (RBF)",
-      "time_MAE": 9.53,
-      "time_R2": 0.499,
-      "risk_AUC": 0.924,
-      "risk_F1": 0.836
-    },
-    {
-      "gate": "G50",
-      "model": "Linear (Ridge / Logistic)",
-      "time_MAE": 10.04,
-      "time_R2": 0.722,
-      "risk_AUC": 0.92,
-      "risk_F1": 0.806
+      "time_MAE": 6.41,
+      "time_R2": 0.172,
+      "risk_AUC": 0.852,
+      "risk_F1": 0.634,
+      "loco_time_MAE": NaN,
+      "loco_time_R2": NaN,
+      "loco_risk_AUC": NaN
     }
   ],
-  "training_seconds": 16.7
+  "training_seconds": 20.6
 }

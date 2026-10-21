@@ -20,11 +20,23 @@ data:
   database: data/app.db
 
 training:
-  # You asked to train on the entire dataset. Both switches are ON.
-  # Turning include_ongoing off trains only on projects with a real
-  # completion date (recommended once more completed projects arrive).
-  include_ongoing: true
-  include_hypothetical: true
+  # Production trains on REAL projects with a REAL completion date (81).
+  # Ongoing projects only have a reported forecast as their "outcome", and the
+  # 32 hypothetical scenarios are made up and unusually easy to predict, so
+  # both stay out of training (they remain in the dataset, labelled, and in
+  # the sensitivity table: `python -m revive train --sensitivity`).
+  include_ongoing: false
+  include_hypothetical: false
+  # core = the compact question set in schema.CORE_KEYS (10 questions at 25%,
+  # 13 at 50%); all = every survey answer (35). The form follows this switch.
+  feature_set: core
+  # linear = ridge / logistic regression with exact additive explanations;
+  # xgboost = gradient-boosted trees with TreeSHAP. Linear generalises better
+  # to an unseen contractor on this dataset (see docs/DATA_NOTES.md).
+  model: linear
+  linear:
+    alpha: 3.0                     # ridge penalty (time and cost)
+    C: 0.5                         # inverse penalty (high-risk classifier)
   time_overrun_clip_pct: 150       # winsorise the single extreme (~398 %) record
   cost_overrun_clip_pct: [-40, 100]
   high_risk_threshold_pct: 40      # "high risk" = forecast time overrun above this

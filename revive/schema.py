@@ -127,6 +127,22 @@ FIELDS: list[dict] = [
          unit="% of contract", min=0, max=100, step=0.5),
 ]
 
+# The compact "core" question set (training.feature_set: core in config.yaml).
+# Chosen by cross-validation, not by taste: on the real completed projects,
+# models on these questions predict a held-out contractor's projects as well
+# as or better than models on all 35 answers (docs/DATA_NOTES.md). Every one
+# is in a monthly progress report or the contract, so a planning engineer can
+# answer it in about two minutes. The other fields stay in the dataset for
+# the descriptive analysis and can be switched back on with feature_set: all.
+CORE_KEYS = (
+    "planned_months", "design_status", "funding", "duration_setting",          # contract
+    "variations_q1", "late_payments_q1", "subcontractor_q1",                  # first quarter
+    "spi_25", "cpi_25", "cert_25",                                            # progress report at 25%
+    "spi_50", "cpi_50", "cert_50",                                            # progress report at 50%
+)
+for _f in FIELDS:
+    _f["core"] = _f["key"] in CORE_KEYS
+
 FIELD_BY_KEY = {f["key"]: f for f in FIELDS}
 
 STAGE_LABELS = {
@@ -166,9 +182,9 @@ LEAKAGE_EXCLUDED = {
 }
 
 
-def fields_for_stages(stages) -> list[dict]:
+def fields_for_stages(stages, feature_set: str = "all") -> list[dict]:
     stages = set(stages)
-    return [f for f in FIELDS if f["stage"] in stages]
+    return [f for f in FIELDS if f["stage"] in stages and (feature_set != "core" or f["core"])]
 
 
 def option_labels(field: dict) -> list[str]:
@@ -202,14 +218,13 @@ def ordinal_value(field: dict, label):
     return float("nan")
 
 
-def public_schema(gates: dict) -> dict:
-    """JSON-safe description of the form, grouped by stage, for the frontend."""
+def public_schema(gates: dict, feature_set: str = "all") -> dict:
+    """JSON-safe description of the form, grouped by stage, for the frontend.
+    Only the questions the model uses are sent, so the form never asks for more."""
     groups = []
     for stage, title in STAGE_LABELS.items():
         items = []
-        for f in FIELDS:
-            if f["stage"] != stage:
-                continue
+        for f in fields_for_stages([stage], feature_set):
             item = {k: f[k] for k in ("key", "label", "kind") if k in f}
             item["help"] = f.get("help", "")
             item["bim"] = bool(f.get("bim"))
@@ -218,9 +233,11 @@ def public_schema(gates: dict) -> dict:
             else:
                 item.update({k: f[k] for k in ("min", "max", "step", "unit") if k in f})
             items.append(item)
-        groups.append({"stage": stage, "title": title, "fields": items})
+        if items:
+            groups.append({"stage": stage, "title": title, "fields": items})
     return {
         "groups": groups,
+        "feature_set": feature_set,
         "gates": {g: {"label": v["label"], "stages": v["stages"], "elapsed_fraction": v["elapsed_fraction"]}
                   for g, v in gates.items()},
     }
