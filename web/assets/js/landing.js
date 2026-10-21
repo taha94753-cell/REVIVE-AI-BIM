@@ -226,7 +226,7 @@ async function overview() {
   try {
     const d = await (await fetch('/api/public/overview')).json();
     const g = d.gates?.G25 || {};
-    const vals = { projects: d.projects, over10: d.share_over_10pct != null ? d.share_over_10pct * 100 : null,
+    const vals = { projects: d.records ?? d.projects, over10: d.share_over_10pct != null ? d.share_over_10pct * 100 : null,
       median: d.median_time_overrun_pct, mae: g.mae };
     $$('[data-count]').forEach(el => {
       const v = vals[el.dataset.count];
@@ -236,12 +236,12 @@ async function overview() {
     });
     const base = $('[data-fill=base]');
     if (base) base.textContent = g.baseline_mae != null ? g.baseline_mae.toFixed(1) : 'n/a';
-    if (d.hypothetical) $('#numbers-note').textContent = `Figures come from the trained model card. ${d.hypothetical} of the ${d.projects} records are hypothetical scenarios; they are labelled in the app and in every result.`;
+    $('#numbers-note').textContent = `Figures come from the trained model card. The survey holds ${d.records ?? d.projects} records, ${d.hypothetical || 0} of them hypothetical scenarios (labelled wherever they appear). The model is trained and tested on the ${d.projects} real completed projects only.`;
     $('#ev-rows').innerHTML = Object.entries(d.gates || {}).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50% of contract time' : 'At 25% of contract time'}</td>
-      <td class="good">${v.mae.toFixed(1)}</td><td>${v.baseline_mae.toFixed(1)}</td><td>${v.r2.toFixed(2)}</td><td>${v.auc.toFixed(2)}</td></tr>`).join('');
+      <td class="good">${v.mae.toFixed(1)}</td><td>${v.baseline_mae.toFixed(1)}</td><td>${v.r2.toFixed(2)}</td><td>${v.loco_r2 == null ? '\u2014' : v.loco_r2.toFixed(2)}</td><td>${v.auc.toFixed(2)}</td></tr>`).join('');
     if (!d.registration_open) { $('#reg-closed').hidden = false; $('#at-register').hidden = true; setAuth('signin'); }
   } catch {
-    $('#ev-rows').innerHTML = '<tr><td colspan="5">The model card could not be loaded.</td></tr>';
+    $('#ev-rows').innerHTML = '<tr><td colspan="6">The model card could not be loaded.</td></tr>';
     $$('[data-count], [data-fill]').forEach(el => { el.textContent = 'n/a'; });
   }
 }

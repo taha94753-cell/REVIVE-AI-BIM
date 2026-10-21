@@ -473,3 +473,99 @@ export function windowsChart(el, wins, labels) {
   });
   el.innerHTML = svg(W, H, 'Slip per window between site updates, apportioned to reported events', b);
 }
+
+// ---------------------------------------------------------------- cockpit instruments
+// An instrument-cluster gauge: a 260-degree dial with tick marks, coloured zones, a lit value arc and a needle,
+// like a car's speedometer. zones: [{to, color}] in value units (the last one runs to max).
+export function gauge(el, { value, min = 0, max = 100, zones = [], color = 'var(--amber)', label = '', text = null, sub = '', ticks = 5, size = 260 }) {
+  const W = size, H = Math.round(size * 0.86), cx = W / 2, cy = W / 2, r = W * 0.40, sweep = 260, start = 90 + (360 - sweep) / 2;
+  const v = Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+  const ang = t => (start + sweep * (t - min) / ((max - min) || 1)) * Math.PI / 180;
+  const pt = (t, rr) => [cx + rr * Math.cos(ang(t)), cy + rr * Math.sin(ang(t))];
+  const arc = (a, e, rr) => {
+    const [x0, y0] = pt(a, rr), [x1, y1] = pt(e, rr);
+    const large = (sweep * (e - a) / ((max - min) || 1)) > 180 ? 1 : 0;
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${rr} ${rr} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  };
+  let b = `<defs><filter id="glow-${el.id}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="${(W / 70).toFixed(1)}" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="face-${el.id}"><stop offset="0" stop-color="#1B2027"/><stop offset=".72" stop-color="#0E1115"/><stop offset="1" stop-color="#07090B"/></radialGradient></defs>`;
+  b += `<circle cx="${cx}" cy="${cy}" r="${r + W * 0.075}" style="fill:url(#face-${el.id});stroke:rgba(255,255,255,.06)"/>`;
+  b += `<path d="${arc(min, max, r)}" style="fill:none;stroke:rgba(255,255,255,.07);stroke-width:${W * 0.05};stroke-linecap:round"/>`;
+  let prev = min;
+  for (const z of zones) {
+    const e = Math.min(z.to ?? max, max);
+    if (e > prev) b += `<path d="${arc(prev, e, r + W * 0.05)}" style="fill:none;stroke:${z.color};stroke-width:${W * 0.012};opacity:.75"/>`;
+    prev = Math.max(prev, e);
+  }
+  for (let i = 0; i <= ticks * 4; i++) {
+    const t = min + (max - min) * i / (ticks * 4), major = i % 4 === 0;
+    const [x0, y0] = pt(t, r - W * (major ? 0.075 : 0.05)), [x1, y1] = pt(t, r - W * 0.03);
+    b += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" style="stroke:${major ? 'rgba(240,244,248,.7)' : 'rgba(240,244,248,.22)'};stroke-width:${major ? 2 : 1}"/>`;
+    if (major && i > 0 && i < ticks * 4) {
+      const [tx, ty] = pt(t, r - W * 0.14);
+      b += `<text x="${tx.toFixed(1)}" y="${(ty + W * 0.016).toFixed(1)}" text-anchor="middle" class="g-tick">${Math.round(t)}</text>`;
+    }
+  }
+  if (v > min) b += `<path d="${arc(min, v, r)}" filter="url(#glow-${el.id})" style="fill:none;stroke:${color};stroke-width:${W * 0.05};stroke-linecap:round"/>`;
+  const [nx, ny] = pt(v, r - W * 0.02), [bx, by] = pt(v, -W * 0.05);
+  b += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" style="stroke:${color};stroke-width:${W * 0.012};stroke-linecap:round" filter="url(#glow-${el.id})"/>`;
+  b += `<circle cx="${cx}" cy="${cy}" r="${W * 0.035}" style="fill:#0B0E12;stroke:${color};stroke-width:2"/>`;
+  b += `<text x="${cx}" y="${cy + W * 0.19}" text-anchor="middle" class="g-val">${esc(text ?? Math.round(v))}</text>`;
+  if (sub) b += `<text x="${cx}" y="${cy + W * 0.275}" text-anchor="middle" class="g-sub">${esc(sub)}</text>`;
+  if (label) b += `<text x="${cx}" y="${cy - W * 0.13}" text-anchor="middle" class="g-label">${esc(label)}</text>`;
+  el.innerHTML = svg(W, H, `${label}: ${text ?? Math.round(v)}`, b);
+}
+
+// The building at the centre of the cluster, where a car dashboard shows the car: an isometric frame whose
+// floors fill with the work done so far, tinted by the forecast band, with leader-line callouts for the readings.
+export function building(el, { done = 0, color = 'var(--amber)', floors = 7, callouts = [] }) {
+  // Isometric frame seen from its near corner (x = 0, y = 0): x runs right-down the front face, y left-down the side.
+  const W = 520, H = 430, cx = 250, base = 386, fw = 150, fd = 92, fh = 34;
+  const iso = (x, y, z) => [cx + (x - y) * 0.87, base - z + (x + y) * 0.5 - (fw + fd) * 0.5];
+  const poly = pts => pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+  const filled = Math.max(0, Math.min(floors, (done / 100) * floors)), top = floors * fh;
+  let b = `<defs><linearGradient id="bf-${el.id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".6"/><stop offset="1" stop-color="${color}" stop-opacity=".15"/></linearGradient>
+    <radialGradient id="pad-${el.id}"><stop offset="0" stop-color="${color}" stop-opacity=".3"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></radialGradient></defs>`;
+  const g0 = iso(fw / 2, fd / 2, 0);
+  b += `<ellipse cx="${g0[0].toFixed(1)}" cy="${(g0[1] + 6).toFixed(1)}" rx="235" ry="70" style="fill:url(#pad-${el.id})"/>`;
+  for (let i = -3; i <= 6; i++) {          // setting-out grid on the ground
+    const a = iso(i * 40 - 40, -60, 0), e = iso(i * 40 - 40, fd + 80, 0), c = iso(-80, i * 30 - 30, 0), d = iso(fw + 80, i * 30 - 30, 0);
+    b += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${e[0].toFixed(1)}" y2="${e[1].toFixed(1)}" class="b-grid"/><line x1="${c[0].toFixed(1)}" y1="${c[1].toFixed(1)}" x2="${d[0].toFixed(1)}" y2="${d[1].toFixed(1)}" class="b-grid"/>`;
+  }
+  // tower crane at the back corner (drawn first, so the frame hides the foot of its mast); the hook sits on the floor being built
+  const H0 = top + 26, mx = fw * 0.55, my = fd + 26;
+  const m0 = iso(mx, my, 0), m1 = iso(mx, my, H0), j0 = iso(mx, my + 34, H0), j1 = iso(mx, my - 150, H0);
+  const hk = iso(mx, my - 112, H0), hb = iso(mx, my - 112, Math.min(H0 - 20, Math.max(filled * fh + 26, 40)));
+  b += `<line x1="${m0[0].toFixed(1)}" y1="${m0[1].toFixed(1)}" x2="${m1[0].toFixed(1)}" y2="${(m1[1] - 16).toFixed(1)}" class="b-crane"/>`;
+  b += `<line x1="${j0[0].toFixed(1)}" y1="${j0[1].toFixed(1)}" x2="${j1[0].toFixed(1)}" y2="${j1[1].toFixed(1)}" class="b-crane"/>`;
+  b += `<line x1="${m1[0].toFixed(1)}" y1="${(m1[1] - 16).toFixed(1)}" x2="${j1[0].toFixed(1)}" y2="${j1[1].toFixed(1)}" class="b-cable"/>`;
+  b += `<line x1="${hk[0].toFixed(1)}" y1="${hk[1].toFixed(1)}" x2="${hb[0].toFixed(1)}" y2="${hb[1].toFixed(1)}" class="b-cable"/><rect x="${(hb[0] - 7).toFixed(1)}" y="${hb[1].toFixed(1)}" width="14" height="9" class="b-load"/>`;
+  for (let f = 0; f < floors; f++) {
+    const z0 = f * fh, k = Math.max(0, Math.min(1, filled - f)), lit = k > 0;
+    const front = [iso(0, 0, z0), iso(fw, 0, z0), iso(fw, 0, z0 + fh), iso(0, 0, z0 + fh)];
+    const side = [iso(0, 0, z0), iso(0, fd, z0), iso(0, fd, z0 + fh), iso(0, 0, z0 + fh)];
+    b += `<polygon points="${poly(front)}" class="b-face${lit ? ' lit' : ''}" style="${lit ? `fill:url(#bf-${el.id});opacity:${(0.4 + 0.6 * k).toFixed(2)}` : ''}"/>`;
+    b += `<polygon points="${poly(side)}" class="b-side${lit ? ' lit' : ''}" style="${lit ? `fill:${color};opacity:${(0.12 + 0.25 * k).toFixed(2)}` : ''}"/>`;
+    for (let c = 1; c < 5; c++) {
+      const p = iso(fw * c / 5, 0, z0), q = iso(fw * c / 5, 0, z0 + fh);
+      b += `<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="b-col"/>`;
+    }
+    for (let c = 1; c < 3; c++) {
+      const p = iso(0, fd * c / 3, z0), q = iso(0, fd * c / 3, z0 + fh);
+      b += `<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="b-col"/>`;
+    }
+    b += `<polyline points="${poly([iso(0, fd, z0 + fh), iso(0, 0, z0 + fh), iso(fw, 0, z0 + fh)])}" class="b-slab${lit ? ' lit' : ''}" style="${lit ? `stroke:${color};color:${color}` : ''}"/>`;
+  }
+  b += `<polygon points="${poly([iso(0, 0, top), iso(fw, 0, top), iso(fw, fd, top), iso(0, fd, top)])}" class="b-roof"/>`;
+  // callouts: a dot on the frame, a leader line and the reading at the edge
+  const anchors = [iso(fw * 0.5, 0, top * 0.86), iso(fw * 0.85, 0, top * 0.55), iso(0, fd * 0.6, top * 0.45), iso(fw * 0.7, 0, top * 0.15)];
+  const slots = [[W - 14, 70], [W - 14, 205], [14, 150], [W - 14, 330]];
+  callouts.slice(0, 4).forEach((c, i) => {
+    const [ax, ay] = anchors[i], [sx, sy] = slots[i], left = sx < cx, elbow = left ? sx + 132 : sx - 132;
+    b += `<polyline points="${ax.toFixed(1)},${ay.toFixed(1)} ${elbow},${sy} ${sx},${sy}" class="b-lead"${ANIM ? ` style="--d:${300 + i * 140}ms"` : ''}/>`;
+    b += `<circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.5" class="b-dot" style="fill:${c.color || 'var(--chalk)'}"/>`;
+    b += `<text x="${sx}" y="${sy - 10}" text-anchor="${left ? 'start' : 'end'}" class="b-k">${esc(c.label)}</text>`;
+    b += `<text x="${sx}" y="${sy + 16}" text-anchor="${left ? 'start' : 'end'}" class="b-v" style="fill:${c.color || 'var(--chalk)'}">${esc(c.value)}</text>`;
+  });
+  el.innerHTML = svg(W, H, `Work done ${Math.round(done)}%`, b);
+}

@@ -1,7 +1,7 @@
 # CLAUDE.md — working on REVIVE
 
 REVIVE is a final-year design project (NUST, civil engineering). It is an AI-BIM decision-support app that:
-- forecasts construction time/cost overrun at 25% or 50% of contract time (XGBoost), and explains each forecast with TreeSHAP;
+- forecasts construction time/cost overrun at 25% or 50% of contract time with sign-constrained linear models on 10/13 core questions (`schema.CORE_KEYS`, `CORE_DIRECTION`), trained on the 81 real completed projects, and explains each forecast as exact per-answer contributions with owned actions (`actions.py`);
 - links the forecast to an IFC model through the schedule (IfcOpenShell);
 - optimises recovery with a linear programme (PuLP/CBC).
 
@@ -10,7 +10,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Commands
 - Setup: `pip install -r requirements-dev.txt && python -m revive setup`
 - Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
-- Test: `python -m pytest -q` (must stay green; 46 tests)
+- Test: `python -m pytest -q` (must stay green; 57 tests)
 - Security scan: `bandit -r revive` (must report no issues)
 - Retrain: `python -m revive train --sensitivity`
 - External test: `python -m revive evaluate --file <xlsx>`
@@ -35,6 +35,8 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
    - Never invent results.
    - When a dataset project is scored in the UI, the out-of-fold value is the honest one (the app already shows it).
 4. **Hypothetical data stays labelled.** 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs.
+4a. **Report leave-one-company-out next to random-fold scores.** The model card has both; quote the unseen-company figure when asked whether it generalises. Keep the SPI-only baseline in the comparison.
+4b. **Keep the form short.** A new model input must beat the current core set under leave-one-company-out before it joins `CORE_KEYS`, and needs a direction in `CORE_DIRECTION`.
 5. **Never commit `data/raw/`.** It contains a private company/project key and an e-mail address.
 6. **Assumptions live in config.yaml.** Keep carbon factors, liquidated damages and crash assumptions there, marked VERIFY; do not hard-code them.
 7. **Pin PuLP below 3.** PuLP 3+/4 no longer ships the CBC solver; `optimizer.py` has a compatibility shim.
@@ -51,6 +53,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
 
 ## Design language (frontend)
+v5 "site cockpit" (`web/assets/css/cockpit.css`, loaded after app.css and only overriding it): the workspace as a vehicle instrument cluster on a construction site. Vertical icon rail (a bottom dock on phones), graphite instrument bezels, construction-yellow ambient light, and on the Forecast sheet a cluster of arc gauges (`charts.gauge`) either side of an isometric building with leader-line callouts (`charts.building`) plus warning lights. Earlier layers below still define the base tokens.
 The look is "site grade": structural-steel graphite with construction-yellow actions (v3).
 - Archivo (variable width, `font-variation-settings:"wdth" N`) for headings and figures, Inter for body text, JetBrains Mono for codes and labels. All three are vendored variable fonts in `web/assets/fonts/`.
 - Graphite surfaces (`--ink-*`, `--surface`), steel-blue `--cyan` for data linework; construction yellow (`--amber`) for primary actions only; hazard stripes (`--hazard`) as a small accent.

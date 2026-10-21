@@ -1,6 +1,6 @@
 # REVIVE — AI-BIM delay analysis, early warning and recovery (v2.0)
 
-REVIVE measures how late a construction project is **today** (current delay, from the baseline schedule and site data), forecasts how late it will finish when it is 25% or 50% of the way through its contract time, explains the forecast with TreeSHAP, and uses a linear programme to find the cheapest recovery.
+REVIVE measures how late a construction project is **today** (current delay, from the baseline schedule and site data), forecasts how late it will finish when it is 25% or 50% of the way through its contract time, explains each forecast as exact per-answer contributions with an owner and an action for each driver, and uses a linear programme to find the cheapest recovery.
 
 **New in 2.0**
 - **Company workspaces.** Each company signs up, adds its people (admin or member roles) and runs as many projects as it has. Every project has its own baseline schedule, optional IFC model, assessments, live site link and history, isolated from every other company.
@@ -11,7 +11,7 @@ REVIVE measures how late a construction project is **today** (current delay, fro
 It runs on two things only: the **baseline schedule** (Primavera P6 `.xer` or CSV) and **site reports** (the assessment form and phone updates, with live weather). A **BIM model is optional**. When one is connected, the same forecast and recovery are drawn on the IFC model and written back into it; when it is not, everything else works unchanged.
 
 ```
-Survey / project records ──► anonymised dataset ──► XGBoost (time, cost, high-risk) ──► TreeSHAP
+Survey / project records ──► anonymised dataset ──► sign-constrained linear models on 10/13 core questions (time, cost, high-risk) ──► exact contributions
                                                           │
 IFC model (Revit export) ──► IfcOpenShell ──► floor area, storeys, concrete ──► model inputs
           │                                               │
@@ -79,13 +79,13 @@ The landing page (`/`) explains the product and holds the sign-up and sign-in fo
 |---|---|
 | Projects | Every project of your company as a card: delay to date, forecast overrun, live status, a sparkline of the slip. Search, sort, create, delete (admins), or load a labelled sample project. |
 | Current delay | How late the project is now: delay to date in days and its band, actual time against earned schedule, SPI(t), work done against plan, cost to date, estimated delay today from the calendar. S-curve with AT and ES, three finish estimates, slip per window apportioned to events (with concurrent windows flagged), activities behind programme, and optional activity progress. |
-| Forecast | The XGBoost forecast form with what-if sliders, risk band, health score, probability of a >40% overrun, cost overrun, recovery trigger and the TreeSHAP waterfall. *Save to project* stores the assessment (re-scored by the server). |
+| Forecast | An instrument cluster (overrun and high-risk gauges either side of the building, warning lights), the 10-question form (13 at 50%) with what-if sliders, cost overrun, recovery trigger, *This week* (each driver with an owner and an action) and the contribution waterfall. *Save to project* stores the assessment (re-scored by the server). |
 | Live site | Starts the project's phone link (QR code with an unguessable token, revocable), live trajectory, feed and weather. Updates from the phone reach every open dashboard of the company. |
 | BIM | Optional Three.js view of the project's IFC model: risk heat map, 4D build sequence, recovery. Upload, demo model, disconnect, IFC export with `Pset_REVIVE_Risk`. |
 | Recovery | The project's baseline schedule (P6 `.xer` or CSV) and the LP crash plan, time-cost curve, Gantt and Monte Carlo finish risk. |
 | Impact | Days, cost and carbon avoided, rework carbon at risk. |
 | Benchmark | The anonymised training dataset with cross-validated forecasts (formerly "Portfolio"); open a record as a worked example. |
-| Evidence | Cross-validated metrics, model comparison, robustness, predicted against actual, SHAP beeswarm, delay-cause ranking and limitations. |
+| Evidence | Cross-validated and leave-one-company-out metrics, model comparison against an SPI-only baseline and the old XGBoost design, robustness, predicted against actual, SHAP beeswarm, delay-cause ranking and limitations. |
 
 ## Commands
 
@@ -165,18 +165,18 @@ Elements without `WBS_Code` fall back to the `ifc_storey` + `ifc_types` rules in
 
 ## Configuration
 
-Every threshold and assumption lives in `config/config.yaml`: risk bands, health-score weights, recovery triggers, liquidated-damages default, crash limits, carbon factors, training scope and XGBoost settings. Lines marked `VERIFY` are assumptions you must check against a cited source before quoting them.
+Every threshold and assumption lives in `config/config.yaml`: risk bands, health-score weights, recovery triggers, liquidated-damages default, crash limits, carbon factors, training scope, question set (`feature_set`), model family (`model: linear | xgboost`) and their settings. Lines marked `VERIFY` are assumptions you must check against a cited source before quoting them.
 
 E-mail alerts: set `alerts.enabled: true` and the environment variables `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_TO`. Without them, alerts are written to `data/outbox/` as `.eml` files, which is fine for a demo.
 
-## Current results (cross-validated, 120 projects with an outcome)
+## Current results (81 real completed projects)
 
-| Checkpoint | Time-overrun error | Guessing the median | R² | High-risk AUC | F1 |
-|---|---|---|---|---|---|
-| 25% of contract time | 6.8 pts | 16.2 pts | 0.77 | 0.91 | 0.74 |
-| 50% of contract time | 5.9 pts | 16.2 pts | 0.81 | 0.94 | 0.81 |
+| Checkpoint | Time-overrun error | Guessing the median | R² | R², unseen company | High-risk AUC | AUC, unseen company |
+|---|---|---|---|---|---|---|
+| 25% of contract time | 6.4 pts | 9.8 pts | 0.81 | 0.50 | 0.88 | 0.86 |
+| 50% of contract time | 4.2 pts | 9.8 pts | 0.91 | 0.74 | 0.91 | 0.89 |
 
-Read `docs/DATA_NOTES.md` before quoting these numbers. On completed projects alone R² is 0.65 and 0.76; without the hypothetical rows it is 0.65 and 0.80.
+"Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Hypothetical scenarios and ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
 
 ## Repository layout
 
@@ -186,8 +186,10 @@ revive/                   Python package
   schema.py               single source of truth for fields, encodings, checkpoints
   data.py                 workbook -> anonymised dataset + targets
   features.py             answers -> model matrix (same code for training and the web form)
-  modeling.py             repeated CV, model comparison, final fit, SHAP, sensitivity
-  inference.py            prediction, 80% range, TreeSHAP per project, health score
+  modeling.py             repeated CV, leave-one-company-out, baselines, final fit, SHAP, sensitivity
+  linear.py               sign-constrained ridge / logistic models with exact contributions, saved as JSON
+  actions.py              forecast drivers -> reasons with an owner and one action
+  inference.py            prediction, 80% range, contributions and actions per project, health score
   scheduling.py           CPM, Earned Schedule status, ML-driven forecast
   optimizer.py            LP recovery (PuLP/CBC) and time-cost curve
   bim.py                  IfcOpenShell geometry, quantities, WBS links, IFC write-back
@@ -219,7 +221,7 @@ bim/                      demo IFC model and linked schedule
 data/processed/           anonymised dataset used by the app
 models/                   trained models, model card, out-of-fold predictions
 reports/                  figures for the written report, comparison and sensitivity tables
-tests/                    pytest suite (46 tests, including test_security.py and test_delay.py)
+tests/                    pytest suite (57 tests, including test_security.py and test_delay.py)
 docs/                     architecture, security review, data notes, defence guide, deployment, roadmap
 ```
 

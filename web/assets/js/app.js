@@ -183,6 +183,64 @@ async function runForecast(opts = {}) {
   }
 }
 
+// ================================================================== instrument cluster
+const riskZones = () => [{ to: 30, color: 'var(--go)' }, { to: 60, color: 'var(--watch)' }, { to: 100, color: 'var(--crit)' }];
+const bandZones = () => S.schema.risk_bands.map(b => ({ to: b.max, color: b.color }));
+const numOr = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+
+/** The cluster before any forecast: needles at rest, an empty frame. */
+function renderClusterIdle() {
+  C.gauge($('#g-overrun'), { value: 0, max: 100, zones: bandZones(), color: 'var(--chalk-3)', label: 'Time overrun', text: '\u2014', sub: '% over contract time' });
+  C.gauge($('#g-risk'), { value: 0, max: 100, zones: riskZones(), color: 'var(--chalk-3)', label: 'High-risk chance', text: '\u2014', sub: 'of a >40% overrun' });
+  C.building($('#cl-building'), { done: 0, color: 'var(--chalk-3)', callouts: [] });
+  $('#telltales').innerHTML = '';
+}
+
+/** Gauges, building and warning lights for a forecast. k runs 0 to 1 while the needles sweep. */
+function drawCluster(p, v, prob, health) {
+  const band = p.band, inp = S.inputs || {}, g50 = p.gate === 'G50';
+  C.gauge($('#g-overrun'), { value: v, max: 100, zones: bandZones(), color: band.color, label: 'Time overrun', text: fmt.pct(v),
+    sub: `80% range ${fmt.pct(p.time_interval_pct[0])} to ${fmt.pct(p.time_interval_pct[1])}` });
+  const pc = Math.round(prob * 100);
+  C.gauge($('#g-risk'), { value: pc, max: 100, zones: riskZones(), color: pc >= 60 ? 'var(--crit)' : pc >= 30 ? 'var(--watch)' : 'var(--go)',
+    label: 'High-risk chance', text: `${pc}%`, sub: `of a >${p.high_risk_threshold_pct}% overrun` });
+  $('#cl-health').textContent = Math.round(health);
+  const hb = $('#cl-health-bar');
+  hb.style.width = `${Math.max(0, Math.min(100, health))}%`;
+  hb.style.background = health >= 75 ? 'var(--go)' : health >= 60 ? 'var(--watch)' : health >= 40 ? 'var(--risk)' : 'var(--crit)';
+  return { band, inp, g50 };
+}
+
+function renderCluster(p) {
+  const inp = S.inputs || {}, g50 = p.gate === 'G50';
+  const spi = numOr(inp[g50 ? 'spi_50' : 'spi_25']), cpi = numOr(inp[g50 ? 'cpi_50' : 'cpi_25']), cert = numOr(inp[g50 ? 'cert_50' : 'cert_25']);
+  const done = cert ?? (spi != null ? spi * (g50 ? 50 : 25) : (g50 ? 50 : 25));
+  const tone = (x, good, warn) => x == null ? 'var(--chalk-3)' : x >= good ? 'var(--go)' : x >= warn ? 'var(--watch)' : 'var(--crit)';
+  C.building($('#cl-building'), { done, color: p.band.color, callouts: [
+    { label: 'Forecast finish', value: p.forecast_months ? `${fmt.num(p.forecast_months, 1)} months` : fmt.pct(p.time_overrun_pct), color: p.band.color },
+    { label: `SPI at ${g50 ? 50 : 25}%`, value: spi == null ? 'not given' : spi.toFixed(2), color: tone(spi, 0.95, 0.85) },
+    { label: 'Value certified', value: cert == null ? 'not given' : `${fmt.num(cert, 0)}% of contract`, color: 'var(--cyan)' },
+    { label: `CPI at ${g50 ? 50 : 25}%`, value: cpi == null ? 'not given' : cpi.toFixed(2), color: tone(cpi, 0.95, 0.85) },
+  ] });
+  $('#cl-overrun-cap').textContent = p.planned_months ? `${fmt.num(p.planned_months, 1)} months planned` : 'Over the contract duration';
+  $('#cl-risk-cap').textContent = `High risk: overrun above ${p.high_risk_threshold_pct}%`;
+  $('#cl-band').textContent = p.band.name;
+  $('#cl-band').style.setProperty('--c', p.band.color);
+  $('#cl-gate').textContent = p.gate_label;
+  const lights = [
+    { k: 'Recovery', on: p.recovery_recommended, c: 'var(--mark)', t: p.recovery_recommended ? 'Recovery plan recommended' : 'No recovery trigger' },
+    { k: 'Pace', on: spi != null && spi < 0.9, c: 'var(--crit)', t: spi == null ? 'SPI not given' : `SPI ${spi.toFixed(2)}` },
+    { k: 'Cost', on: cpi != null && cpi < 0.9, c: 'var(--risk)', t: cpi == null ? 'CPI not given' : `CPI ${cpi.toFixed(2)}` },
+    { k: 'Late IPCs', on: /[1-9]/.test(String(inp.late_payments_q1 || '')), c: 'var(--watch)', t: `IPCs paid late: ${inp.late_payments_q1 || 'not given'}` },
+    { k: 'Blanks', on: p.missing_inputs.length > 0, c: 'var(--chalk-2)', t: `${p.missing_inputs.length} answers left blank` },
+  ];
+  $('#telltales').innerHTML = lights.map(l => `<li class="${l.on ? 'on' : ''}" style="--c:${l.c}" data-tip="${esc(l.t)}"><i></i>${esc(l.k)}</li>`).join('');
+  const acts = p.actions || [];
+  $('#actions-card').hidden = !acts.length;
+  $('#acts').innerHTML = acts.map(a => `<li><span class="owner o-${esc(a.owner)}">${esc(a.owner_label)}</span>
+    <b>${esc(a.reason)}</b><span class="adds">+${a.adds_pct_points.toFixed(1)} pts</span><p>${esc(a.action)}</p></li>`).join('');
+}
+
 function renderResult() {
   const p = S.prediction, band = p.band, tr = p.training_record;
   const planned = p.planned_months, fc = p.forecast_months;
@@ -215,6 +273,7 @@ function renderResult() {
   fx.tween('result', 0, 1, S.prevPrediction ? 650 : 900, k => {
     const v = lerp(from.v, to.v, k);
     big.textContent = fmt.pct(v);
+    drawCluster(p, v, lerp(from.prob, to.prob, k), lerp(from.h, to.h, k));
     C.rangeBar($('#range'), { value: v, lo: lerp(from.lo, to.lo, k), hi: lerp(from.hi, to.hi, k), bands: S.schema.risk_bands });
     C.dial($('#dial'), lerp(from.h, to.h, k));
     $('#m-prob').textContent = `${Math.round(lerp(from.prob, to.prob, k) * 100)}%`;
@@ -222,6 +281,7 @@ function renderResult() {
   });
   requestAnimationFrame(() => { const b = $('#m-prob-bar'); if (b) b.style.width = `${Math.round(to.prob * 100)}%`; });
   C.waterfall($('#waterfall'), p.explanation, p.time_overrun_pct);
+  renderCluster(p);
   $('#whatif').hidden = false;
   $('#save-row').hidden = false;
   if (!$('#save-name').value || $('#save-name').dataset.auto === '1') { $('#save-name').value = S.presetName || ''; $('#save-name').dataset.auto = '1'; }
@@ -899,28 +959,30 @@ function renderWeather() {
 // ================================================================== evidence
 function renderEvidence() {
   const card = S.card, g = card.gates;
-  $('#metrics').innerHTML = `<thead><tr><th>Checkpoint</th><th class="n">Time error</th><th class="n">Guessing the median</th><th class="n">R\u00b2</th><th class="n">High-risk AUC</th><th class="n">F1</th><th class="n">Cost R\u00b2</th></tr></thead><tbody>` +
-    Object.entries(g).map(([k, v]) => `<tr><td>${esc(v.label)}</td><td class="n">${v.time_overrun.mae.mean.toFixed(1)} pts</td><td class="n">${v.time_overrun.baseline_median_mae.toFixed(1)} pts</td>
-      <td class="n">${v.time_overrun.r2.mean.toFixed(2)}</td><td class="n">${v.high_risk.auc.mean.toFixed(2)}</td><td class="n">${v.high_risk.f1.mean.toFixed(2)}</td><td class="n">${v.cost_overrun.r2.mean.toFixed(2)}</td></tr>`).join('') + '</tbody>';
-  $('#validation-note').textContent = `${card.validation} Trained ${card.trained_at.slice(0, 10)} on ${card.dataset.n_projects} projects. High risk means a time overrun above ${card.high_risk_threshold_pct}%.`;
+  const lc = v => v.leave_company_out || null, f2 = x => (x == null ? '\u2014' : x.toFixed(2));
+  $('#metrics').innerHTML = `<thead><tr><th>Checkpoint</th><th class="n">Time error</th><th class="n">Guessing the median</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">High-risk AUC</th><th class="n">AUC, unseen company</th><th class="n">Cost R\u00b2</th></tr></thead><tbody>` +
+    Object.entries(g).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50%' : 'At 25%'}</td><td class="n">${v.time_overrun.mae.mean.toFixed(1)} pts</td><td class="n">${v.time_overrun.baseline_median_mae.toFixed(1)} pts</td>
+      <td class="n">${v.time_overrun.r2.mean.toFixed(2)}</td><td class="n">${f2(lc(v)?.time_overrun?.r2)}</td><td class="n">${v.high_risk.auc.mean.toFixed(2)}</td><td class="n">${f2(lc(v)?.high_risk_auc)}</td><td class="n">${v.cost_overrun.r2.mean.toFixed(2)}</td></tr>`).join('') + '</tbody>';
+  $('#validation-note').textContent = `${card.validation} Trained ${card.trained_at.slice(0, 10)} on ${card.dataset.n_projects} real completed projects from ${(card.dataset.companies || []).length || 'several'} data sources, ${card.model === 'linear' ? 'with a sign-constrained linear model' : 'with XGBoost'} on ${card.feature_set === 'core' ? 'the core questions' : 'every answer'}. High risk means a time overrun above ${card.high_risk_threshold_pct}%.`;
   if (card.model_comparison) {
-    $('#comparison').innerHTML = '<thead><tr><th>Checkpoint</th><th>Model</th><th class="n">Time error</th><th class="n">R\u00b2</th><th class="n">AUC</th></tr></thead><tbody>' +
-      card.model_comparison.map(m => `<tr><td>${m.gate === 'G50' ? '50%' : '25%'}</td><td>${esc(m.model)}</td><td class="n">${m.time_MAE.toFixed(1)}</td><td class="n">${m.time_R2 == null ? '\u2014' : m.time_R2.toFixed(2)}</td><td class="n">${m.risk_AUC == null ? '\u2014' : m.risk_AUC.toFixed(2)}</td></tr>`).join('') + '</tbody>';
+    $('#comparison').innerHTML = '<thead><tr><th>Checkpoint</th><th>Model</th><th class="n">Time error</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">AUC</th><th class="n">AUC, unseen company</th></tr></thead><tbody>' +
+      card.model_comparison.map(m => `<tr${/production/.test(m.model) ? ' class="prod"' : ''}><td>${m.gate === 'G50' ? '50%' : '25%'}</td><td>${esc(m.model)}</td><td class="n">${m.time_MAE.toFixed(1)}</td><td class="n">${f2(m.time_R2)}</td><td class="n">${f2(m.loco_time_R2)}</td><td class="n">${f2(m.risk_AUC)}</td><td class="n">${f2(m.loco_risk_AUC)}</td></tr>`).join('') + '</tbody>';
   }
   if (card.sensitivity) {
-    $('#sensitivity').innerHTML = '<thead><tr><th>Data used</th><th>At</th><th class="n">n</th><th class="n">Time error</th><th class="n">Median guess</th><th class="n">R\u00b2</th><th class="n">AUC</th></tr></thead><tbody>' +
-      card.sensitivity.map(s => `<tr><td>${esc(s.scope)}</td><td>${s.gate === 'G50' ? '50%' : '25%'}</td><td class="n">${s.n}</td><td class="n">${s.time_MAE.toFixed(1)}</td><td class="n">${s.baseline_MAE.toFixed(1)}</td><td class="n">${s.time_R2.toFixed(2)}</td><td class="n">${s.risk_AUC == null ? '\u2014' : s.risk_AUC.toFixed(2)}</td></tr>`).join('') + '</tbody>';
+    $('#sensitivity').innerHTML = '<thead><tr><th>Data used</th><th>At</th><th class="n">n</th><th class="n">Time error</th><th class="n">Median guess</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">AUC</th></tr></thead><tbody>' +
+      card.sensitivity.map(s => `<tr><td>${esc(s.scope)}</td><td>${s.gate === 'G50' ? '50%' : '25%'}</td><td class="n">${s.n}</td><td class="n">${s.time_MAE.toFixed(1)}</td><td class="n">${s.baseline_MAE.toFixed(1)}</td><td class="n">${s.time_R2.toFixed(2)}</td><td class="n">${f2(s.loco_time_R2)}</td><td class="n">${f2(s.risk_AUC)}</td></tr>`).join('') + '</tbody>';
   }
   $('#excluded').innerHTML = Object.entries(card.excluded_for_leakage).map(([k, v]) => `<li><b>${esc(k)}</b>: ${esc(v)}</li>`).join('');
-  const hyp = card.dataset.hypothetical, n = card.dataset.n_projects, ongoing = card.dataset.by_status['Still ongoing'] || 0;
+  const n = card.dataset.n_projects, G = card.gates, spiOnly = G.G25?.leave_company_out?.spi_only_linear?.r2;
   $('#limits').innerHTML = [
-    `${hyp} of ${n} training records are hypothetical scenarios, and ${ongoing} projects are still ongoing, so their outcome is a reported forecast rather than a final figure.`,
+    `The model is trained on ${n} real completed projects from three contractors and a few external records: a pilot study, not a model for the whole industry. Hypothetical scenarios and ongoing projects are kept out of training and labelled wherever they appear.`,
+    `For a company it has never seen, the time forecast explains about ${Math.round((G.G25?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% of the variation at 25% and ${Math.round((G.G50?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% at 50%. SPI alone transfers about as well${spiOnly != null ? ` (${spiOnly.toFixed(2)} at 25%)` : ''}: the other questions mainly give the forecast its reasons.`,
+    `The cost forecast at 25% is barely better than the average (R\u00b2 ${G.G25?.cost_overrun?.r2?.mean?.toFixed(2)}); treat it as indicative. At 50% it is usable (R\u00b2 ${G.G50?.cost_overrun?.r2?.mean?.toFixed(2)}).`,
     'Contract and site information alone does not predict overrun in this data; the signal appears once first-quarter events and earned value are known. REVIVE therefore forecasts at 25% and 50% of contract time, not at award.',
-    'SPI and CPI dominate the explanation. If those values were back-calculated from the final delay, performance is optimistic; the robustness table shows results without them.',
+    'SPI dominates the explanation. If SPI values were back-calculated from the final delay, performance is optimistic; the robustness table shows results without SPI and CPI.',
     'The recovery and digital twin use one linked case-study schedule. Crash rates, liquidated damages and carbon factors are inputs to verify for each real project.',
     'Performance is cross-validated. The next step is an external test on newly collected projects: python -m revive evaluate --file new.xlsx',
   ].map(t => `<li>${esc(t)}</li>`).join('');
-  const d = card.dataset;
   $$('[data-evgate]').forEach(el => {
     el.innerHTML = Object.keys(g).map(k => `<button type="button" data-g="${k}" aria-pressed="${k === S.evGate}">${k === 'G50' ? '50%' : '25%'}</button>`).join('');
     el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.evGate = b.dataset.g; renderEvidence(); renderInsightCharts(); }));
@@ -1528,6 +1590,7 @@ async function init() {
   $('#ld').value = schema.optimizer.default_ld_per_day_pkr;
   $('#status').textContent = 'Connected';
   buildForm();
+  renderClusterIdle();
   await initWeather();
   $('#preset-select').innerHTML = '<option value="">Choose</option>' + presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
   renderEvidence();

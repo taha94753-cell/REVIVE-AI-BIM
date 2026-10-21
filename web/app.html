@@ -9,11 +9,12 @@
   <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/css/app.css?v=4.0.1">
+  <link rel="stylesheet" href="/assets/css/cockpit.css?v=5.0.0">
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js", "three/addons/": "/vendor/three/addons/"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
-  <script type="module" src="/assets/js/app.js?v=4.0.1"></script>
+  <script type="module" src="/assets/js/app.js?v=5.0.0"></script>
 </head>
-<body class="app">
+<body class="app cockpit">
 <a class="skip" href="#main">Skip to the content</a>
 <header class="topbar">
   <a class="wordmark" href="/" aria-label="REVIVE home"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><span>REVIVE</span></a>
@@ -147,9 +148,19 @@
 <section id="assess" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-assess" tabindex="-1" hidden>
     <header class="sheet-head reveal">
       <div><h2>Forecast</h2>
-        <p>Where the project is heading. Enter what is known at the checkpoint; leave anything you do not know blank, the model handles missing answers without inventing them.</p></div>
+        <p>Where the project is heading. Ten answers from the contract and the monthly progress report (thirteen at the halfway point); anything you leave blank counts as average, never as an invented value.</p></div>
       <div class="titleblock"><span>Sheet 02</span><span>of 08</span><span id="tb-assess" class="tb-proj">No project</span></div>
     </header>
+    <div class="cluster" id="cluster" aria-live="polite">
+      <div class="cl-gauge"><div id="g-overrun" class="chart gauge"></div><p class="cl-cap" id="cl-overrun-cap">Forecast time overrun</p></div>
+      <div class="cl-centre">
+        <div class="cl-top"><span class="chip" id="cl-band" style="--c:var(--chalk-3)">No forecast yet</span><span class="cl-gate" id="cl-gate">Run a forecast</span></div>
+        <div id="cl-building" class="chart building"></div>
+        <div class="cl-health"><span>Project health</span><i class="cl-bar"><b id="cl-health-bar"></b></i><b id="cl-health">&mdash;</b></div>
+      </div>
+      <div class="cl-gauge"><div id="g-risk" class="chart gauge"></div><p class="cl-cap" id="cl-risk-cap">Chance of a high overrun</p></div>
+      <ul class="telltales" id="telltales" aria-label="Warning lights"></ul>
+    </div>
     <div class="assess-grid reveal">
       <form id="assess-form" novalidate>
         <div class="form-top">
@@ -169,6 +180,10 @@
       </form>
       <aside id="result" class="result">
         <div id="result-body" aria-live="polite"><p class="empty">Run a forecast to see the overrun, the project health score and the recovery trigger.</p></div>
+        <div class="actions-card" id="actions-card" hidden>
+          <div class="row-head"><h3>This week</h3><span class="fine" style="margin:0">Who does what about each driver</span></div>
+          <ol class="acts" id="acts"></ol>
+        </div>
         <div class="whatif" id="whatif" hidden>
           <div class="row-head"><h3>What if</h3><button type="button" class="linkbtn" id="whatif-reset">Back to the entered values</button></div>
           <p class="fine" style="margin-top:0">Drag to test a scenario. The forecast, explanation, recovery plan and BIM colours follow instantly.</p>
@@ -179,7 +194,7 @@
     </div>
     <div class="explain reveal">
       <div class="explain-head"><h3>Why the model says this</h3>
-        <p>TreeSHAP splits the gap between the average project and this one into exact contributions, in percentage points of time overrun. Orange pushes the overrun up, green pulls it down.</p></div>
+        <p>The forecast is the average project plus one exact contribution per answer, in percentage points of time overrun (the SHAP values of the linear model). Orange pushes the overrun up, green pulls it down. Each answer can only push in the direction engineering sense allows, or not at all.</p></div>
       <div id="waterfall" class="chart"></div>
     </div>
   </section>
@@ -324,7 +339,7 @@
 <section id="portfolio" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-portfolio" tabindex="-1" hidden>
     <header class="sheet-head reveal">
       <div><h2>Benchmark data</h2>
-        <p>The anonymised projects the model learned from, each with its cross-validated forecast (scored by a model that never saw it). Use them to compare your project, or open one in the Forecast sheet as a worked example.</p></div>
+        <p>The anonymised survey projects. The model learned from the real completed ones, each shown with its cross-validated forecast (scored by a model that never saw it). Ongoing and hypothetical records were not used for training, so their forecast is out-of-sample. Open one in the Forecast sheet as a worked example.</p></div>
       <div class="titleblock"><span>Sheet 07</span><span>of 08</span><span id="tb-portfolio" class="tb-proj">No project</span></div>
     </header>
     <div class="overview reveal">
@@ -362,7 +377,7 @@
       <div class="titleblock"><span>Sheet 08</span><span>of 08</span><span id="tb-evidence" class="tb-proj">No project</span></div>
     </header>
     <div class="ev-grid reveal">
-      <div><h3>Cross-validated performance</h3><div class="table-wrap"><table class="grid" id="metrics"></table></div><p class="fine" id="validation-note"></p></div>
+      <div><h3>Cross-validated performance</h3><p class="fine" style="margin-top:0">Two tests: random folds, and <b>leave one company out</b> (train on the other contractors, predict the held-out one). The second is the honest answer to "will it work for a company it has never seen?".</p><div class="table-wrap"><table class="grid" id="metrics"></table></div><p class="fine" id="validation-note"></p></div>
       <div><h3>What the data is made of</h3><div id="composition"></div></div>
     </div>
     <div class="ev-grid reveal">

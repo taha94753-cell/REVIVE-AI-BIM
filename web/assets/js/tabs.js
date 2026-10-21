@@ -80,7 +80,7 @@ export function roving(list, tabs, { activate } = {}) {
   list.addEventListener('keydown', e => {
     const all = tabs().filter(t => !t.hidden && t.offsetParent !== null);
     const i = all.indexOf(document.activeElement);
-    const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: all.length - 1 }[e.key];
+    const j = { ArrowRight: i + 1, ArrowLeft: i - 1, ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: all.length - 1 }[e.key];  // rails run either way
     if (i < 0 || j == null) return;
     e.preventDefault();
     const t = all[(j + all.length) % all.length];
