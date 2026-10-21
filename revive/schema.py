@@ -140,6 +140,17 @@ CORE_KEYS = (
     "spi_25", "cpi_25", "cert_25",                                            # progress report at 25%
     "spi_50", "cpi_50", "cert_50",                                            # progress report at 50%
 )
+# The direction each core answer is allowed to move the forecast when its value
+# goes UP (+1 = more overrun, -1 = less). Ordinal answers are coded so that a
+# higher value means a better situation (complete design, committed funding,
+# negotiated duration, better subcontractors), except the event counts.
+# The linear model may set an effect to zero but never flip it.
+CORE_DIRECTION = {
+    "design_status": -1, "funding": -1, "duration_setting": -1,
+    "variations_q1": +1, "late_payments_q1": +1, "subcontractor_q1": -1,
+    "spi_25": -1, "cpi_25": -1, "cert_25": -1, "spi_50": -1, "cpi_50": -1, "cert_50": -1,
+    # planned_months is left free: long jobs can drift more or absorb slips better.
+}
 for _f in FIELDS:
     _f["core"] = _f["key"] in CORE_KEYS
 

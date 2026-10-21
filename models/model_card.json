@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-10-21T19:04:42+00:00",
+  "trained_at": "2026-10-21T19:09:20+00:00",
   "training_scope": {
     "include_ongoing": false,
     "include_hypothetical": false
@@ -48,6 +48,20 @@
   "high_risk_threshold_pct": 40,
   "model": "linear",
   "feature_set": "core",
+  "sign_constraints": {
+    "design_status": -1,
+    "funding": -1,
+    "duration_setting": -1,
+    "variations_q1": 1,
+    "late_payments_q1": 1,
+    "subcontractor_q1": -1,
+    "spi_25": -1,
+    "cpi_25": -1,
+    "cert_25": -1,
+    "spi_50": -1,
+    "cpi_50": -1,
+    "cert_50": -1
+  },
   "validation": "Repeated 5-fold cross-validation x 3 repeats (out-of-fold predictions), plus leave-one-company-out; final models refitted on all records.",
   "excluded_for_leakage": {
     "D*_tot": "whole-project totals are only known at completion",
@@ -73,68 +87,68 @@
       "n_encoded_columns": 10,
       "time_overrun": {
         "mae": {
-          "mean": 6.307,
-          "std": 0.154
+          "mean": 6.373,
+          "std": 0.162
         },
         "rmse": {
-          "mean": 8.548,
-          "std": 0.179
+          "mean": 8.694,
+          "std": 0.198
         },
         "r2": {
-          "mean": 0.817,
-          "std": 0.008
+          "mean": 0.811,
+          "std": 0.009
         },
         "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -10.56,
-          9.89
+          -10.28,
+          9.93
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 4.41,
-          "std": 0.341
+          "mean": 4.374,
+          "std": 0.128
         },
         "rmse": {
-          "mean": 6.577,
-          "std": 0.568
+          "mean": 6.133,
+          "std": 0.297
         },
         "r2": {
-          "mean": 0.033,
-          "std": 0.17
+          "mean": 0.163,
+          "std": 0.081
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.899,
-          "std": 0.009
+          "mean": 0.883,
+          "std": 0.006
         },
         "f1": {
-          "mean": 0.727,
-          "std": 0.021
+          "mean": 0.684,
+          "std": 0.0
         },
         "accuracy": {
-          "mean": 0.864,
-          "std": 0.01
+          "mean": 0.852,
+          "std": 0.0
         },
         "precision": {
-          "mean": 0.898,
-          "std": 0.028
+          "mean": 0.929,
+          "std": 0.0
         },
         "recall": {
-          "mean": 0.611,
-          "std": 0.02
+          "mean": 0.542,
+          "std": 0.0
         },
         "positives": 24,
         "majority_class_accuracy": 0.704
       },
       "leave_company_out": {
         "time_overrun": {
-          "mae": 8.273,
-          "rmse": 15.16,
-          "r2": 0.425
+          "mae": 7.486,
+          "rmse": 14.152,
+          "r2": 0.499
         },
-        "high_risk_auc": 0.909,
+        "high_risk_auc": 0.865,
         "spi_only_linear": {
           "mae": 7.545,
           "rmse": 12.934,
@@ -150,42 +164,42 @@
         {
           "key": "spi_25",
           "label": "SPI at 25% of time",
-          "mean_abs_shap": 6.037
+          "mean_abs_shap": 6.205
         },
         {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 4.026
+          "mean_abs_shap": 3.888
         },
         {
           "key": "duration_setting",
           "label": "How the duration was set",
-          "mean_abs_shap": 2.422
+          "mean_abs_shap": 2.315
         },
         {
           "key": "cert_25",
           "label": "Value certified at 25% of time",
-          "mean_abs_shap": 2.115
+          "mean_abs_shap": 1.976
         },
         {
           "key": "variations_q1",
           "label": "Variation orders so far",
-          "mean_abs_shap": 1.57
-        },
-        {
-          "key": "design_status",
-          "label": "Design status at award",
-          "mean_abs_shap": 1.494
-        },
-        {
-          "key": "cpi_25",
-          "label": "CPI at 25% of time",
-          "mean_abs_shap": 0.789
+          "mean_abs_shap": 1.434
         },
         {
           "key": "planned_months",
           "label": "Original contract duration",
-          "mean_abs_shap": 0.738
+          "mean_abs_shap": 1.206
+        },
+        {
+          "key": "funding",
+          "label": "Funding committed at award",
+          "mean_abs_shap": 0.575
+        },
+        {
+          "key": "design_status",
+          "label": "Design status at award",
+          "mean_abs_shap": 0.0
         }
       ]
     },
@@ -195,53 +209,53 @@
       "n_encoded_columns": 13,
       "time_overrun": {
         "mae": {
-          "mean": 3.681,
-          "std": 0.106
+          "mean": 4.234,
+          "std": 0.128
         },
         "rmse": {
-          "mean": 5.263,
-          "std": 0.121
+          "mean": 6.043,
+          "std": 0.15
         },
         "r2": {
-          "mean": 0.931,
-          "std": 0.003
+          "mean": 0.909,
+          "std": 0.005
         },
         "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -4.86,
-          5.23
+          -7.28,
+          5.46
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 2.43,
-          "std": 0.104
+          "mean": 2.416,
+          "std": 0.042
         },
         "rmse": {
-          "mean": 3.098,
-          "std": 0.124
+          "mean": 2.919,
+          "std": 0.043
         },
         "r2": {
-          "mean": 0.787,
-          "std": 0.017
+          "mean": 0.811,
+          "std": 0.006
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.918,
-          "std": 0.002
+          "mean": 0.913,
+          "std": 0.003
         },
         "f1": {
-          "mean": 0.75,
-          "std": 0.008
+          "mean": 0.763,
+          "std": 0.025
         },
         "accuracy": {
-          "mean": 0.868,
-          "std": 0.006
+          "mean": 0.877,
+          "std": 0.017
         },
         "precision": {
-          "mean": 0.858,
-          "std": 0.022
+          "mean": 0.894,
+          "std": 0.067
         },
         "recall": {
           "mean": 0.667,
@@ -252,11 +266,11 @@
       },
       "leave_company_out": {
         "time_overrun": {
-          "mae": 5.412,
-          "rmse": 10.84,
-          "r2": 0.706
+          "mae": 5.204,
+          "rmse": 10.219,
+          "r2": 0.739
         },
-        "high_risk_auc": 0.92,
+        "high_risk_auc": 0.89,
         "spi_only_linear": {
           "mae": 4.564,
           "rmse": 8.284,
@@ -272,42 +286,42 @@
         {
           "key": "spi_50",
           "label": "SPI at 50% of time",
-          "mean_abs_shap": 6.457
+          "mean_abs_shap": 7.113
         },
         {
           "key": "spi_25",
           "label": "SPI at 25% of time",
-          "mean_abs_shap": 2.657
+          "mean_abs_shap": 2.613
         },
         {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 2.464
+          "mean_abs_shap": 2.032
         },
         {
-          "key": "cpi_50",
-          "label": "CPI at 50% of time",
-          "mean_abs_shap": 1.864
+          "key": "funding",
+          "label": "Funding committed at award",
+          "mean_abs_shap": 1.156
         },
         {
-          "key": "design_status",
-          "label": "Design status at award",
-          "mean_abs_shap": 1.144
+          "key": "planned_months",
+          "label": "Original contract duration",
+          "mean_abs_shap": 1.024
         },
         {
           "key": "cert_25",
           "label": "Value certified at 25% of time",
-          "mean_abs_shap": 1.132
+          "mean_abs_shap": 0.995
         },
         {
-          "key": "cert_50",
-          "label": "Value certified at 50% of time",
-          "mean_abs_shap": 0.846
+          "key": "variations_q1",
+          "label": "Variation orders so far",
+          "mean_abs_shap": 0.625
         },
         {
-          "key": "duration_setting",
-          "label": "How the duration was set",
-          "mean_abs_shap": 0.796
+          "key": "subcontractor_q1",
+          "label": "Subcontractor performance",
+          "mean_abs_shap": 0.597
         }
       ]
     }
@@ -327,13 +341,13 @@
     {
       "gate": "G25",
       "model": "Linear, core questions (production)",
-      "time_MAE": 6.31,
-      "time_R2": 0.817,
-      "risk_AUC": 0.899,
-      "risk_F1": 0.727,
-      "loco_time_MAE": 8.27,
-      "loco_time_R2": 0.425,
-      "loco_risk_AUC": 0.909
+      "time_MAE": 6.37,
+      "time_R2": 0.811,
+      "risk_AUC": 0.883,
+      "risk_F1": 0.684,
+      "loco_time_MAE": 7.49,
+      "loco_time_R2": 0.499,
+      "loco_risk_AUC": 0.865
     },
     {
       "gate": "G25",
@@ -404,13 +418,13 @@
     {
       "gate": "G50",
       "model": "Linear, core questions (production)",
-      "time_MAE": 3.68,
-      "time_R2": 0.931,
-      "risk_AUC": 0.918,
-      "risk_F1": 0.75,
-      "loco_time_MAE": 5.41,
-      "loco_time_R2": 0.706,
-      "loco_risk_AUC": 0.92
+      "time_MAE": 4.23,
+      "time_R2": 0.909,
+      "risk_AUC": 0.913,
+      "risk_F1": 0.763,
+      "loco_time_MAE": 5.2,
+      "loco_time_R2": 0.739,
+      "loco_risk_AUC": 0.89
     },
     {
       "gate": "G50",
@@ -468,5 +482,5 @@
       "loco_risk_AUC": NaN
     }
   ],
-  "training_seconds": 20.6
+  "training_seconds": 23.7
 }

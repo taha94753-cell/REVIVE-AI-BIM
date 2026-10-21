@@ -37,6 +37,7 @@ training:
   linear:
     alpha: 3.0                     # ridge penalty (time and cost)
     C: 0.5                         # inverse penalty (high-risk classifier)
+    sign_constraints: true         # effects follow schema.CORE_DIRECTION or are zero
   time_overrun_clip_pct: 150       # winsorise the single extreme (~398 %) record
   cost_overrun_clip_pct: [-40, 100]
   high_risk_threshold_pct: 40      # "high risk" = forecast time overrun above this

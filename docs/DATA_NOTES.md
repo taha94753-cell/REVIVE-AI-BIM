@@ -38,6 +38,12 @@ real completed projects**. Three changes follow from the evidence below.
 3. **Use a regularised linear model** (ridge for time and cost, logistic for high
    risk) instead of XGBoost. Its explanation is exact: coefficient x standardised
    answer, which is the SHAP value of a linear model.
+4. **Keep every effect on the side engineering sense allows** (`schema.CORE_DIRECTION`):
+   a free fit on 81 correlated records said complete drawings and a better CPI
+   *add* delay. The constrained fit sets such effects to zero instead. It costs a
+   little on random folds and improves the leave-one-company-out R² (0.43 to 0.50
+   at 25%, 0.71 to 0.74 at 50%). CPI and design status end up with zero effect on
+   time; they still drive the cost forecast.
 
 ### How it was tested
 - **Repeated 5-fold** cross-validation (5 folds x 3 repeats), as before.
@@ -52,31 +58,32 @@ real completed projects**. Three changes follow from the evidence below.
 | At | Model | MAE | R² | LOCO MAE | LOCO R² | High-risk AUC | LOCO AUC |
 |---|---|---|---|---|---|---|---|
 | 25% | Median guess | 9.75 | — | — | — | — | — |
-| 25% | **Linear, 10 core questions (production)** | **6.31** | **0.82** | **8.27** | **0.43** | **0.90** | **0.91** |
+| 25% | **Linear, 10 core questions, sign-constrained (production)** | **6.37** | **0.81** | **7.49** | **0.50** | **0.88** | **0.86** |
 | 25% | Linear, SPI only | 6.81 | 0.74 | 7.55 | 0.58 | — | — |
 | 25% | XGBoost, all 33 answers (old design) | 6.28 | 0.64 | 7.83 | 0.28 | 0.80 | 0.75 |
-| 25% | XGBoost, 10 core questions | 6.57 | 0.63 | 7.73 | 0.29 | 0.82 | 0.82 |
+| 25% | XGBoost, core questions | 6.57 | 0.63 | 7.73 | 0.29 | 0.82 | 0.82 |
 | 50% | Median guess | 9.75 | — | — | — | — | — |
-| 50% | **Linear, 13 core questions (production)** | **3.68** | **0.93** | **5.41** | **0.71** | **0.92** | **0.92** |
+| 50% | **Linear, 13 core questions, sign-constrained (production)** | **4.23** | **0.91** | **5.20** | **0.74** | **0.91** | **0.89** |
 | 50% | Linear, SPI only | 3.99 | 0.91 | 4.56 | 0.83 | — | — |
 | 50% | XGBoost, all 36 answers (old design) | 5.27 | 0.77 | 6.99 | 0.35 | 0.88 | 0.87 |
-| 50% | XGBoost, 13 core questions | 4.72 | 0.79 | 6.59 | 0.38 | 0.89 | 0.88 |
+| 50% | XGBoost, core questions | 4.72 | 0.79 | 6.59 | 0.38 | 0.89 | 0.88 |
 
-Cost overrun (linear, core questions): R² **0.03** at 25% (MAE 4.4 points) and
-**0.79** at 50% (MAE 2.4 points). **The 25% cost forecast is not better than the
-average and must be presented as indicative only.** The old 0.82 came from the
+Cost overrun (linear, core questions): R² **0.16** at 25% (MAE 4.4 points) and
+**0.81** at 50% (MAE 2.4 points). **The 25% cost forecast is barely better than
+guessing the average and must be presented as indicative only.** The old 0.82 came from the
 hypothetical rows.
 
 ### What this means (say it this way in the defence)
 - **On this data, a small model on the progress-report signals beats a big model
   on every survey answer.** More questions added noise, not skill, and the old
-  XGBoost set collapses on an unseen contractor (LOCO R² 0.28 at 25%).
+  XGBoost set collapses on an unseen contractor (LOCO R² 0.28 at 25%, 0.35 at 50%).
 - **SPI carries most of the signal.** SPI alone transfers to a new contractor
-  better than the 10/13-question model (LOCO R² 0.58 vs 0.43 at 25%). The other
+  slightly better than the 10/13-question model (LOCO R² 0.58 vs 0.50 at 25%,
+  0.83 vs 0.74 at 50%). The other
   questions help inside a contractor and give the explanation its reasons (late
   IPCs, how the duration was set, design status), but they do not yet transfer.
   With only four company groups this comparison is itself noisy.
-- **The high-risk classifier transfers well** (LOCO AUC 0.91 at 25%, 0.92 at 50%):
+- **The high-risk classifier transfers well** (LOCO AUC 0.86 at 25%, 0.89 at 50%):
   "will this project overrun by more than 40%?" is the most dependable output.
 - Old headline figures (R² 0.77/0.81 on all 120 records) were inflated by the
   hypothetical rows and by random folds. Do not quote them.
@@ -85,14 +92,14 @@ hypothetical rows.
 
 | Data used | At | n | MAE | LOCO MAE | R² | LOCO R² | AUC |
 |---|---|---|---|---|---|---|---|
-| Real completed (production) | 25% | 81 | 6.20 | 8.27 | 0.82 | 0.43 | 0.90 |
-| Real completed (production) | 50% | 81 | 3.61 | 5.41 | 0.93 | 0.71 | 0.92 |
-| Real incl. ongoing | 25% | 88 | 9.39 | 11.05 | 0.66 | 0.54 | 0.90 |
-| Real incl. ongoing | 50% | 88 | 7.79 | 9.80 | 0.76 | 0.67 | 0.92 |
-| All records incl. hypothetical | 25% | 120 | 7.41 | 10.22 | 0.77 | 0.64 | 0.92 |
-| All records incl. hypothetical | 50% | 120 | 5.92 | 8.69 | 0.84 | 0.74 | 0.93 |
-| Real completed, SPI/CPI removed | 25% | 81 | 7.98 | 10.24 | 0.70 | 0.23 | 0.87 |
-| Real completed, SPI/CPI removed | 50% | 81 | 7.26 | 9.16 | 0.76 | 0.35 | 0.88 |
+| Real completed projects (production) | 25% | 81 | 6.31 | 7.49 | 0.81 | 0.50 | 0.88 |
+| Real completed projects (production) | 50% | 81 | 4.25 | 5.20 | 0.91 | 0.74 | 0.91 |
+| Real projects incl. ongoing | 25% | 88 | 8.77 | 9.14 | 0.70 | 0.69 | 0.90 |
+| Real projects incl. ongoing | 50% | 88 | 6.97 | 8.38 | 0.79 | 0.77 | 0.92 |
+| All records incl. hypothetical | 25% | 120 | 7.00 | 9.00 | 0.78 | 0.70 | 0.92 |
+| All records incl. hypothetical | 50% | 120 | 6.28 | 8.38 | 0.83 | 0.77 | 0.93 |
+| Real completed, SPI/CPI removed | 25% | 81 | 8.01 | 9.89 | 0.69 | 0.32 | 0.84 |
+| Real completed, SPI/CPI removed | 50% | 81 | 7.19 | 8.86 | 0.75 | 0.42 | 0.86 |
 
 ### Limits that remain
 - 81 projects from three contractors plus a few external records. That is a

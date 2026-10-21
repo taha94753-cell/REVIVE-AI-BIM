@@ -50,7 +50,7 @@ from .config import load_config, models_dir, reports_dir
 from .data import load_clean
 from .features import column_to_field, encode, feature_set
 from .linear import LinearModel
-from .schema import FIELD_BY_KEY, LEAKAGE_EXCLUDED
+from .schema import CORE_DIRECTION, FIELD_BY_KEY, LEAKAGE_EXCLUDED
 
 
 # ---------------------------------------------------------------------------
@@ -91,15 +91,21 @@ def _xgb_clf(params=None):
                              eval_metric="logloss", **p)
 
 
+def _signs() -> dict:
+    """Sign constraints for the linear model (training.linear.sign_constraints in config)."""
+    lin = load_config()["training"].get("linear", {})
+    return dict(CORE_DIRECTION) if lin.get("sign_constraints", True) else {}
+
+
 def _reg(params=None):
     if model_kind() == "linear":
-        return LinearModel("reg", alpha=load_config()["training"].get("linear", {}).get("alpha", 3.0))
+        return LinearModel("reg", alpha=load_config()["training"].get("linear", {}).get("alpha", 3.0), signs=_signs())
     return _xgb_reg(params)
 
 
 def _clf(params=None):
     if model_kind() == "linear":
-        return LinearModel("clf", C=load_config()["training"].get("linear", {}).get("C", 0.5))
+        return LinearModel("clf", C=load_config()["training"].get("linear", {}).get("C", 0.5), signs=_signs())
     return _xgb_clf(params)
 
 
@@ -248,6 +254,7 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         "high_risk_threshold_pct": tcfg["high_risk_threshold_pct"],
         "model": model_kind(),
         "feature_set": feature_set(),
+        "sign_constraints": _signs() if model_kind() == "linear" else {},
         "validation": f"Repeated {folds}-fold cross-validation x {reps} repeats (out-of-fold predictions), "
                       "plus leave-one-company-out; final models refitted on all records.",
         "excluded_for_leakage": LEAKAGE_EXCLUDED,
@@ -294,8 +301,8 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         spi_cols = [c for c in X.columns if c.startswith("spi_")]
         if not spi_cols:   # feature_set: all without EVM never happens, but stay safe
             spi_cols = list(X.columns[:1])
-        spi_rand, _ = _cv_regression(lambda: LinearModel("reg"), X[spi_cols], T["time"], reps, folds, seed)
-        spi_loco, _ = _cv_regression(lambda: LinearModel("reg"), X[spi_cols], T["time"], 1, folds, seed, groups=groups)
+        spi_rand, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], reps, folds, seed)
+        spi_loco, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], 1, folds, seed, groups=groups)
 
         # ---- final fits on every record ---------------------------------
         final_time = _reg(reg_params).fit(X, T["time"])

@@ -83,3 +83,36 @@ def test_encoding_of_full_question_set_still_works():
     from revive.data import load_clean
     X = encode(load_clean().head(3), "G50", feature_set="all")
     assert X.shape[1] == len(gate_columns("G50", "all"))
+
+
+def test_forecast_lists_owned_actions_for_drivers_that_raise_it():
+    from revive.inference import get_predictor
+    from revive.presets import PRESETS
+    pred = get_predictor().predict(PRESETS[0]["inputs"], PRESETS[0]["gate"])
+    ups = {c["key"] for c in pred["explanation"]["contributions"] if c["shap"] >= 0.5}
+    assert pred["actions"] or not ups
+    for a in pred["actions"]:
+        assert a["key"] in ups and a["owner_label"] and a["action"] and a["adds_pct_points"] >= 0.5
+
+
+def test_sign_constraints_hold_and_match_an_unconstrained_fit_when_inactive():
+    X, y = _toy()
+    free = LinearModel("reg").fit(X, y)
+    same = LinearModel("reg", signs={"a": +1, "b": -1}).fit(X, y)         # true signs: a +, b -
+    np.testing.assert_allclose(same.coef, free.coef, atol=1e-6)
+    wrong = LinearModel("reg", signs={"a": -1}).fit(X, y)                 # forbid a's real direction
+    assert wrong.coef[0] == 0.0
+    clf = LinearModel("clf", signs={"a": -1, "c": +1}).fit(X, (y > 0).astype(int))
+    assert clf.coef[0] <= 0 and clf.coef[2] >= 0
+    free_clf = LinearModel("clf").fit(X, (y > 0).astype(int))
+    loose = LinearModel("clf", signs={"a": +1}).fit(X, (y > 0).astype(int))
+    np.testing.assert_allclose(loose.coef, free_clf.coef, atol=1e-3)
+
+
+def test_saved_models_respect_the_declared_directions():
+    from revive.schema import CORE_DIRECTION
+    for gate in load_config()["gates"]:
+        for kind in ("time", "cost", "risk"):
+            d = json.loads((models_dir() / gate / f"{kind}.json").read_text())
+            for col, w in zip(d["columns"], d["coef"]):
+                assert w * CORE_DIRECTION.get(col, 0) >= -1e-9, (gate, kind, col, w)

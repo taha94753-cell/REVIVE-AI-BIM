@@ -17,6 +17,7 @@ from functools import lru_cache
 
 import numpy as np
 import pandas as pd
+from .actions import actions_for
 from .config import load_config, models_dir
 from .data import load_clean
 from .features import column_to_field, display_value, encode_one, gate_fields
@@ -141,6 +142,7 @@ class Predictor:
             "missing_inputs": missing,
         }
         result["recovery_recommended"] = bool(result["recovery_triggers"]) or result["band"]["name"] in ("At risk", "Critical")
+        result["actions"] = actions_for(result["explanation"])
         if source_project_id and not self.oof.empty:
             row = self.oof[self.oof["project_id"] == source_project_id]
             if len(row):

@@ -1,9 +1,9 @@
 scope,gate,n,time_MAE,time_R2,loco_time_MAE,loco_time_R2,baseline_MAE,risk_AUC
-Real completed projects (production),G25,81,6.2,0.822,8.27,0.425,9.75,0.898
-Real completed projects (production),G50,81,3.61,0.933,5.41,0.706,9.75,0.918
-Real projects incl. ongoing,G25,88,9.39,0.66,11.05,0.537,13.68,0.901
-Real projects incl. ongoing,G50,88,7.79,0.756,9.8,0.666,13.68,0.921
-All records incl. hypothetical,G25,120,7.41,0.769,10.22,0.644,16.22,0.915
-All records incl. hypothetical,G50,120,5.92,0.842,8.69,0.742,16.22,0.925
-"Real completed, SPI/CPI removed",G25,81,7.98,0.701,10.24,0.234,9.75,0.873
-"Real completed, SPI/CPI removed",G50,81,7.26,0.756,9.16,0.345,9.75,0.88
+Real completed projects (production),G25,81,6.31,0.814,7.49,0.499,9.75,0.884
+Real completed projects (production),G50,81,4.25,0.908,5.2,0.739,9.75,0.914
+Real projects incl. ongoing,G25,88,8.77,0.705,9.14,0.69,13.68,0.896
+Real projects incl. ongoing,G50,88,6.97,0.791,8.38,0.765,13.68,0.922
+All records incl. hypothetical,G25,120,7.0,0.779,9.0,0.703,16.22,0.92
+All records incl. hypothetical,G50,120,6.28,0.831,8.38,0.767,16.22,0.933
+"Real completed, SPI/CPI removed",G25,81,8.01,0.693,9.89,0.319,9.75,0.838
+"Real completed, SPI/CPI removed",G50,81,7.19,0.75,8.86,0.417,9.75,0.864
