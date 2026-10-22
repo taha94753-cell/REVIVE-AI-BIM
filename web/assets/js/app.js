@@ -1095,6 +1095,20 @@ async function resync() {
 
 // ================================================================== tabs (hash routing: #delay, #assess, ...)
 const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover', 'impact', 'portfolio', 'evidence'];
+const TAB_HINT = { projects: 'Every project and where it stands', delay: 'How late the project is today', assess: 'Where it is heading, and why',
+  live: 'Phone updates from site', twin: 'The forecast on the building', recover: 'The cheapest way back', impact: 'Time, cost and carbon',
+  portfolio: 'The survey projects', evidence: 'How far the numbers can be trusted' };
+
+/** Previous and next sheet at the foot of each sheet: the workflow reads in order without the rail. */
+function sheetNav() {
+  const name = id => $(`#tab-${id} span`)?.textContent || id;
+  TABS.forEach((id, i) => {
+    const sec = $(`#${id}`); if (!sec || sec.querySelector('.sheet-nav')) return;
+    const prev = TABS[i - 1], next = TABS[i + 1];
+    const link = (t, dir) => `<a class="sn-${dir}" href="#${t}"><small>${dir === 'next' ? 'Next' : 'Back'}</small><b>${esc(name(t))}</b><span>${esc(TAB_HINT[t])}</span></a>`;
+    sec.insertAdjacentHTML('beforeend', `<nav class="sheet-nav" aria-label="Sheets">${prev ? link(prev, 'prev') : '<span></span>'}${next ? link(next, 'next') : ''}</nav>`);
+  });
+}
 const NEEDS_PROJECT = new Set(['delay', 'live']);
 
 function showTab(id, { push = true } = {}) {
@@ -1151,11 +1165,15 @@ function moveTabInd({ instant = false } = {}) {
   a.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
 }
 
+// a frame with one bay still to build: the empty state's drawing (decorative)
+const EMPTY_ART = `<svg class="es-art" viewBox="0 0 120 72" aria-hidden="true"><path class="g" d="M4 66h112"/><path d="M20 66V18M50 66V18M80 66V42M20 42h60M20 18h30"/><path class="todo" d="M80 42V18M50 18h30M80 18h20M100 18v48M80 42h20"/><path class="arc" d="M60 14c4-8 12-11 22-11"/><path class="arc" d="M78 0l4 3-3.5 4"/></svg>`;
+
 function renderNoProject(id) {
   if (id === 'delay') {
     $('#delay-body').hidden = true;
     $('#delay-empty').hidden = false;
-    $('#delay-empty').innerHTML = `<h3>Open a project to see its current delay</h3><p class="muted">The current delay is measured from a project's baseline schedule and its site reports.</p>
+    $('#delay-empty').innerHTML = `${EMPTY_ART}<h3>Open a project to see its current delay</h3><p class="muted">The current delay is measured from a project's baseline schedule and its site reports.</p>
+      <ol class="es-steps"><li><b>Choose or create a project</b><span>or load the labelled sample</span></li><li><b>Add the baseline</b><span>P6 .xer, MS Project or CSV</span></li><li><b>Send a site update</b><span>from the phone link on Live site</span></li></ol>
       <div class="actions"><a class="btn primary" href="#projects">Choose a project</a><button type="button" class="btn ghost" data-act="new">New project</button></div>`;
     $('#delay-empty [data-act=new]').addEventListener('click', openProjectModal);
   }
@@ -1456,12 +1474,22 @@ async function loadDelay() {
   } catch (e) { report(e); }
 }
 
+/** A thin meter under a figure: the value as a bar, its reference as a tick, and the gap between them in the
+ *  delay band's colour, so a lag is seen before it is read. Values are fractions of the bar (0..1). */
+function meter(m, colour) {
+  if (!m || !Number.isFinite(m.v)) return '';
+  const c = x => Math.max(0, Math.min(1, x)) * 100;
+  const v = c(m.v), r = m.ref == null ? null : c(m.ref);
+  const gap = r == null ? '' : `<em style="left:${Math.min(v, r)}%;width:${Math.abs(r - v)}%"></em><b style="left:${r}%"></b>`;
+  return `<span class="meter" style="--c:${esc(colour || 'var(--chalk-2)')}" role="img" aria-label="${esc(m.label || '')}"><i style="width:${v}%"></i>${gap}</span>`;
+}
+
 function renderDelay() {
   const d = S.delay;
   setTitleblocks();
   if (!d?.available) {
     $('#delay-body').hidden = true; $('#delay-empty').hidden = false;
-    $('#delay-empty').innerHTML = `<h3>No progress reading yet</h3><p class="muted">${esc(d?.reason || '')}</p>
+    $('#delay-empty').innerHTML = `${EMPTY_ART}<h3>No progress reading yet</h3><p class="muted">${esc(d?.reason || '')}</p>
       <div class="actions"><a class="btn primary" href="#assess">Enter the checkpoint answers</a><a class="btn ghost" href="#live">Start the site link</a><button type="button" class="btn ghost" data-act="prog">Enter activity progress</button></div>`;
     $('#delay-empty [data-act=prog]').addEventListener('click', () => { $('#delay-body').hidden = false; $('#delay-empty').hidden = true; openProgress(); });
     return;
@@ -1477,15 +1505,16 @@ function renderDelay() {
     ? `behind programme at the status date, ${b.pct_of_duration}% of the planned duration. If the remaining work goes to plan, completion moves from day ${fmt.num(d.planned_days)} to day ${fmt.num(d.finish.to_plan)}${d.finish_dates.to_plan ? ` (${esc(d.finish_dates.to_plan)})` : ''}.`
     : d.delay_days < -0.5 ? `ahead of programme at the status date.` : `on programme at the status date.`;
   $('#dl-source').innerHTML = `<b>Status ${esc(d.status_date || '')}</b> &middot; ${esc(d.source)}${d.days_since_status != null ? ` &middot; ${d.days_since_status === 0 ? 'today' : `${d.days_since_status} days ago`}` : ''}`;
+  const span = d.planned_days || 1;
   const k = [
-    ['Actual time', st.at, v => `day ${fmt.num(v)}`, `${fmt.num(st.elapsed_pct, 0)}% of contract time`],
-    ['Earned schedule', st.es, v => `day ${fmt.num(v)}`, `work done matches the plan on this day`],
-    ['SPI(t)', st.spi_t ?? 0, v => fmt.num(v, 2), st.spi_t < 1 ? 'time efficiency, below 1 = slipping' : 'time efficiency'],
-    ['Work done', st.ev * 100, v => `${fmt.num(v, 1)}%`, `planned ${fmt.num(st.pv * 100, 1)}% by now`],
+    ['Actual time', st.at, v => `day ${fmt.num(v)}`, `${fmt.num(st.elapsed_pct, 0)}% of contract time`, { v: st.at / span }],
+    ['Earned schedule', st.es, v => `day ${fmt.num(v)}`, `work done matches the plan on this day`, { v: st.es / span, ref: st.at / span, label: 'earned day against today' }],
+    ['SPI(t)', st.spi_t ?? 0, v => fmt.num(v, 2), st.spi_t < 1 ? 'time efficiency, below 1 = slipping' : 'time efficiency', { v: (st.spi_t ?? 0) / 1.25, ref: 1 / 1.25, label: 'SPI against 1.0' }],
+    ['Work done', st.ev * 100, v => `${fmt.num(v, 1)}%`, `planned ${fmt.num(st.pv * 100, 1)}% by now`, { v: st.ev, ref: st.pv, label: 'work done against planned' }],
   ];
   if (d.cost_overrun_to_date_pct != null) k.push(['Cost to date', d.cost_overrun_to_date_pct, v => fmt.pct(v, 1), `CPI ${fmt.num(d.cpi, 2)}: spend against value of work done`]);
   if (d.calendar) k.push(['Estimated delay today', d.calendar.estimated_delay_today_days, v => `${fmt.num(v)} d`, `calendar is at ${fmt.num(d.calendar.elapsed_today_pct, 0)}% of contract time`]);
-  $('#dl-kpis').innerHTML = k.map(([t, , , sub], i) => `<div class="kpi" style="--d:${i * 70}ms"><dt>${t}</dt><dd data-i="${i}"></dd><small>${esc(sub)}</small></div>`).join('');
+  $('#dl-kpis').innerHTML = k.map(([t, , , sub, m], i) => `<div class="kpi" style="--d:${i * 70}ms"><dt>${t}</dt><dd data-i="${i}"></dd><small>${esc(sub)}</small>${meter(m, b.color)}</div>`).join('');
   k.forEach(([, v, f], i) => fx.countUp($(`#dl-kpis dd[data-i="${i}"]`), v ?? 0, f, 900));
   $('#dl-notes').innerHTML = d.notes.map(n => `<p class="note warn">${esc(n)}</p>`).join('');
   C.sCurve($('#scurve'), d);
@@ -1614,6 +1643,7 @@ function wire() {
   $('#live-base').addEventListener('change', e => { try { localStorage.setItem('revive-base', e.target.value); } catch { /* private mode */ } renderLinkCard(); });
   $('#live-copy').addEventListener('click', copyLink);
   // shell
+  sheetNav();
   addEventListener('hashchange', () => { const id = location.hash.slice(1); if (TABS.includes(id)) showTab(id, { push: false }); });
   addEventListener('resize', () => moveTabInd({ instant: true }));
   wireTabBar();
