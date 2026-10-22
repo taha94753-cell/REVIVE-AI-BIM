@@ -82,11 +82,11 @@ The landing page (`/`) explains the product and holds the sign-up and sign-in fo
 | Sheet | What it does |
 |---|---|
 | Projects | Every project of your company as a card: delay to date, forecast overrun, live status, a sparkline of the slip. Search, sort, create, delete (admins), or load a labelled sample project. |
-| Current delay | How late the project is now: delay to date in days and its band, actual time against earned schedule, SPI(t), work done against plan, cost to date, estimated delay today from the calendar. S-curve with AT and ES, three finish estimates, slip per window apportioned to events (with concurrent windows flagged), activities behind programme, and optional activity progress. |
+| Current delay | How late the project is now: delay to date in days and its band, actual time against earned schedule, SPI(t), work done against plan, cost to date, estimated delay today from the calendar. S-curve with AT and ES, three finish estimates, slip per window apportioned to events (with concurrent windows flagged), activities behind programme, and optional activity progress. | The **evidence pack** button opens a printable extension-of-time pack (delay, slip per window and its apportionment, notice date, every site record, early warning, owned actions, sign-off).
 | Forecast | An instrument cluster (overrun and high-risk gauges either side of the building, warning lights), the 10-question form (13 at 50%) with what-if sliders, cost overrun, recovery trigger, *This week* (each driver with an owner and an action) and the contribution waterfall. *Save to project* stores the assessment (re-scored by the server). |
-| Live site | Starts the project's phone link (QR code with an unguessable token, revocable), live trajectory, feed and weather. Updates from the phone reach every open dashboard of the company. |
+| Live site | Replay of the site updates one by one with the early warning (when REVIVE first flagged the project, and how long before completion). Starts the project's phone link (QR code with an unguessable token, revocable), live trajectory, feed and weather. Updates from the phone reach every open dashboard of the company. |
 | BIM | Optional Three.js view of the project's IFC model: risk heat map, 4D build sequence, recovery. Upload, demo model, disconnect, IFC export with `Pset_REVIVE_Risk`. |
-| Recovery | The project's baseline schedule (P6 `.xer` or CSV) and the LP crash plan, time-cost curve, Gantt and Monte Carlo finish risk. |
+| Recovery | The project's baseline schedule (P6 `.xer`, MS Project `.xml` or CSV) and the LP crash plan, time-cost curve, Gantt, Monte Carlo finish risk and *what drives the finish* (the share of simulated futures in which each activity is critical). |
 | Impact | Days, cost and carbon avoided, rework carbon at risk. |
 | Benchmark | The anonymised training dataset with cross-validated forecasts (formerly "Portfolio"); open a record as a worked example. |
 | Evidence | Cross-validated and leave-one-company-out metrics, model comparison against an SPI-only baseline and the old XGBoost design, robustness, predicted against actual, SHAP beeswarm, delay-cause ranking and limitations. |
@@ -225,7 +225,7 @@ bim/                      demo IFC model and linked schedule
 data/processed/           anonymised dataset used by the app
 models/                   trained models, model card, out-of-fold predictions
 reports/                  figures for the written report, comparison and sensitivity tables
-tests/                    pytest suite (57 tests, including test_security.py and test_delay.py)
+tests/                    pytest suite (73 tests, including test_security.py and test_delay.py)
 docs/                     architecture, security review, data notes, defence guide, deployment, roadmap
 ```
 

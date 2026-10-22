@@ -52,7 +52,8 @@ from .security import (LIMITER, BodyLimit, CsrfGuard, SecurityHeaders, build_csp
                        sec_cfg, upload_limit_bytes)
 
 WEB = ROOT / "web"
-PAGES = {"landing": WEB / "landing.html", "app": WEB / "app.html", "site": WEB / "site.html"}
+PAGES = {"landing": WEB / "landing.html", "app": WEB / "app.html", "site": WEB / "site.html",
+         "evidence": WEB / "evidence.html"}
 COOKIE = "revive_session"
 log = logging.getLogger("revive")
 
@@ -601,6 +602,8 @@ async def _receive_upload(file: UploadFile, kind: str, dest_dir: Path) -> Path:
             raise HTTPException(400, "This is not an IFC (STEP) file. Export IFC from Revit and upload the .ifc file.")
         if kind == "xer" and not head.lstrip(b"\xef\xbb\xbf").startswith(b"ERMHDR"):
             raise HTTPException(400, "This is not a Primavera P6 .xer export.")
+        if kind == "mspdi" and b"<Project" not in head:
+            raise HTTPException(400, "This is not an MS Project XML file. In MS Project use File > Save As > XML.")
         if b"\x00" in head and kind != "ifc":
             raise HTTPException(400, "This does not look like a text schedule file.")
     except BaseException:
@@ -640,11 +643,13 @@ async def upload_schedule(request: Request, user: User, file: UploadFile = File(
     from .schedule_import import import_schedule
     p = header_project(request, user, required=True)
     name = (file.filename or "").lower()
-    if not name.endswith((".csv", ".xer")):
-        raise HTTPException(400, "Upload the baseline schedule as a Primavera P6 .xer export or a REVIVE .csv.")
+    if not name.endswith((".csv", ".xer", ".xml")):
+        raise HTTPException(400, "Upload the baseline schedule as a Primavera P6 .xer export, an MS Project .xml "
+                                 "(File > Save As > XML) or a REVIVE .csv.")
     throttle(f"upload:{user['id']}", 20, 600)
     d = workspace_dir(user["company_id"], p["id"])
-    tmp = await _receive_upload(file, "xer" if name.endswith(".xer") else "schedule", d)
+    kind = "xer" if name.endswith(".xer") else "mspdi" if name.endswith(".xml") else "schedule"
+    tmp = await _receive_upload(file, kind, d)
     try:   # validate the temporary copy first: a rejected upload never touches the project's current schedule
         checked, report = await run_in_threadpool(import_schedule, tmp)
     except Exception as exc:
@@ -841,6 +846,23 @@ def project_delay(pid: int, user: User):
         return ok(_delay_for(user["company_id"], p, full=True))
     except ValueError as exc:
         raise HTTPException(400, f"Delay analysis failed: {exc}") from exc
+
+
+@app.get("/api/projects/{pid}/evidence")
+def project_evidence(pid: int, user: User):
+    """Extension-of-time evidence pack: delay, windows, site records, forecast history and early warning."""
+    from .evidence import build_pack
+    p = own_project(user, pid)
+    lid = live.for_project(user["company_id"], p["id"])
+    try:
+        d = _delay_for(user["company_id"], p, full=True)
+    except ValueError as exc:
+        raise HTTPException(400, f"Delay analysis failed: {exc}") from exc
+    _, pred = _latest_prediction(user["company_id"], p, lid)
+    pack = build_pack(company=user.get("company_name") or "", prepared_by=user.get("name") or user.get("email") or "",
+                      project=p, delay_result=d, live_project=live.get_project(lid) if lid else None,
+                      assessment=store.latest_for_project(user["company_id"], p["id"]), prediction=pred)
+    return ok(pack)
 
 
 @app.get("/api/projects/{pid}/activities")
@@ -1133,6 +1155,14 @@ def admin_link(token: str, request: Request):
     resp = RedirectResponse("/app#projects", status_code=303)
     _set_cookie(request, resp, auth.create_session(u["id"], client_ip(request)))
     return resp
+
+
+@app.get("/evidence/{pid}", include_in_schema=False)
+def evidence_page(pid: int, request: Request):
+    """Printable evidence pack (the page fetches /api/projects/{pid}/evidence, which checks the company)."""
+    if not auth.session_user(request.cookies.get(COOKIE)):
+        return RedirectResponse("/?next=app#start", status_code=303)
+    return FileResponse(PAGES["evidence"])
 
 
 @app.get("/site/{token}", include_in_schema=False)

@@ -10,7 +10,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Commands
 - Setup: `pip install -r requirements-dev.txt && python -m revive setup`
 - Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
-- Test: `python -m pytest -q` (must stay green; 57 tests)
+- Test: `python -m pytest -q` (must stay green; 73 tests)
 - Security scan: `bandit -r revive` (must report no issues)
 - Retrain: `python -m revive train --sensitivity`
 - External test: `python -m revive evaluate --file <xlsx>`
@@ -19,6 +19,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Architecture (data flow)
 `schema.py` → `data.py` → `features.py` → `modeling.py` → `inference.py` → `recovery.py`
 
+`evidence.py` builds the extension-of-time evidence pack (`/api/projects/{id}/evidence`, printable page `web/evidence.html`) and the early-warning record. `schedule_import.py` also reads MS Project XML through defusedxml (never parse uploads with the plain xml modules). `simulation.py` reports the criticality index (what drives the finish).
 `recovery.py` combines `scheduling.py` (CPM, forecast), `optimizer.py` (LP), `simulation.py` (Monte Carlo), `bim.py` (IFC) and `sustainability.py`. `weather.py` fetches Open-Meteo site weather and classifies lost days; `schedule_import.py` imports Primavera P6 `.xer` or CSV baseline schedules. `live.py` holds monitored projects, phone updates and the in-process SSE `Broker`; the phone page is `web/site.html` + `web/assets/js/site.js`. `server.py` exposes all of it under /api/*. The frontend lives in `web/assets/js/`:
 - `app.js`: state and rendering
 - `conn.js`: every API call goes through `api()`/`post()`, which raise `ApiError` (`.network` = server unreachable); the monitor reconnects by itself

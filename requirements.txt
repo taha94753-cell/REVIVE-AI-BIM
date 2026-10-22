@@ -14,3 +14,4 @@ fastapi>=0.110
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 segno>=1.5            # QR code for the live site link
+defusedxml>=0.7.1     # safe XML parsing for uploaded MS Project schedules

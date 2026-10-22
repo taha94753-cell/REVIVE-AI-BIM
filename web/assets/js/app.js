@@ -362,6 +362,13 @@ function renderRecovery() {
     $('#sim-big').innerHTML = `P80 finish month ${fmt.mo(sim.p80_before_day)} now, <span class="mark">month ${fmt.mo(sim.p80_after_day)}</span> with the plan`;
     $('#sim-note').textContent = `Chance of finishing by the target (month ${fmt.mo(sim.deadline_day)}): ${Math.round(sim.p_on_time_before * 100)}% now, ${Math.round(sim.p_on_time_after * 100)}% with the plan. P80 means 80% of simulated finishes fall on or before that month. ${sim.method}`;
     C.distribution($('#dist'), sim);
+    const dr = sim.drivers || [];
+    $('#drivers-wrap').hidden = !dr.length;
+    $('#crit').innerHTML = dr.map(d => {
+      const pc = Math.round(d.criticality * 100), c = pc >= 80 ? 'var(--crit)' : pc >= 40 ? 'var(--risk)' : 'var(--watch)';
+      return `<li><span class="cn"><b>${esc(d.id)}</b> ${esc(d.name)}${d.crash_days > 0 ? `<em class="crash">plan: \u2212${fmt.num(d.crash_days, 1)} d</em>` : ''}</span>
+        <i class="cbar"><b style="width:${pc}%;background:${c}"></b></i><span class="cp">${pc}%</span></li>`;
+    }).join('');
   }
   $('#formulation').innerHTML = `<pre>${esc(o.formulation.objective)}\nsubject to\n  ${o.formulation.constraints.map(esc).join('\n  ')}\n\nSolver: ${esc(o.formulation.solver)}</pre>
     <p class="fine">d = forecast remaining duration (baseline scaled by k = ${r.duration_scale_k} so the schedule finish matches the ML forecast), c = crash cost per day, u = crash limit, LD = liquidated damages per day, D = target completion, t0 = day ${r.t0_day} (checkpoint). Work done by the checkpoint follows Earned Schedule: ES = SPI x t0 = day ${r.earned_schedule_day}.</p>`;
@@ -876,10 +883,63 @@ function renderFeed(fresh = false) {
   }).join('') || '<li class="muted">No monitored project yet. Run a forecast, then start monitoring.</li>';
 }
 
-function renderTrajectory() {
-  const pts = (S.live?.updates || []).map(u => ({ x: u.summary.elapsed_pct, y: u.summary.time_overrun_pct,
+function trajectoryPoints() {
+  return (S.live?.updates || []).map(u => ({ x: u.summary.elapsed_pct, y: u.summary.time_overrun_pct,
     lo: u.summary.interval[0], hi: u.summary.interval[1], color: u.summary.band.color, label: `${u.reporter}, ${u.created_at.replace('T', ' ')}` }));
+}
+
+function renderTrajectory() {
+  stopReplay();
+  const pts = trajectoryPoints(), n = pts.length;
   C.trajectory($('#trajectory'), pts, S.schema.risk_bands);
+  $('#replay').hidden = n < 2;
+  $('#replay-card').hidden = true;
+  const r = $('#replay-step');
+  r.max = String(Math.max(0, n - 1)); r.value = r.max;
+  $('#replay-label').textContent = n ? `Update ${n - 1} of ${n - 1}` : '';
+  renderEarlyWarning();
+}
+
+// ---- Replay (from the REVIVE web app): step through the site updates and watch the forecast and the warning appear
+let replayTimer = null;
+function showReplayStep(i) {
+  const ups = S.live?.updates || [], u = ups[i];
+  if (!u) return;
+  C.animate(false);
+  C.trajectory($('#trajectory'), trajectoryPoints().slice(0, i + 1), S.schema.risk_bands);
+  C.animate(true);
+  $('#replay-step').value = String(i);
+  $('#replay-label').textContent = i ? `Update ${i} of ${ups.length - 1}` : 'Monitoring start';
+  const s = u.summary, first = ups.findIndex(x => ['At risk', 'Critical'].includes(x.summary?.band?.name));
+  const card = $('#replay-card');
+  card.hidden = false;
+  card.innerHTML = `<div class="rc-head"><span class="chip" style="--c:${s.band.color}">${esc(s.band.name)}</span>
+      <b>${fmt.pct(s.time_overrun_pct)}</b><span class="muted">${esc(u.created_at.slice(0, 10))} \u00b7 ${Math.round(s.elapsed_pct)}% of contract time \u00b7 ${esc(u.reporter)}</span></div>
+    <p>${(Array.isArray(u.changes) ? u.changes : []).map(esc).join('; ') || 'No change reported'}</p>
+    ${u.note ? `<p class="muted">\u201c${esc(u.note)}\u201d</p>` : ''}
+    ${i === first ? '<p class="rc-warn">REVIVE raised the warning here.</p>' : ''}`;
+}
+function stopReplay() { clearInterval(replayTimer); replayTimer = null; const b = $('#replay-play'); if (b) b.textContent = 'Replay'; }
+function toggleReplay() {
+  if (replayTimer) { stopReplay(); return; }
+  const n = (S.live?.updates || []).length;
+  if (n < 2) return;
+  let i = 0;
+  $('#replay-play').textContent = 'Pause';
+  showReplayStep(i);
+  replayTimer = setInterval(() => { i += 1; if (i >= n) { stopReplay(); renderEarlyWarning(); return; } showReplayStep(i); }, fx.REDUCED ? 400 : 1100);
+}
+
+/** The first update whose forecast reached At risk or Critical, and how much contract time was left then. */
+function renderEarlyWarning() {
+  const el = $('#early-warn'), ups = S.live?.updates || [];
+  const first = ups.find(u => ['At risk', 'Critical'].includes(u.summary?.band?.name));
+  el.hidden = !first;
+  if (!first) return;
+  const months = Number(S.project?.details?.planned_months || S.project?.inputs?.planned_months || 0);
+  const left = Math.max(0, 100 - first.summary.elapsed_pct);
+  const days = months ? Math.round(left / 100 * months * C.DPM) : null;
+  el.innerHTML = `<b>Early warning:</b> REVIVE first flagged this project as <b>${esc(first.summary.band.name)}</b> on ${esc(first.created_at.slice(0, 10))}, at ${Math.round(first.summary.elapsed_pct)}% of contract time${days != null ? `, <b>${days} days before the contract completion date</b>` : ''}.`;
 }
 
 async function copyLink() {
@@ -1103,6 +1163,7 @@ function renderNoProject(id) {
 
 function setTitleblocks() {
   $$('.tb-proj').forEach(el => { el.textContent = S.project ? S.project.name : 'Quick assessment'; });
+  $$('.pack-link').forEach(a => { a.hidden = !S.project; if (S.project) a.href = `/evidence/${S.project.id}`; });
 }
 
 // ================================================================== workspace (company projects)
@@ -1254,10 +1315,15 @@ async function loadSampleProject() {
     await post('/assessments', { name: `${pre.name} at 25%`, inputs: pre.inputs, gate: pre.gate });
     const lp = await post('/live', { name: p.name, inputs: pre.inputs, gate: pre.gate });
     const tok = lp.site_path.split('/').pop();
-    const ups = [{ elapsed_pct: 30, spi: 0.86, events: { late_payments: 1, weather_days: 2 }, note: 'Sample update' },
-      { elapsed_pct: 35, spi: 0.82, events: { material_events: 1, variations: 1 }, note: 'Sample update' },
-      { elapsed_pct: 39, spi: 0.8, cpi: 0.93, events: { weather_days: 3, rfis: 2 }, note: 'Sample update' }];
-    for (const u of ups) await post(`/site/${tok}/update`, { reporter: 'Sample data', ...u });
+    // six fortnightly site updates, written the way a site engineer reports them (all labelled sample data)
+    const ups = [
+      { elapsed_pct: 29, spi: 0.88, events: { late_payments: 1 }, note: 'Sample: IPC-3 certified 41 days ago, still unpaid. Concrete pours slowed to save cash.' },
+      { elapsed_pct: 33, spi: 0.86, events: { weather_days: 3, rfis: 1 }, note: 'Sample: three days of rain stopped the second-floor slab pour. RFI-12 on beam reinforcement still open.' },
+      { elapsed_pct: 37, spi: 0.83, events: { material_events: 1 }, note: 'Sample: 16 mm rebar shortage at the supplier, columns on grid C waited five days.' },
+      { elapsed_pct: 41, spi: 0.81, events: { variations: 1, late_payments: 1 }, note: 'Sample: VO-2 (extra lift shaft) instructed without a time extension. IPC-4 now 35 days late.' },
+      { elapsed_pct: 45, spi: 0.80, cpi: 0.93, events: { rfis: 2 }, note: 'Sample: revised MEP drawings issued; two RFIs raised on sleeve positions.' },
+      { elapsed_pct: 49, spi: 0.79, cpi: 0.92, events: { weather_days: 2 }, note: 'Sample: dust storm, crane stood down two days. Night shift on blockwork started.' }];
+    for (const u of ups) await post(`/site/${tok}/update`, { reporter: 'Sample: site engineer', ...u });
     await loadProjects();
     await openProject(p.id, { tab: 'delay' });
     toast('Sample project ready. Everything in it is labelled sample data.', 'ok');
@@ -1494,6 +1560,8 @@ async function clearProgress() {
 
 // ================================================================== wiring
 function wire() {
+  $('#replay-play').addEventListener('click', toggleReplay);
+  $('#replay-step').addEventListener('input', e => { stopReplay(); showReplayStep(Number(e.target.value)); });
   $('#assess-form').addEventListener('submit', e => { e.preventDefault(); runForecast({ base: true }); });
   $$('#gate-switch button').forEach(b => b.addEventListener('click', () => { setGate(b.dataset.gate); if ($('#auto-run').checked && S.prediction) scheduleRun(100, { base: true }); }));
   $('#preset-select').addEventListener('change', e => {

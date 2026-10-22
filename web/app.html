@@ -96,6 +96,8 @@
     </header>
     <div id="delay-empty" class="empty-state" hidden></div>
     <div id="delay-body" hidden>
+      <div class="pack-bar"><p class="muted">Going to claim time? The evidence pack puts the delay, the slip per window, every site record and the early warning on one printable document.</p>
+        <a class="btn primary pack-link" target="_blank" rel="noopener" href="#">Open the evidence pack</a></div>
       <div class="dl-hero">
         <div class="dl-big" data-tilt>
           <span class="chip" id="dl-band" data-z="30"></span>
@@ -218,7 +220,7 @@
             <p class="muted">Scan with a phone on the same Wi-Fi or hotspot, or open:</p>
             <p><a id="live-url" target="_blank" rel="noopener"></a></p>
             <label class="inline small" id="live-base-wrap" hidden>Address for the phone <select id="live-base"></select></label>
-            <div class="live-actions"><button type="button" class="btn ghost sm" id="live-copy">Copy link</button><a class="btn ghost sm" id="live-open" target="_blank" rel="noopener">Open the phone page here</a></div>
+            <div class="live-actions"><a class="btn ghost sm pack-link" target="_blank" rel="noopener" href="#">Evidence pack</a><button type="button" class="btn ghost sm" id="live-copy">Copy link</button><a class="btn ghost sm" id="live-open" target="_blank" rel="noopener">Open the phone page here</a></div>
             <p class="fine">Phone cannot open it? It must be on the same Wi-Fi or hotspot as this computer. On Windows run <b>phone-access.bat</b> once to allow it through the firewall, or try another address above.</p>
           </div>
         </div>
@@ -236,6 +238,13 @@
       <div>
         <h3>Forecast trajectory</h3>
         <div id="trajectory" class="chart"></div>
+        <div class="replay" id="replay" hidden>
+          <button type="button" class="btn ghost sm" id="replay-play" aria-label="Replay the project update by update">Replay</button>
+          <input type="range" id="replay-step" min="0" max="0" value="0" step="1" aria-label="Site update shown">
+          <output id="replay-label"></output>
+        </div>
+        <div class="replay-card" id="replay-card" hidden></div>
+        <p class="callout-warn" id="early-warn" hidden></p>
         <p class="fine" id="traj-note">Each point is one site update, scored by the checkpoint model nearest to the time elapsed. The shaded band is the 80% range.</p>
         <div class="weather">
           <div class="row-head"><h3>Live site weather</h3><label class="inline">Location <select id="wx-loc"></select></label></div>
@@ -300,7 +309,7 @@
     <div class="sched-bar">
       <p id="sched-summary" class="muted">Reading the baseline schedule</p>
       <div class="twin-actions">
-        <label class="btn ghost file">Upload baseline schedule (P6 .xer or CSV)<input type="file" id="sched-file" accept=".xer,.csv" hidden></label>
+        <label class="btn ghost file">Upload baseline schedule (P6 .xer, MS Project .xml or CSV)<input type="file" id="sched-file" accept=".xer,.xml,.csv" hidden></label>
         <button type="button" class="btn ghost" id="reset-sched">Use the demo schedule</button>
       </div>
     </div>
@@ -315,6 +324,11 @@
     <div class="sim" id="sim" hidden>
       <div><h3>Finish-date risk</h3><p class="sim-big" id="sim-big"></p><p class="fine" id="sim-note"></p></div>
       <div id="dist" class="chart"></div>
+      <div class="drivers" id="drivers-wrap" hidden>
+        <div class="row-head"><h3>What drives the finish</h3><span class="fine" style="margin:0">Share of simulated futures in which each activity is on the critical path</span></div>
+        <ol class="crit" id="crit"></ol>
+        <p class="fine">Protect the top of this list first: a slip there moves the completion date in most futures. Activities the recovery plan accelerates are marked.</p>
+      </div>
     </div>
     <div class="rec-grid reveal">
       <div><h3>Cost of finishing earlier</h3><p class="fine">Each point is the cheapest way to finish on that day, solved as its own LP. The optimum balances crash cost against liquidated damages.</p><div id="curve" class="chart"></div></div>
@@ -424,7 +438,7 @@
       <p class="fine">The start date and duration turn schedule days into calendar dates and tell REVIVE when a site report is out of date.</p>
     </div>
     <div class="pm-panel" data-pp="schedule" hidden>
-      <div class="drop" id="pm-sched-drop"><input type="file" id="pm-sched" accept=".xer,.csv"><b>Drop the baseline schedule here</b><span>Primavera P6 .xer export or a REVIVE .csv (max 20 MB). Without one, the demo G+3 schedule is used so you can try everything first.</span><em id="pm-sched-name"></em></div>
+      <div class="drop" id="pm-sched-drop"><input type="file" id="pm-sched" accept=".xer,.xml,.csv"><b>Drop the baseline schedule here</b><span>Primavera P6 .xer export, MS Project .xml (File &gt; Save As &gt; XML) or a REVIVE .csv (max 20 MB). Without one, the demo G+3 schedule is used so you can try everything first.</span><em id="pm-sched-name"></em></div>
     </div>
     <div class="pm-panel" data-pp="bim" hidden>
       <div class="pm-choice" role="radiogroup" aria-label="BIM model">
