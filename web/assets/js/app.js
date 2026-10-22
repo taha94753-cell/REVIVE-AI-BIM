@@ -7,6 +7,7 @@ import { api, post, del, upload, rawFetch, ping, onConnChange, noteFailure, wait
 import { LiveChannel } from './live.js';
 import { enter, plate, roving, segs, to } from './tabs.js';
 import { tilt } from './tilt.js';
+import { trackGlass } from './glass.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1740,4 +1741,5 @@ async function boot() {
   }
 }
 
+trackGlass('.inspector, .legend, .timeline, .hud-modes, .menu, .conn-card, dialog.modal');
 boot();
