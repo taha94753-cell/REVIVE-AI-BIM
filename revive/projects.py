@@ -18,7 +18,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from .config import use_scope, workspace_dir
-from .db import add_columns, connect
+from .db import Remote, add_columns, connect
 from .schema import FIELD_BY_KEY, FIELDS, match_option
 
 SCHEMA = """
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, compa
   inputs TEXT, gate TEXT, schedule_file TEXT, ifc_mode TEXT NOT NULL DEFAULT 'demo', ifc_file TEXT,
   progress TEXT, created_by INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_projects_company ON projects(company_id);
+CREATE TABLE IF NOT EXISTS project_files (path TEXT PRIMARY KEY, data BLOB NOT NULL);
 """
 DETAIL_KEYS = ("project_type", "province", "contract_value", "contract_type", "client_sector", "planned_months",
                "floor_area_m2", "storeys", "length_km", "description")
@@ -183,6 +184,7 @@ def update(company_id: int, pid: int, **fields) -> dict | None:
         return p
     sets.append("updated_at = ?"); vals.append(_now())
     with _conn() as c:
+        _keep_files(c, [fields.get("schedule_file"), fields.get("ifc_file")])
         # nosec B608: `sets` holds only column names written in this function; every value is a bound parameter
         c.execute(f"UPDATE projects SET {', '.join(sets)} WHERE id = ? AND company_id = ?",  # nosec B608
                   (*vals, int(pid), int(company_id)))
@@ -202,7 +204,11 @@ def delete(company_id: int, pid: int) -> bool:
     store.delete_for_project(company_id, pid)
     with _conn() as c:
         c.execute("DELETE FROM projects WHERE id = ? AND company_id = ?", (int(pid), int(company_id)))
-    shutil.rmtree(workspace_dir(company_id, pid), ignore_errors=True)
+    d = workspace_dir(company_id, pid)
+    prefix = str(d / "x")[:-1]   # the folder plus separator, so p1 never matches p10
+    with _conn() as c:
+        c.execute("DELETE FROM project_files WHERE substr(path, 1, ?) = ?", (len(prefix), prefix))
+    shutil.rmtree(d, ignore_errors=True)
     return True
 
 
@@ -211,11 +217,36 @@ def files(p: dict | None) -> dict | None:
     """The scope dict config.use_scope() expects."""
     if not p:
         return None
+    _restore_files([p.get("schedule_file"), p.get("ifc_file")])
     return {"schedule": p.get("schedule_file"), "ifc_mode": p.get("ifc_mode") or "demo", "ifc": p.get("ifc_file")}
 
 
 def scope(p: dict | None):
     return use_scope(files(p))
+
+
+# On a hosted database (db.Remote) the container disk is temporary, so project files are kept in the database
+# too and written back to the same path when a fresh container needs them. Locally the disk is the store.
+def _keep_files(c, paths) -> None:
+    if not isinstance(c, Remote):
+        return
+    for f in filter(None, paths):
+        if Path(f).is_file():
+            c.execute("INSERT OR REPLACE INTO project_files (path, data) VALUES (?, ?)", (str(f), Path(f).read_bytes()))
+
+
+def _restore_files(paths) -> None:
+    missing = [str(f) for f in filter(None, paths) if not Path(f).exists()]
+    if not missing:
+        return
+    c = _conn()
+    if not isinstance(c, Remote):
+        return
+    for f in missing:
+        row = c.execute("SELECT data FROM project_files WHERE path = ?", (f,)).fetchone()
+        if row:
+            Path(f).parent.mkdir(parents=True, exist_ok=True)
+            Path(f).write_bytes(row[0])
 
 
 def store_upload(company_id: int, pid: int, kind: str, src: Path, original_name: str) -> Path:
