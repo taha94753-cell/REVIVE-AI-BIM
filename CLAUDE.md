@@ -27,6 +27,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 - `fx.js`: tweens, count-ups, reveal, `[data-tip]` tooltips, toasts
 - `charts.js`: hand-drawn SVG charts (entry animations are CSS classes; `animate(false)` while a slider is dragged)
 - `twin.js`: Three.js viewer
+- `iso.js`: the landing page's isometric CSS-3D site models ("For companies"); each `[data-iso]` stage assembles when it scrolls into view and tilts under the pointer via `tilt.js`
 
 ## Ground rules
 1. **schema.py is the single source of truth** for model inputs. When you add a field, add it there (key, survey code, stage, kind, options). The form, encoder and API all follow automatically. Then retrain.
@@ -66,7 +67,7 @@ The look is "site grade": structural-steel graphite with construction-yellow act
 
 Keep charts as SVG in `charts.js`.
 
-The vendored `ui-ux-pro-max` (`.claude/skills/ui-ux-pro-max/`, MIT, nextlevelbuilder/ui-ux-pro-max-skill) and `design-taste-frontend` (`.claude/skills/design-taste-frontend/`, MIT, Leonxlnx/taste-skill; its scratch files go to the git-ignored `.taste-skill/`) skills are advisory: use it for UX, accessibility and layout checks, but the design language above and ground rule 11 (no CDN links, vendored fonts) win over any palette, font, image or link they suggest.
+The vendored `ui-ux-pro-max` (`.claude/skills/ui-ux-pro-max/`, MIT, nextlevelbuilder/ui-ux-pro-max-skill), `impeccable` (`.claude/skills/impeccable/`, Apache 2.0, pbakaus/impeccable; its `detect` verb is the AI-slop detector) and `design-taste-frontend` (`.claude/skills/design-taste-frontend/`, MIT, Leonxlnx/taste-skill; its scratch files go to the git-ignored `.taste-skill/`) skills are advisory: use them for UX, accessibility and layout checks, but the design language above and ground rule 11 (no CDN links, vendored fonts) win over any palette, font, image or link they suggest. 21st.dev components are React/Tailwind: port the idea to vanilla JS/CSS (as `tilt.js` does), never import them.
 
 ## Useful next tasks
 - Collect more completed projects, run `evaluate`, then merge and retrain.

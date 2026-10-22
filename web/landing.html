@@ -9,11 +9,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/landing.css?v=6.2.0">
+  <link rel="stylesheet" href="/assets/css/landing.css?v=6.3.0">
   <script src="/assets/js/intro.js?v=6.0.0"></script>
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
-  <script type="module" src="/assets/js/landing.js?v=6.2.0"></script>
+  <script type="module" src="/assets/js/landing.js?v=6.3.0"></script>
 </head>
 <body>
 <div id="intro" aria-hidden="true">
@@ -190,18 +190,18 @@
         <p class="muted reveal-up">A workspace holds a company's projects, people and site links. Nothing in it is visible to anyone else, and the test suite checks it.</p>
       </div>
       <ul class="feat">
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          <div><h3>Company workspaces</h3><p>Each company signs up once and runs as many projects as it has, each with its own schedule, model and history.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <div><h3>Isolated by design</h3><p>Every record carries its company and every read filters on it. Another company's ids simply answer "not found".</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 20a6.5 6.5 0 0 0-2.5-5.2"/></svg>
-          <div><h3>Roles</h3><p>Admins add people and delete projects; members analyse. Passwords are scrypt-hashed and sessions expire.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2"/></svg>
-          <div><h3>Revocable site links</h3><p>Phones get an unguessable link, never an account. Reissue it and the old link stops working.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-          <div><h3>Hardened</h3><p>Content Security Policy, CSRF checks, typed and size-limited uploads, login throttling and bounded inputs.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
-          <div><h3>Runs on your network</h3><p>Everything is vendored, so it works offline in a site office or a defence room. Live weather is optional and fails soft.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="workspaces" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Company workspaces</h3><p>Each company signs up once and runs as many projects as it has, each with its own schedule, model and history.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="isolated" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Isolated by design</h3><p>Every record carries its company and every read filters on it. Another company's ids simply answer "not found".</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="roles" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Roles</h3><p>Admins add people and delete projects; members analyse. Passwords are scrypt-hashed and sessions expire.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="links" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Revocable site links</h3><p>Phones get an unguessable link, never an account. Reissue it and the old link stops working.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="hardened" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Hardened</h3><p>Content Security Policy, CSRF checks, typed and size-limited uploads, login throttling and bounded inputs.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="offline" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Runs on your network</h3><p>Everything is vendored, so it works offline in a site office or a defence room. Live weather is optional and fails soft.</p></div></li>
       </ul>
     </div>
   </section>

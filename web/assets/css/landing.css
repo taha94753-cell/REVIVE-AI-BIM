@@ -246,12 +246,54 @@ p{margin:0 0 14px}
 .companies .wrap.two{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
 .companies-head{position:sticky;top:120px}
 .companies-head p:not(.kicker){max-width:42ch;font-size:18px}
-.feat{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.feat li{display:grid;align-content:start;gap:14px;padding:24px;border-radius:var(--r);background:var(--card);border:1px solid var(--rule);transition:border-color .25s,transform .3s var(--ease)}
-.feat li:hover{border-color:var(--ink);transform:translateY(-2px)}
-.fi{width:44px;height:44px;padding:10px;border-radius:var(--r-sm);background:var(--signal);fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.feat{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:40px 28px}
+.feat li{display:grid;align-content:start;gap:18px;transform-style:preserve-3d;transition:transform .5s var(--ease)}
+.feat li>div{transform-style:preserve-3d;transition:transform .5s var(--ease)}
 .feat h3{font-size:24px;margin:0 0 6px}
-.feat p{margin:0;color:var(--muted);font-size:15.5px}
+.feat p{margin:0;color:var(--muted);font-size:15.5px;max-width:40ch}
+
+/* isometric site models (iso.js): a 180px plinth turned to the isometric view; every block has a top, a +x and a +y
+   face, lit from the upper left. Blocks drop in floor by floor once the model is in view, then loop quietly. */
+.iso-stage{position:relative;height:232px;border-radius:var(--r);background:var(--paper-2);border:1px solid var(--rule);transform-style:preserve-3d;transition:transform .5s var(--ease),border-color .3s}
+.feat li:hover .iso-stage{border-color:var(--rule-2)}
+.iso-world{position:absolute;left:50%;top:50%;width:180px;height:180px;margin:-90px 0 0 -90px;transform-style:preserve-3d;transform:translateY(30px) translateZ(110px) rotateX(60deg) rotateZ(45deg) scale(var(--iso-s,1))}
+.bx{position:absolute;left:0;top:0;width:var(--w);height:var(--d);transform:translate3d(var(--x),var(--y),var(--z));transform-style:preserve-3d}
+.bm{position:absolute;inset:0;display:block;transform-style:preserve-3d;transform:translateZ(70px);transition:transform .8s var(--ease) calc(var(--i) * 60ms)}
+.bm s{position:absolute;left:0;top:0;display:block;transform-origin:0 0;border:1px solid rgba(17,18,20,.16);opacity:0;transition:opacity .25s linear calc(var(--i) * 60ms)}
+.bm .ft{width:var(--w);height:var(--d);transform:translateZ(var(--h))}
+.bm .fx,.bm .fbx{width:var(--h);height:var(--d);transform:translateX(var(--w)) translateZ(var(--h)) rotateY(90deg)}
+.bm .fy,.bm .fby{width:var(--w);height:var(--h);transform:translateY(var(--d)) translateZ(var(--h)) rotateX(-90deg)}
+.bm .fbx{transform:translateZ(var(--h)) rotateY(90deg)}
+.bm .fby{transform:translateZ(var(--h)) rotateX(-90deg)}
+.built .bm{transform:none}
+.built .bm s{opacity:1}
+.plinth .bm{transform:none;transition:none}.plinth s{opacity:1;transition:none}
+.plinth .ft{background:#FBFAF7}.plinth .fy{background:#D6D0C5}.plinth .fx{background:#C3BCAF}
+.con .ft{background:#ECE8E0}.con .fy{background:#D2CBBF}.con .fx{background:#B9B1A4}
+.ink .ft{background:#45484D}.ink .fy{background:#2A2C30}.ink .fx{background:#16171A}
+.ink s{border-color:rgba(242,244,247,.10)}
+.sig .ft{background:#FFD24D}.sig .fy{background:#FFC21A}.sig .fx{background:#D9A200}
+.pad .ft{background:#D9D3C8}.pad .fy,.pad .fx{background:#B4AC9F}
+.glass s{background:rgba(127,178,240,.10);border-color:rgba(31,95,173,.55)}
+.scan .ft{background:rgba(255,194,26,.30);border-color:#D9A200}.scan .fx,.scan .fy{display:none}
+.rk .fy{background:#2A2C30}
+.rk .fy::after{content:"";position:absolute;left:10%;right:10%;top:45%;height:2px;background:var(--signal);opacity:.25}
+
+/* idle loops, started once the drop-in has settled */
+.built .lp-lift{animation:iso-lift 4.2s var(--ease) calc(var(--i) * 60ms + 1.6s) infinite}
+.built .lp-lift.d2{animation-delay:calc(var(--i) * 60ms + 3s)}
+.built .lp-lift.d3{animation-delay:calc(var(--i) * 60ms + 4.4s)}
+@keyframes iso-lift{0%,55%,100%{transform:none}70%{transform:translateZ(16px)}85%{transform:translateZ(-1px)}}
+.built .lp-probe{animation:iso-probe 3.6s var(--ease) 1.6s infinite}
+@keyframes iso-probe{0%,20%,100%{transform:none}45%{transform:translateX(-17px)}52%{transform:translateX(-12px)}60%{transform:translateX(-17px)}80%{transform:none}}
+.built .lp-token{animation:iso-token 3.2s cubic-bezier(.45,0,.2,1) 1.6s infinite}
+@keyframes iso-token{0%{transform:none}50%{transform:translate3d(45px,-37px,58px)}88%{transform:translate3d(90px,-74px,44px)}100%{transform:translate3d(90px,-74px,44px) scale3d(.01,.01,.01)}}
+.built .lp-scan{animation:iso-scan 5s ease-in-out 1.6s infinite}
+@keyframes iso-scan{0%,100%{transform:none}50%{transform:translateZ(70px)}}
+.built .rk .fy::after{animation:iso-led 2.4s steps(1) 1.6s infinite}
+.built .rk.d2 .fy::after{animation-delay:2.4s}.built .rk.d3 .fy::after{animation-delay:3.2s}
+@keyframes iso-led{0%,30%{opacity:1}31%,100%{opacity:.25}}
+.still .bm,.still .bm s{transition:none}
 
 /* evidence: the model card as a white schedule sheet */
 .evidence{background:var(--paper-2)}
@@ -282,7 +324,7 @@ p{margin:0 0 14px}
 .auth input{font:inherit;font-size:16px;font-weight:400;color:var(--ink);background:var(--paper);border:1.5px solid var(--rule-2);border-radius:var(--r-sm);padding:12px;min-height:48px;transition:border-color .2s,box-shadow .2s}
 .auth input:hover{border-color:var(--ink-2)}
 .auth input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px var(--signal)}
-.auth input::placeholder{color:#76797F}
+.auth input::placeholder{color:#5A5D63}
 .pw{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:-6px}
 .pw i{height:4px;border-radius:2px;background:var(--paper-2);transition:background .3s}
 .pw[data-s="1"] i:nth-child(-n+1){background:var(--crit)}
@@ -349,6 +391,7 @@ p{margin:0 0 14px}
   .stats{grid-template-columns:1fr}
   .stats>div{border-right:0;margin-right:0;border-bottom:1px solid var(--rule)}
   .feat{grid-template-columns:1fr}
+  .iso-stage{height:210px}.iso-world{--iso-s:.9}
   .auth{padding:6px 18px 22px}.auth-tabs{margin:0 -18px 20px}
   .ev-table{padding:4px 10px 12px}.ev-table td{font-size:22px;padding:12px 6px}.ev-table th{padding:10px 6px}
 }
