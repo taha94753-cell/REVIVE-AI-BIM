@@ -9,12 +9,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/landing.css?v=6.3.0">
+  <link rel="stylesheet" href="/assets/css/landing.css?v=6.4.0">
   <script src="/assets/js/intro.js?v=6.0.0"></script>
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
-  <script type="module" src="/assets/js/landing.js?v=6.3.0"></script>
-  <script type="module" src="/assets/js/storeys.js?v=6.3.0"></script>
+  <script type="module" src="/assets/js/landing.js?v=6.4.0"></script>
 </head>
 <body>
 <div id="intro" aria-hidden="true">
@@ -29,7 +28,7 @@
 <header class="nav" id="nav">
   <a class="mark" href="/" aria-label="REVIVE"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></a>
   <nav aria-label="Page">
-    <a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#model">On the building</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a>
+    <a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a>
   </nav>
   <span class="grow"></span>
   <a class="btn text" href="#start" data-auth="signin" id="nav-signin">Sign in</a>
@@ -184,63 +183,25 @@
     </div>
   </section>
 
-  <section class="band model" id="model">
-    <div class="wrap">
-      <div class="sec-head"><p class="kicker"><span>04</span>On the building</p><h2 class="reveal-up">Pull the building apart and read each storey.</h2></div>
-      <div class="model-grid">
-        <div class="model-side">
-          <p class="model-lede reveal-up">With an IFC model linked, every storey takes the delay of the activities that build it. Choose a plan, then pick a storey to slide it out of the block.</p>
-          <div class="plans" role="group" aria-label="Plan shown on the model">
-            <b class="plan-ind" aria-hidden="true"></b>
-            <button type="button" data-plan="base" aria-pressed="false">Baseline</button>
-            <button type="button" data-plan="fore" aria-pressed="true">Forecast</button>
-            <button type="button" data-plan="rec" aria-pressed="false">Recovered</button>
-          </div>
-          <ol class="storeys" id="storeys" aria-label="Storeys, roof first; select one to slide it out">
-            <li><button type="button" data-s="5" aria-pressed="false"><b>Roof</b><span>Roof slab, parapet and plant base</span><em class="d crit">+18 d</em></button></li>
-            <li><button type="button" data-s="4" aria-pressed="false"><b>Level 4</b><span>Level 4 frame and services first fix</span><em class="d crit">+14 d</em></button></li>
-            <li><button type="button" data-s="3" aria-pressed="false"><b>Level 3</b><span>Level 3 frame, rebar delivery held</span><em class="d risk">+9 d</em></button></li>
-            <li><button type="button" data-s="2" aria-pressed="false"><b>Level 2</b><span>Level 2 frame, interim payment paid late</span><em class="d watch">+5 d</em></button></li>
-            <li><button type="button" data-s="1" aria-pressed="false"><b>Level 1</b><span>Level 1 columns, beams and slab</span><em class="d go">+2 d</em></button></li>
-            <li><button type="button" data-s="0" aria-pressed="false"><b>Ground</b><span>Raft, ground columns and slab</span><em class="d go">0 d</em></button></li>
-          </ol>
-          <p class="fine">Illustrative storey data on the sample block. In the app the bands come from your own schedule, forecast and recovery plan.</p>
-        </div>
-        <figure class="model-frame">
-          <canvas id="model3d" aria-hidden="true"></canvas>
-          <div class="m-tags" aria-hidden="true"></div>
-          <div class="m-card" aria-hidden="true"><b class="m-arrow"></b><p class="m-ct" data-c="t"></p><p class="m-ca" data-c="a"></p><p class="m-cd" data-c="d"></p><p class="m-cx" data-c="x"></p></div>
-          <aside class="m-ro" id="ro" data-glass aria-live="polite" aria-label="Selected storey">
-            <p class="m-rt"><span data-ro="t">Whole block, forecast</span><em>illustrative</em></p>
-            <p class="m-ra" data-ro="a">Late storeys stack up: the roof finishes last.</p>
-            <dl><div><dt>Finish</dt><dd class="crit">+18 d</dd></div><div><dt>Bought back</dt><dd>none</dd></div></dl>
-          </aside>
-          <p class="m-hint" data-glass="dark" aria-hidden="true"><span>Drag to turn. Scroll to pull the storeys apart.</span></p>
-          <figcaption class="sr-only">A six-storey concrete frame, exploded storey by storey, each storey tinted by its delay band under the chosen plan.</figcaption>
-        </figure>
-      </div>
-    </div>
-  </section>
-
   <section class="band companies" id="companies">
     <div class="wrap two">
       <div class="companies-head">
-        <p class="kicker"><span>05</span>For companies</p><h2 class="reveal-up">Each company sees only its own projects.</h2>
+        <p class="kicker"><span>04</span>For companies</p><h2 class="reveal-up">Each company sees only its own projects.</h2>
         <p class="muted reveal-up">A workspace holds a company's projects, people and site links. Nothing in it is visible to anyone else, and the test suite checks it.</p>
       </div>
       <ul class="feat">
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          <div><h3>Company workspaces</h3><p>Each company signs up once and runs as many projects as it has, each with its own schedule, model and history.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <div><h3>Isolated by design</h3><p>Every record carries its company and every read filters on it. Another company's ids simply answer "not found".</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 20a6.5 6.5 0 0 0-2.5-5.2"/></svg>
-          <div><h3>Roles</h3><p>Admins add people and delete projects; members analyse. Passwords are scrypt-hashed and sessions expire.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2"/></svg>
-          <div><h3>Revocable site links</h3><p>Phones get an unguessable link, never an account. Reissue it and the old link stops working.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-          <div><h3>Hardened</h3><p>Content Security Policy, CSRF checks, typed and size-limited uploads, login throttling and bounded inputs.</p></div></li>
-        <li class="reveal-up"><svg class="fi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
-          <div><h3>Runs on your network</h3><p>Everything is vendored, so it works offline in a site office or a defence room. Live weather is optional and fails soft.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="workspaces" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Company workspaces</h3><p>Each company signs up once and runs as many projects as it has, each with its own schedule, model and history.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="isolated" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Isolated by design</h3><p>Every record carries its company and every read filters on it. Another company's ids simply answer "not found".</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="roles" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Roles</h3><p>Admins add people and delete projects; members analyse. Passwords are scrypt-hashed and sessions expire.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="links" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Revocable site links</h3><p>Phones get an unguessable link, never an account. Reissue it and the old link stops working.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="hardened" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Hardened</h3><p>Content Security Policy, CSRF checks, typed and size-limited uploads, login throttling and bounded inputs.</p></div></li>
+        <li class="reveal-up" data-tilt><div class="iso-stage" data-iso="offline" data-z="36" aria-hidden="true"></div>
+          <div data-z="18"><h3>Runs on your network</h3><p>Everything is vendored, so it works offline in a site office or a defence room. Live weather is optional and fails soft.</p></div></li>
       </ul>
     </div>
   </section>
@@ -248,7 +209,7 @@
   <section class="band evidence" id="evidence">
     <div class="wrap two">
       <div>
-        <p class="kicker"><span>06</span>Evidence</p><h2 class="reveal-up">Numbers you can defend.</h2>
+        <p class="kicker"><span>05</span>Evidence</p><h2 class="reveal-up">Numbers you can defend.</h2>
         <p class="muted reveal-up">Every figure is cross-validated: each project was scored by a model that never saw it, and the hardest test leaves a whole company out. The Evidence sheet in the app adds the model comparison, robustness checks and the limits.</p>
       </div>
       <div class="ev-table reveal-up">
@@ -261,7 +222,7 @@
   <section class="band start" id="start">
     <div class="wrap two">
       <div class="start-copy">
-        <p class="kicker"><span>07</span>Start</p><h2>Open your company's workspace.</h2>
+        <p class="kicker"><span>06</span>Start</p><h2>Open your company's workspace.</h2>
         <p class="muted">Create a workspace in under a minute, then add your first project or load a sample one. Site staff never need an account: they use the link you give them.</p>
         <p class="fine" id="reg-closed" hidden>New sign-ups are closed on this server. Ask its administrator for an account.</p>
       </div>
@@ -296,7 +257,7 @@
   <div class="wrap">
     <div class="foot-top">
       <span class="mark"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></span>
-      <nav aria-label="Footer"><a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#model">On the building</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a><a href="#start">Sign in</a></nav>
+      <nav aria-label="Footer"><a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a><a href="#start">Sign in</a></nav>
     </div>
     <p class="foot-word" aria-hidden="true">REVIVE</p>
     <div class="foot-bot">

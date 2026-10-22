@@ -5,8 +5,11 @@
 //  * real figures come from /api/public/overview (cross-validated model card), never hard-coded
 //  * motion: Motion (vendored, the Framer Motion engine) for the intro, tabs, scroll and reveals
 //  * sign in / create workspace talk to /api/auth/*
+//  * "For companies": six isometric site models (iso.js) that tilt in depth under the pointer (tilt.js)
 import * as THREE from 'three';
 import { REDUCED, enter, plate, roving } from './tabs.js';
+import { isoScenes } from './iso.js';
+import { tilt } from './tilt.js';
 import { glassAll } from './glass.js';
 
 const M = globalThis.Motion;
@@ -564,3 +567,5 @@ plate($('.xt-ind'), $('#xt-now'), { instant: true });
 wireTabs();
 overview();
 scrollMotion();
+isoScenes();
+tilt();

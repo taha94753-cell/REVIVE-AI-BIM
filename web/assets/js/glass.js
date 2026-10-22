@@ -1,6 +1,5 @@
-// Glass panes for anything that floats over a 3D scene: the hero readout, the storey explorer's readout, tags and
-// plan switch. A vanilla port of 21st.dev's "glass-card" (21st.dev/educalvolpz/glass-card): a frosted body inset from a
-// refractive rim that bends what sits behind it, a chromatic edge, a pointer-tracked specular highlight with a sweep
+// Glass panes for anything that floats over a 3D scene: the hero readout, its tag and caption. A vanilla port of
+// 21st.dev's "glass-card" (21st.dev/educalvolpz/glass-card): a frosted body inset from a refractive rim that bends what sits behind it, a chromatic edge, a pointer-tracked specular highlight with a sweep
 // along the top edge, and a small lift on hover.
 //   glass(el)            give one element the pane (it keeps its own children, padding and colours)
 //   glassAll(root)       every [data-glass] under root; data-glass="dark" for a pane on the ink side
