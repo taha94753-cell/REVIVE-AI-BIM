@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { REDUCED, enter, plate, roving } from './tabs.js';
 import { isoScenes } from './iso.js';
 import { tilt } from './tilt.js';
+import { glassAll } from './glass.js';
 
 const M = globalThis.Motion;
 const OUT = [0.16, 1, 0.3, 1];
@@ -558,6 +559,7 @@ async function wireAuth() {
 }
 
 // =================================================================== boot
+glassAll(document.querySelector('.hero'));
 siteModel();
 isoBuilding();
 wireAuth();
