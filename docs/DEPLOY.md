@@ -11,7 +11,25 @@ docker compose up --build        # http://localhost:8000
 ```
 `data/` and `bim/` are mounted as volumes, so saved assessments and uploaded models survive restarts. The Dockerfile builds on Python 3.12 from `requirements-lock.txt` and runs as uid 1000.
 
-## Render (free, recommended for a public link)
+## GitHub Codespaces (free, no card, recommended)
+`.devcontainer/` makes the repository open as a ready-to-run codespace.
+1. Repository page, green **Code** button, **Codespaces** tab, **Create codespace on main**
+   (or the *Open in GitHub Codespaces* button in the README).
+2. The first start installs everything (about 5 minutes); `.devcontainer/start.sh` then starts REVIVE on
+   port 8000, makes the port public and opens it in a new tab. The **Ports** tab always shows the link,
+   `https://<codespace-name>-8000.app.github.dev`; the Live site QR code points there too.
+3. Share that link. It works while the codespace runs: it stops after 30 minutes idle (raise it to 4 hours
+   at github.com/settings/codespaces) and starts again from **Code**, **Codespaces** with the same link.
+
+Free personal accounts get 60 hours a month on a 2-core machine. Stop the codespace after a demo
+(github.com/codespaces). Saved workspaces stay in the codespace until it is deleted.
+
+## From your own laptop (free, no account)
+Run `run.bat`, then `share.bat` (macOS / Linux: `./run.sh`, then `./share.sh`). It prints a temporary
+`https://….trycloudflare.com` link to the app on your laptop (a Cloudflare quick tunnel). The link changes
+every time and works only while both windows stay open.
+
+## Render (free plan, but Render may ask for a card)
 `render.yaml` is a Render Blueprint for a free Docker web service.
 1. render.com, sign up with GitHub.
 2. *New*, *Blueprint*, connect `taha94753-cell/REVIVE-AI-BIM`, branch `main`, *Apply*.

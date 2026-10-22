@@ -1,0 +1,16 @@
+{
+  // GitHub Codespaces: free for personal accounts (60 hours a month on 2 cores), no card.
+  // "Code" > "Codespaces" > "Create codespace on main" installs REVIVE and starts it on port 8000.
+  "name": "REVIVE",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "postCreateCommand": "pip install --no-cache-dir -r requirements-lock.txt && python -m revive setup",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "REVIVE app", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": [".devcontainer/README.md"] }
+  }
+}

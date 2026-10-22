@@ -128,8 +128,12 @@ class CsrfGuard:
             origin = _header(scope, b"origin")
             host = _header(scope, b"host")
             if origin and origin != "null" and host:
-                o = re.sub(r"^https?://", "", origin.rstrip("/"))
-                if o.lower() != host.lower():
+                o = re.sub(r"^https?://", "", origin.rstrip("/")).lower()
+                # Behind a forwarding proxy (GitHub Codespaces, a Cloudflare tunnel) Host is the local address and
+                # the public one arrives as X-Forwarded-Host. Accepting it is safe: a page on another site cannot
+                # send it (or the REVIVE header above) without a CORS preflight, which this app never grants.
+                fwd = (_header(scope, b"x-forwarded-host") or "").split(",")[0].strip().lower()
+                if o not in {host.lower(), fwd}:
                     return await _deny(send, 403, "Request blocked: it came from another website (CSRF protection).")
         return await self.app(scope, receive, send)
 

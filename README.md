@@ -1,5 +1,9 @@
 # REVIVE — AI-BIM delay analysis, early warning and recovery (v2.0)
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/taha94753-cell/REVIVE-AI-BIM?quickstart=1)
+
+**Try it online, free, no card:** click the button above (GitHub Codespaces). REVIVE installs itself and opens in a new tab after about 5 minutes; see `.devcontainer/README.md`. To share the app from your own laptop instead, run `run.bat`, then `share.bat`.
+
 REVIVE measures how late a construction project is **today** (current delay, from the baseline schedule and site data), forecasts how late it will finish when it is 25% or 50% of the way through its contract time, explains each forecast as exact per-answer contributions with an owner and an action for each driver, and uses a linear programme to find the cheapest recovery.
 
 **New in 2.0**

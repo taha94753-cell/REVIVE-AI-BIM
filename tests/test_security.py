@@ -195,3 +195,13 @@ def test_embedded_app_sends_a_partitioned_cross_site_cookie(monkeypatch):
     assert "partitioned" in out and "max-age=0" in out
     # the header middleware drops X-Frame-Options only when it is told the app may be framed
     assert SecurityHeaders(None, "x", framable=True).framable and not SecurityHeaders(None, "x").framable
+
+
+def test_requests_through_a_forwarding_proxy_pass_and_others_still_fail(client):
+    pub = "https://fluffy-space-8000.app.github.dev"
+    via_proxy = client.post("/api/projects", json={"name": "x"},
+                            headers={"Origin": pub, "X-Forwarded-Host": "fluffy-space-8000.app.github.dev"})
+    assert via_proxy.status_code == 200
+    spoof = client.post("/api/projects", json={"name": "x"},
+                        headers={"Origin": "https://evil.example", "X-Forwarded-Host": "fluffy-space-8000.app.github.dev"})
+    assert spoof.status_code == 403
