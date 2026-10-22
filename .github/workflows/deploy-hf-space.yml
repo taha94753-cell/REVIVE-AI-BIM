@@ -1,4 +1,4 @@
-# Deploys REVIVE to a Hugging Face Space (Docker SDK) on every push to main, or by hand from the Actions tab.
+# Deploys REVIVE to a Hugging Face Space (Docker SDK), by hand from the Actions tab.
 #
 # One-time setup (repository Settings > Secrets and variables > Actions):
 #   secret   HF_TOKEN   a Hugging Face access token with WRITE permission (huggingface.co/settings/tokens)
@@ -10,9 +10,9 @@
 # carry, so the job uploads a staged copy with the header added. data/raw/ is never uploaded.
 name: Deploy to Hugging Face Space
 
+# Manual only: Hugging Face now requires a PRO subscription for Docker Spaces. Run it from the Actions tab
+# once the account has PRO (render.yaml is the free alternative).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

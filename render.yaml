@@ -1,0 +1,15 @@
+# Render Blueprint: deploys REVIVE as a free Docker web service (render.com, New > Blueprint, pick this repo).
+# Measured: the app peaks at about 200 MB, inside the free plan's 512 MB. Free services sleep after
+# 15 minutes without visitors; the first visit wakes them in about a minute. The disk is not kept between
+# deploys or restarts, so saved workspaces reset: use it to show the app, not to keep project data.
+services:
+  - type: web
+    name: revive
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true            # redeploys on every push to main
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

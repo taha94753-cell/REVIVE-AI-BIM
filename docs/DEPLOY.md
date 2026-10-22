@@ -11,9 +11,22 @@ docker compose up --build        # http://localhost:8000
 ```
 `data/` and `bim/` are mounted as volumes, so saved assessments and uploaded models survive restarts. The Dockerfile builds on Python 3.12 from `requirements-lock.txt` and runs as uid 1000.
 
-## Hugging Face Spaces (free link, deployed by GitHub Actions)
-`.github/workflows/deploy-hf-space.yml` creates the Space and uploads the app on every push to `main`
-(or from the Actions tab, *Deploy to Hugging Face Space*, *Run workflow*). It runs
+## Render (free, recommended for a public link)
+`render.yaml` is a Render Blueprint for a free Docker web service.
+1. render.com, sign up with GitHub.
+2. *New*, *Blueprint*, connect `taha94753-cell/REVIVE-AI-BIM`, branch `main`, *Apply*.
+3. The first build takes about 10 minutes. The app is then at `https://revive-XXXX.onrender.com`
+   (Render shows the exact address). It redeploys on every push to `main`.
+
+Measured in the Docker image: about 200 MB of memory with sign-in, forecast, recovery, BIM and benchmark
+all used, inside the free plan's 512 MB. Free services sleep after 15 minutes without visitors (the first
+visit takes about a minute) and the disk resets on restart, so saved workspaces do not last. The link is
+public and anyone can create a workspace; the anonymised survey dataset is visible in the Benchmark sheet,
+so confirm the contractors agree before sharing it.
+
+## Hugging Face Spaces (needs a Hugging Face PRO subscription for Docker Spaces)
+`.github/workflows/deploy-hf-space.yml` creates the Space and uploads the app when run from the Actions
+tab (*Deploy to Hugging Face Space*, *Run workflow*). It runs
 `scripts/deploy_hf_space.py`, which adds the Space README header and never uploads `data/raw/`.
 
 One-time setup:
@@ -35,5 +48,5 @@ keeping project data.
 The image was built and run locally as uid 1000 (the user Spaces run as): health check, sign-up and a
 forecast all work.
 
-## Render / Railway
+## Railway and others
 Use the Dockerfile. Set `PORT` if the platform assigns one; the start command already reads it. Free tiers sleep, so wake the app a few minutes before a demo.
