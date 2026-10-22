@@ -48,7 +48,7 @@ from .presets import PRESETS
 from .recovery import element_properties, run_recovery
 from .scheduling import DAYS_PER_MONTH, cpm, load_schedule
 from .schema import LEAKAGE_EXCLUDED, public_schema
-from .security import (LIMITER, BodyLimit, CsrfGuard, SecurityHeaders, build_csp, inline_script_hashes, limit,
+from .security import (LIMITER, BodyLimit, CsrfGuard, SecurityHeaders, build_csp, embed_origins, inline_script_hashes, limit,
                        sec_cfg, upload_limit_bytes)
 
 WEB = ROOT / "web"
@@ -134,7 +134,8 @@ app.add_middleware(FreshFrontend)
 app.add_middleware(StreamSafeGZip, minimum_size=1000)
 app.add_middleware(BodyLimit)
 app.add_middleware(CsrfGuard)
-app.add_middleware(SecurityHeaders, csp=build_csp(inline_script_hashes(list(PAGES.values()))))
+EMBED = embed_origins()
+app.add_middleware(SecurityHeaders, csp=build_csp(inline_script_hashes(list(PAGES.values())), EMBED), framable=bool(EMBED))
 
 
 # ------------------------------------------------------------------ identity
@@ -192,7 +193,20 @@ def throttle(key: str, n: int, window_s: float, msg: str = "Too many requests. W
         raise HTTPException(429, msg)
 
 
+def _embedded_cookie(resp: Response, value: str, max_age: int) -> None:
+    """Session cookie for a framed app, written by hand: Starlette only emits Partitioned on Python 3.14+.
+    The token is url-safe base64, so it needs no quoting."""
+    expires = "; expires=Thu, 01 Jan 1970 00:00:00 GMT" if max_age == 0 else ""
+    resp.headers.append("set-cookie", f"{COOKIE}={value}; Max-Age={max_age}{expires}; Path=/; HttpOnly; Secure; "
+                                      "SameSite=None; Partitioned")
+
+
 def _set_cookie(request: Request, resp: Response, token: str) -> None:
+    if EMBED:
+        # Shown inside another site's page (e.g. a Hugging Face Space): the browser only sends the session cookie
+        # from inside that frame if it is SameSite=None and Secure; Partitioned (CHIPS) keeps it per embedding site.
+        _embedded_cookie(resp, token, int(auth.session_days() * 86400))
+        return
     mode = str(sec_cfg().get("cookie_secure", "auto")).lower()
     secure = request.url.scheme == "https" if mode == "auto" else mode in ("true", "1", "yes")
     resp.set_cookie(COOKIE, token, max_age=int(auth.session_days() * 86400), httponly=True, secure=secure,
@@ -385,7 +399,10 @@ def login(req: LoginReq, request: Request):
 def logout(request: Request):
     auth.end_session(request.cookies.get(COOKIE))
     resp = JSONResponse({"signed_out": True})
-    resp.delete_cookie(COOKIE, path="/")
+    if EMBED:   # a partitioned cookie is only removed by a cookie with the same attributes
+        _embedded_cookie(resp, '""', 0)
+    else:
+        resp.delete_cookie(COOKIE, path="/")
     return resp
 
 

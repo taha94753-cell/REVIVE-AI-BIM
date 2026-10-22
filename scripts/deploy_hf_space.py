@@ -2,7 +2,8 @@
 
 Environment: HF_TOKEN (write access), HF_SPACE ("owner/name"), HF_PRIVATE ("true" / "false").
 The Space gets the same files as the repository except local and private data, plus a README with the
-YAML header Hugging Face needs (sdk: docker, app_port: 8000).
+YAML header Hugging Face needs (sdk: docker, app_port: 8000), and its Dockerfile allows the Space page
+(https://huggingface.co) to show the app in a frame.
 """
 from __future__ import annotations
 
@@ -31,9 +32,9 @@ pinned: false
 short_description: AI-BIM early warning and recovery for construction delays
 ---
 
-> **Open the app in its own tab:** https://{subdomain}.hf.space
-> (it refuses to load inside the frame on this page, on purpose: its security headers block framing).
-> Saved workspaces live in the container and reset when the Space restarts.
+> The app runs right here on this page. Full-screen link: https://{subdomain}.hf.space
+> Click **Create workspace** to start, then **Load a sample project**. Saved workspaces live in the
+> container and reset when the Space restarts, so this is a demo, not a place to keep project data.
 
 """
 
@@ -55,6 +56,12 @@ def stage(dest: Path, subdomain: str) -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, out)
         n += 1
+    # this Space's page shows the app in a frame from huggingface.co: allow exactly that origin
+    # (everywhere else, e.g. run.bat and docker compose, framing stays refused)
+    docker = dest / "Dockerfile"
+    docker.write_text(docker.read_text(encoding="utf-8").replace(
+        "ENV PYTHONDONTWRITEBYTECODE=1", "ENV REVIVE_EMBED_ORIGINS=https://huggingface.co PYTHONDONTWRITEBYTECODE=1", 1),
+        encoding="utf-8")
     readme = dest / "README.md"
     readme.write_text(HEADER.format(subdomain=subdomain) + (ROOT / "README.md").read_text(encoding="utf-8"),
                       encoding="utf-8")

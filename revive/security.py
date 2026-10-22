@@ -43,7 +43,17 @@ def inline_script_hashes(pages: list[Path]) -> list[str]:
     return sorted(out)
 
 
-def build_csp(script_hashes: list[str]) -> str:
+def embed_origins() -> list[str]:
+    """Sites allowed to show REVIVE inside a frame (security.embed_origins, or REVIVE_EMBED_ORIGINS separated by
+    spaces). Empty everywhere except a hosted demo such as a Hugging Face Space, whose page frames the app."""
+    import os
+    env = os.environ.get("REVIVE_EMBED_ORIGINS")
+    raw = env.split() if env is not None else (load_config().get("security", {}).get("embed_origins") or [])
+    return [o.rstrip("/") for o in raw if re.fullmatch(r"https://[A-Za-z0-9.-]+(:\d+)?/?", o)]
+
+
+def build_csp(script_hashes: list[str], frame_origins: list[str] | None = None) -> str:
+    frames = "frame-ancestors 'self' " + " ".join(frame_origins) if frame_origins else "frame-ancestors 'none'"
     return "; ".join([
         "default-src 'self'",
         "script-src 'self' " + " ".join(script_hashes),
@@ -55,13 +65,13 @@ def build_csp(script_hashes: list[str]) -> str:
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",
-        "frame-ancestors 'none'",
+        frames,
     ])
 
 
 class SecurityHeaders:
-    def __init__(self, app, csp: str):
-        self.app, self.csp = app, csp.encode()
+    def __init__(self, app, csp: str, framable: bool = False):
+        self.app, self.csp, self.framable = app, csp.encode(), framable
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -74,11 +84,12 @@ class SecurityHeaders:
                 h = [(k, v) for k, v in msg.get("headers", []) if k.lower() not in (b"server",)]
                 names = {k.lower() for k, _ in h}
                 add = [(b"x-content-type-options", b"nosniff"),
-                       (b"x-frame-options", b"DENY"),
                        (b"referrer-policy", b"no-referrer" if path.startswith(("/site", "/auth/link")) else b"same-origin"),
                        (b"permissions-policy", b"camera=(), microphone=(), geolocation=(), payment=(), usb=()"),
                        (b"cross-origin-opener-policy", b"same-origin"),
                        (b"cross-origin-resource-policy", b"same-origin")]
+                if not self.framable:          # embedding allowed only for the origins in the CSP frame-ancestors
+                    add.append((b"x-frame-options", b"DENY"))
                 if b"content-security-policy" not in names:
                     add.append((b"content-security-policy", self.csp))
                 if (path.startswith("/api/") or path.startswith("/auth/")) and b"cache-control" not in names:

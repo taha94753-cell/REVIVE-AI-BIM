@@ -166,6 +166,8 @@ security:
   allow_registration: true      # false = only `python -m revive create-company` can add a company
   session_days: 7               # sign-in lasts this long on a device
   cookie_secure: auto           # auto = Secure cookie when served over HTTPS (set true behind an HTTPS proxy)
+  embed_origins: []             # sites allowed to frame the app, e.g. [https://huggingface.co] for a Space.
+                                # REVIVE_EMBED_ORIGINS overrides it; set only on a hosted HTTPS demo
   api_docs: false               # true (or REVIVE_API_DOCS=1) exposes /docs; keep false on a shared network
   max_ifc_mb: 150
   max_schedule_mb: 20

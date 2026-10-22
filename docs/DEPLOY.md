@@ -21,8 +21,10 @@ One-time setup:
 2. GitHub repository, *Settings*, *Secrets and variables*, *Actions*, *New repository secret*:
    name `HF_TOKEN`, value the token.
 3. *Actions* tab, *Deploy to Hugging Face Space*, *Run workflow* (or push to `main`).
-4. The first build takes about 10 minutes. Open **https://taha94753-revive.hf.space** in its own tab:
-   the app's security headers stop it loading inside the frame on the Space page.
+4. The first build takes about 10 minutes. The app then works on the Space page itself
+   (huggingface.co/spaces/taha94753/revive) and full screen at **https://taha94753-revive.hf.space**.
+   Only the Space allows framing (`REVIVE_EMBED_ORIGINS=https://huggingface.co`, set by the deploy
+   script); local and Docker runs keep refusing it.
 
 The Space is **private** by default. Set the repository variable `HF_PRIVATE` to `false` to make it public
 once the contractors who shared the records agree to the anonymised dataset being public; `HF_SPACE`

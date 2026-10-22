@@ -166,3 +166,32 @@ def test_registration_can_be_closed(monkeypatch):
         r = c.post("/api/auth/register", json={"company": "Closed", "name": "A", "email": "closed@example.com",
                                                "password": PASSWORD})
         assert r.status_code == 403
+
+
+def test_framing_is_refused_unless_a_hosted_demo_allows_one_origin(monkeypatch):
+    from revive.security import build_csp, embed_origins
+    monkeypatch.delenv("REVIVE_EMBED_ORIGINS", raising=False)
+    assert embed_origins() == []
+    assert "frame-ancestors 'none'" in build_csp([], embed_origins())
+    monkeypatch.setenv("REVIVE_EMBED_ORIGINS", "https://huggingface.co http://evil.example javascript:x")
+    assert embed_origins() == ["https://huggingface.co"]              # only https origins are accepted
+    assert "frame-ancestors 'self' https://huggingface.co" in build_csp([], embed_origins())
+
+
+def test_embedded_app_sends_a_partitioned_cross_site_cookie(monkeypatch):
+    import uuid
+    from fastapi.testclient import TestClient
+    from revive import server
+    from revive.security import LIMITER, SecurityHeaders
+    monkeypatch.setattr(server, "EMBED", ["https://huggingface.co"])
+    LIMITER.hits.clear()
+    c = TestClient(server.app, headers={"X-Revive-Request": "1"})
+    tag = uuid.uuid4().hex[:8]
+    r = c.post("/api/auth/register", json={"company": f"Embed {tag}", "name": "E", "email": f"e-{tag}@example.com",
+                                           "password": "correct-horse-battery-9"})
+    cookie = r.headers["set-cookie"].lower()
+    assert "samesite=none" in cookie and "secure" in cookie and "partitioned" in cookie and "httponly" in cookie
+    out = c.post("/api/auth/logout").headers.get("set-cookie", "").lower()
+    assert "partitioned" in out and "max-age=0" in out
+    # the header middleware drops X-Frame-Options only when it is told the app may be framed
+    assert SecurityHeaders(None, "x", framable=True).framable and not SecurityHeaders(None, "x").framable
