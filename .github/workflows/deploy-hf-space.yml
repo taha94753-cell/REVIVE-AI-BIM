@@ -1,0 +1,53 @@
+# Deploys REVIVE to a Hugging Face Space (Docker SDK) on every push to main, or by hand from the Actions tab.
+#
+# One-time setup (repository Settings > Secrets and variables > Actions):
+#   secret   HF_TOKEN   a Hugging Face access token with WRITE permission (huggingface.co/settings/tokens)
+#   variable HF_SPACE   optional, defaults to taha94753/revive
+#   variable HF_PRIVATE optional, "false" makes the Space public. It stays private until the contractors who
+#                       shared the survey records agree to the anonymised dataset being public.
+#
+# The Space builds the repository's Dockerfile. Its README needs a YAML header that the GitHub README does not
+# carry, so the job uploads a staged copy with the header added. data/raw/ is never uploaded.
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-hf-space
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the token is set
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Add a repository secret HF_TOKEN (a Hugging Face token with write access) first."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the Hugging Face client
+        run: pip install "huggingface_hub>=0.30"
+
+      - name: Create or update the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE || 'taha94753/revive' }}
+          HF_PRIVATE: ${{ vars.HF_PRIVATE || 'true' }}
+        run: python scripts/deploy_hf_space.py
