@@ -2,13 +2,14 @@
 @font-face{font-family:"Inter";src:url(/assets/fonts/inter-latin-wght-normal.woff2) format("woff2");font-weight:100 900;font-display:swap}
 @font-face{font-family:"Archivo";src:url(/assets/fonts/archivo-latin-wdth-normal.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2");font-weight:100 800;font-display:swap}
-:root{--ink:#20262E;--ink-2:#4A5562;--ink-3:#7A8492;--line:#D5DAE0;--paper:#fff;--amber:#F2A900;--bg:#E9ECEF}
+:root{--ink:#20262E;--ink-2:#4A5562;--ink-3:#5A6470;--line:#D5DAE0;--paper:#fff;--amber:#FFC21A;--bg:#E9ECEF}   /* ink-3 is 5.9:1 on white (was 3.7:1) */
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 13px/1.5 "Inter",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .toolbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#0E1013;border-bottom:3px solid var(--amber)}
 .toolbar .grow{flex:1}
 .tb-btn{font:600 14px "Inter",sans-serif;color:#F2F4F7;text-decoration:none;background:#1B1E23;border:1px solid #2C3138;border-radius:10px;padding:8px 14px;cursor:pointer}
-.tb-btn.primary{background:var(--amber);color:#1A1200;border-color:var(--amber)}
+.tb-btn.primary{background:var(--amber);color:#111214;border-color:var(--amber)}
+.tb-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .sheet{width:min(210mm,100% - 24px);margin:18px auto 40px;background:var(--paper);padding:16mm 15mm;box-shadow:0 10px 40px rgba(0,0,0,.18)}
 .loading,.error{color:var(--ink-3)}.error{color:#C8283F}
 .sample{background:repeating-linear-gradient(-45deg,#FFF4D6 0 10px,#FFEAB0 10px 20px);border:1px solid #E7C35A;padding:6px 10px;font-weight:600;margin:0 0 12px}
@@ -50,6 +51,7 @@ tr.conc td{background:#FFF7E6}
 .sig{display:grid;grid-template-columns:1.2fr 1.2fr .6fr;gap:18px;margin-top:26px}
 .sig div{border-top:1px solid var(--ink);padding-top:4px;font-size:11px;color:var(--ink-3);height:44px}
 .foot{margin-top:18px;padding-top:6px;border-top:1px solid var(--line);font-size:10px;color:var(--ink-3);text-align:right}
+@media screen and (max-width:700px){.sheet table{display:block;overflow-x:auto}}
 @media (max-width:700px){.sheet{padding:18px 14px}.head{grid-template-columns:1fr}.kpis,.fin{grid-template-columns:1fr 1fr}.kpis div+div{border-left:0}}
 @page{size:A4;margin:12mm}
 @media print{body{background:#fff}.no-print{display:none!important}.sheet{width:auto;margin:0;padding:0;box-shadow:none}}

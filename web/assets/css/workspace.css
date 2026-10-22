@@ -74,6 +74,7 @@ body.cockpit .callout-warn{border-radius:10px}
 body.cockpit :is(.kpis dd,.impact dd,.ws-kpis dd,.dl-kpis dd,.ov-kpis dd,.metrics dd,.lb-cells dd,.sim-big,.big,.dl-big .big,.cg b){
   font-family:var(--figure);font-variation-settings:"wdth" 80;font-weight:850;letter-spacing:-.02em}
 body.cockpit :is(.ws-kpis,.dl-kpis,.kpis,.impact,.metrics) dt{color:var(--chalk-2)}
+body.cockpit :is(.kpis,.impact,.ws-kpis,.dl-kpis,.ov-kpis,.metrics) dd small{font:400 14px/1.45 var(--text);font-variation-settings:normal;letter-spacing:0;color:var(--chalk-2)}
 body.cockpit .g-val{font-variation-settings:"wdth" 80;font-weight:850}
 body.cockpit :is(.b-v,.cl-health b,.crit .cp,.rc-head b){font-variation-settings:"wdth" 82;font-weight:800}
 body.cockpit .g-tick,body.cockpit .g-sub,body.cockpit .b-k,body.cockpit .cl-cap,body.cockpit .cl-gate,body.cockpit .cl-health{fill:var(--chalk-3);color:var(--chalk-3)}
@@ -104,6 +105,10 @@ body.cockpit .seg.pm-tabs .seg-thumb{background:var(--amber);box-shadow:none}
 body.cockpit .seg.pm-tabs button[aria-selected=true]{background:var(--amber);color:var(--amber-ink);box-shadow:none}
 body.cockpit legend .step{border-color:var(--amber);background:var(--amber);color:var(--amber-ink)}
 
+/* inline label + control pairs wrap instead of pushing the page sideways on phones */
+body.cockpit .inline{flex-wrap:wrap;max-width:100%;min-width:0}
+body.cockpit .inline select{flex:1 1 180px;min-width:0;max-width:100%;width:auto}
+
 /* ---- phones: the rail is a dock, so the top bar carries the mark and loses the long labels */
 @media (max-width:820px){
   body.cockpit .wordmark .rv{display:block;width:30px;height:30px}
@@ -118,3 +123,31 @@ body.cockpit legend .step{border-color:var(--amber);background:var(--amber);colo
   body.cockpit .live-pill,body.cockpit .conn{padding:8px;min-width:0}
   body.cockpit .tabs{background:#0F1012}
 }
+
+/* ---- the phone update page (site.html): the same flat graphite, sized for a thumb on site.
+   Sending an update is the page's one primary action, so it is signal yellow (pink stays for the recovery plan). */
+body.site{
+  --amber:#FFC21A; --amber-2:#FFD24D; --chalk:#F2F4F7; --chalk-2:#B4BCC7; --chalk-3:#8E97A3;
+  --line:rgba(242,244,247,.08); --line-strong:rgba(242,244,247,.16); --ink-800:#1A1D21; --ink-850:#0F1113;
+  background:#0C0D0F;background-image:none}
+body.site::before,body.site::after{display:none}
+body.site .site-top{background:rgba(12,13,15,.96);border-bottom:1px solid var(--line-strong)}
+body.site .wordmark{font:900 22px/1 var(--display);font-variation-settings:"wdth" 84;letter-spacing:.04em;color:var(--chalk)}
+body.site .site-main h1{font:900 clamp(34px,9vw,44px)/.98 var(--display);font-variation-settings:"wdth" 78;letter-spacing:-.025em}
+body.site .site-main h2{font:850 24px/1.05 var(--display);font-variation-settings:"wdth" 84}
+body.site .site-now{border-radius:12px;background:#16181C;border:1px solid var(--line-strong)}
+body.site :is(input,select,.site-field textarea){background:#0F1113;border:1px solid var(--line-strong);border-radius:8px;color:var(--chalk)}
+body.site :is(input,select,.site-field textarea):focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,194,26,.22)}
+body.site input::placeholder,body.site textarea::placeholder{color:var(--chalk-3)}
+body.site input[type=range]{accent-color:var(--amber);background:transparent;border:0;box-shadow:none}
+body.site .site-wx{background:#16181C;border:1px solid var(--line-strong);border-left:4px solid #7FB2F0;border-radius:8px;color:var(--chalk-2)}
+body.site .stepper button{border-radius:8px;background:#1A1D21;border:1px solid var(--line-strong)}
+body.site .stepper button:hover{border-color:var(--chalk-3)}
+body.site .seg{background:#0F1113;border:1px solid var(--line-strong);border-radius:10px}
+body.site :is(.seg-thumb,.seg button[aria-pressed=true],.seg button[aria-checked=true],.seg button[aria-selected=true]){background:#2A2E33;color:var(--chalk);box-shadow:inset 0 0 0 1px var(--chalk-3)}
+body.site .seg.has-thumb button[aria-pressed=true],body.site .seg.has-thumb button[aria-checked=true],body.site .seg.has-thumb button[aria-selected=true]{background:transparent;box-shadow:none}
+body.site .site-send{background:var(--amber);color:#111214;border:0;border-radius:10px;box-shadow:none;filter:none;font:800 19px var(--text)}
+body.site .site-send:hover{background:var(--amber-2)}
+body.site .site-events .ev.set{background:rgba(255,194,26,.07)}
+body.site .site-events .ev.set output{color:var(--amber)}
+body.site :focus-visible{outline:2px solid var(--amber);outline-offset:2px}

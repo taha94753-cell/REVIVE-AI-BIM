@@ -4,7 +4,8 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const num = (v, d = 0) => (v == null || Number.isNaN(Number(v)) ? '—' : Number(v).toLocaleString('en', { maximumFractionDigits: d, minimumFractionDigits: d }));
 const pct = (v, d = 0) => (v == null ? '—' : `${v > 0 ? '+' : ''}${Number(v).toFixed(d)}%`);
 const day = s => (s ? String(s).slice(0, 10) : '—');
-const BAND = { 'On track': '#1E9E62', Watch: '#B98A00', 'At risk': '#D9631E', Critical: '#C8283F' };
+// risk colours for paper: each passes WCAG AA (4.5:1) on white, unlike the dark-theme colours the API sends
+const BAND = { 'On track': '#11804F', Watch: '#9A6400', 'At risk': '#C2410C', Critical: '#C81E3A' };
 const CAT = { client: '#2D6FD1', neutral: '#7A8492', contractor: '#D9931E', unexplained: '#B9C0C8' };
 
 $('#print').addEventListener('click', () => window.print());
@@ -68,7 +69,7 @@ function render(d) {
   <section><h2>1. Summary</h2>
   ${dl.available ? `
     <dl class="kpis">
-      <div><dt>Delay to date</dt><dd style="color:${esc(band.color || '#20262E')}">${num(dl.delay_days)} days</dd><small>${esc(band.name || '')}</small></div>
+      <div><dt>Delay to date</dt><dd style="color:${BAND[band.name] || '#20262E'}">${num(dl.delay_days)} days</dd><small>${esc(band.name || '')}</small></div>
       <div><dt>SPI(t)</dt><dd>${num(dl.spi_t, 2)}</dd><small>earned schedule</small></div>
       <div><dt>Slip with client or weather events</dt><dd>${num(dl.excusable_days_indicative, 1)} days</dd><small>indicative, see section 3</small></div>
       <div><dt>Forecast overrun</dt><dd>${f ? pct(f.time_overrun_pct) : '—'}</dd><small>${f && f.interval ? `80% range ${pct(f.interval[0])} to ${pct(f.interval[1])}` : ''}</small></div>
