@@ -1,0 +1,13 @@
+# Same exclusions as .dockerignore. Never upload data/raw (private company/project key).
+.git
+.venv
+venv
+__pycache__
+_backup
+data/raw
+data/app.db
+data/outbox
+models/bim_cache
+models/exports
+bim/uploads
+.env*
