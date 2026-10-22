@@ -151,6 +151,128 @@ p{margin:0 0 14px}
 .hero-frame figcaption{position:absolute;right:18px;top:18px;max-width:34ch;padding:10px 12px;border-radius:var(--r-sm);background:rgba(255,255,255,.9);
   color:var(--ink-2);font-size:13px;line-height:1.45}
 
+/* ---- glass: panes that float over a 3D scene (glass.js, a port of 21st.dev's glass-card). A frosted body inset from a
+   refractive rim, a chromatic edge, a pointer-tracked highlight and a lift on hover. The body tint is opaque enough
+   that ink on light glass and chalk on dark glass stay above 4.5:1 over any part of the scene. */
+:where(.glass){position:relative}
+.glass{isolation:isolate;overflow:hidden;background:transparent!important;border:0!important;
+  box-shadow:0 26px 60px -30px rgba(17,18,20,.55),0 10px 26px -20px rgba(17,18,20,.4)!important;
+  transition:transform .35s var(--spring),box-shadow .35s var(--ease)}
+.glass>:not(.g-l){position:relative;z-index:1}
+.glass .g-l{position:absolute;pointer-events:none;border-radius:inherit}
+.glass .g-body{inset:5px;z-index:0;border-radius:max(4px,calc(var(--gr,12px) - 5px));background:rgba(255,255,255,.7);
+  -webkit-backdrop-filter:blur(14px) saturate(160%) brightness(1.03);backdrop-filter:blur(14px) saturate(160%) brightness(1.03);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(255,255,255,.18)}
+.glass .g-rim{inset:0;z-index:0;padding:5px;background:rgba(255,255,255,.5);
+  -webkit-backdrop-filter:blur(2px) saturate(172%) brightness(1.07);backdrop-filter:blur(2px) saturate(172%) brightness(1.07);
+  -webkit-mask:linear-gradient(#000,#000) content-box,linear-gradient(#000,#000);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000,#000) content-box exclude,linear-gradient(#000,#000)}
+.glass.bend .g-rim{-webkit-backdrop-filter:url(#revive-glass-bend) blur(2px) saturate(172%) brightness(1.07);backdrop-filter:url(#revive-glass-bend) blur(2px) saturate(172%) brightness(1.07)}
+.glass .g-light{inset:0;z-index:0;overflow:hidden;isolation:isolate}
+.glass .g-chroma{inset:0;padding:5px;mix-blend-mode:plus-lighter;
+  background:linear-gradient(125deg,rgba(110,214,240,.42) 0%,transparent 36%,transparent 64%,rgba(240,110,190,.34) 100%);
+  -webkit-mask:linear-gradient(#000,#000) content-box,linear-gradient(#000,#000);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000,#000) content-box exclude,linear-gradient(#000,#000)}
+.glass .g-spec{left:30%;top:28%;width:260px;height:260px;margin:-130px 0 0 -130px;mix-blend-mode:plus-lighter;border-radius:50%;will-change:transform;
+  background:radial-gradient(closest-side,rgba(255,255,255,.34),rgba(255,255,255,.08) 48%,transparent 74%)}
+.glass .g-sweep{top:0;left:29%;width:42%;height:7px;mix-blend-mode:plus-lighter;will-change:transform;
+  background:linear-gradient(to bottom,rgba(255,255,255,.92),rgba(255,255,255,.2) 55%,transparent);
+  -webkit-mask:linear-gradient(90deg,transparent,#000 42%,#000 58%,transparent);mask:linear-gradient(90deg,transparent,#000 42%,#000 58%,transparent)}
+.glass .g-ring{inset:0;z-index:2;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -1px 0 rgba(17,18,20,.08)}
+.glass.dark .g-body{background:rgba(17,18,20,.66)}
+.glass.dark .g-rim{background:rgba(17,18,20,.35)}
+.glass.dark .g-ring{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.1)}
+@media (hover:hover) and (pointer:fine){
+  .glass:hover{transform:translateY(-3px) scale(1.006);box-shadow:0 34px 70px -30px rgba(17,18,20,.6),0 14px 30px -20px rgba(17,18,20,.45)!important}
+}
+/* browsers without backdrop-filter get a solid pane, so the text never loses its ground */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass .g-body{background:rgba(255,255,255,.94)}.glass.dark .g-body{background:rgba(17,18,20,.92)}
+}
+.hud.glass{--gr:var(--r)}
+.hero-frame figcaption.glass{--gr:var(--r-sm);color:var(--ink)}
+.frame-tag.glass{--gr:4px;color:var(--chalk)}
+
+/* ---- on the building: the storey explorer (storeys.js). A daylight model frame beside the storey register. */
+.model{background:var(--paper)}
+.model-grid{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:clamp(28px,4vw,64px);align-items:start}
+.model-side{display:grid;gap:22px;position:sticky;top:96px}
+.model-lede{font-size:18px;max-width:46ch;margin:0}
+.plans{position:relative;display:grid;grid-template-columns:repeat(3,1fr);padding:5px;border-radius:999px;background:var(--paper-2);
+  box-shadow:inset 0 0 0 1px var(--rule)}
+.plans button{position:relative;z-index:1;min-height:44px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);
+  font:650 15px var(--text);cursor:pointer;transition:color .25s,transform .2s var(--spring)}
+.plans button:hover{color:var(--ink)}
+.plans button:active{transform:scale(.96)}
+.plans button[aria-pressed=true]{color:var(--ink)}
+.plan-ind{position:absolute;left:0;top:0;width:0;height:0;opacity:0;border-radius:999px;background:var(--card);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 10px 22px -12px rgba(17,18,20,.5),0 0 0 1px var(--rule)}
+.storeys{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.storeys button{width:100%;display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:14px;min-height:56px;padding:8px 14px;
+  border:0;border-radius:var(--r);background:var(--card);color:var(--ink);text-align:left;cursor:pointer;font:inherit;
+  box-shadow:inset 0 0 0 1px var(--rule);transition:transform .3s var(--spring),box-shadow .3s var(--ease),background .25s}
+.storeys button:hover{transform:translateX(6px);box-shadow:inset 0 0 0 1.5px var(--ink),0 14px 28px -20px rgba(17,18,20,.55)}
+.storeys button:active{transform:translateX(6px) scale(.99)}
+.storeys button[aria-pressed=true]{background:var(--ink);color:var(--paper);box-shadow:0 16px 30px -18px rgba(17,18,20,.7)}
+.storeys button[aria-pressed=true] span{color:var(--chalk-2)}
+.storeys b{font:850 20px/1 var(--sign);font-variation-settings:"wdth" 80}
+.storeys span{font-size:14.5px;color:var(--muted);line-height:1.35}
+.d{font:800 17px/1 var(--sign);font-style:normal;font-variant-numeric:tabular-nums;padding:6px 9px;border-radius:6px;white-space:nowrap;color:#fff}
+.d.go{background:var(--go)}.d.watch{background:var(--watch)}.d.risk{background:var(--risk)}.d.crit{background:var(--crit)}.d.mark{background:var(--mark)}
+.model-frame{position:relative;margin:0;height:min(84svh,780px);min-height:520px;border-radius:var(--r-lg);overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,#C3CEd8 0%,#E2E5E6 34%,#ECEAE5 60%,#E4E0D8 100%);box-shadow:0 1px 0 var(--rule),0 40px 80px -50px rgba(17,18,20,.55)}
+#model3d{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#model3d.over{cursor:pointer}#model3d.grabbing{cursor:grabbing}
+.m-tags{position:absolute;inset:0;pointer-events:none;z-index:2}
+.m-tag{--gr:999px;position:absolute;left:0;top:0;display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;color:var(--ink);
+  font:700 13px var(--text);white-space:nowrap;will-change:transform;transition:opacity .25s}
+.m-tag i{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.m-tag b{font:850 14px var(--sign)}
+.m-tag em{font-style:normal;font-variant-numeric:tabular-nums}
+.m-tag[data-band=go] i{background:var(--go)}.m-tag[data-band=watch] i{background:var(--watch)}.m-tag[data-band=risk] i{background:var(--risk)}
+.m-tag[data-band=crit] i{background:var(--crit)}.m-tag[data-band=mark] i{background:var(--mark)}
+.m-tag.on{outline:2px solid var(--ink);outline-offset:1px}
+.m-card{--gr:16px;position:absolute;left:0;top:0;z-index:4;width:260px;padding:14px 16px 12px;border-radius:16px;color:var(--ink);pointer-events:none;
+  opacity:0;transform:translateY(8px) scale(.96);transition:opacity .15s,transform .15s var(--ease)}
+.m-card.show{opacity:1;transform:none}
+.m-arrow{position:absolute;top:-4px;left:50%;width:10px;height:10px;margin-left:-5px;transform:rotate(45deg);background:rgba(255,255,255,.85);z-index:3}
+.m-card p{margin:0}
+.m-ct{font:850 20px/1.05 var(--sign);font-variation-settings:"wdth" 80;margin-bottom:4px!important}
+.m-ca{font-size:13.5px;color:var(--ink-2);margin-bottom:8px!important}
+.m-cd{font:700 14px var(--text)}.m-cx{font-size:13px;color:var(--muted)}
+.m-ro{--gr:var(--r);position:absolute;left:18px;bottom:18px;z-index:3;width:min(330px,calc(100% - 36px));padding:16px 18px;border-radius:var(--r);color:var(--ink)}
+.m-rt{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);margin:0 0 4px!important}
+.m-rt em{font-style:normal;font-size:12px;color:var(--ink);background:var(--signal);padding:0 6px;border-radius:3px;align-self:start}
+.m-ra{font-size:14.5px;margin:0 0 12px!important}
+.m-ro dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:0}
+.m-ro dt{font-size:12px;color:var(--ink-2)}
+.m-ro dd{margin:2px 0 0;font:850 26px/1 var(--sign);font-variation-settings:"wdth" 78;font-variant-numeric:tabular-nums}
+.m-ro dd.small{font:700 14px/1.3 var(--text)}
+.m-ro dd.go{color:var(--go)}.m-ro dd.watch{color:var(--watch)}.m-ro dd.risk{color:var(--risk)}.m-ro dd.crit{color:var(--crit)}.m-ro dd.mark{color:var(--mark)}
+.m-hint{--gr:999px;position:absolute;right:18px;top:18px;z-index:3;margin:0;padding:8px 14px;border-radius:999px;color:var(--chalk);font-size:13px}
+.model-frame.no-gl{background:var(--paper-2)}.model-frame.no-gl .m-hint{display:none}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---- hover and press feedback on the rest of the page */
+.btn{transition:background .2s,color .2s,border-color .2s,transform .25s var(--spring),box-shadow .25s var(--ease)}
+.btn.signal:hover,.btn.line:hover{transform:translateY(-2px);box-shadow:0 14px 26px -16px rgba(17,18,20,.6)}
+.btn:active{transform:translateY(0) scale(.97)}
+.proof li{transition:transform .3s var(--spring)}
+.proof li:hover{transform:translateY(-3px)}
+.stats>div{transition:transform .35s var(--spring)}
+.stats>div:hover{transform:translateY(-4px)}
+.stats>div:hover .num{color:var(--steel)}
+.stats .num{transition:color .3s}
+.feat li{transition:border-color .25s,transform .35s var(--spring),box-shadow .35s var(--ease)}
+.feat li:hover{transform:translateY(-6px);box-shadow:0 26px 44px -30px rgba(17,18,20,.55)}
+.feat li svg{transition:transform .45s var(--spring)}
+.feat li:hover svg{transform:rotate(-8deg) scale(1.08)}
+.steps li:hover{transform:translateY(-6px);border-color:var(--signal)}
+.ev-table tbody tr{transition:background .2s}
+.ev-table tbody tr:hover{background:var(--paper)}
+.xtabs button:active{transform:scale(.98)}
+.foot nav a{transition:color .2s}
+
 /* ---- bands */
 .band{position:relative;padding:clamp(76px,9vw,132px) 0}
 .band h2+p,.companies-head h2,.start h2,.evidence h2{margin-bottom:24px}
@@ -351,6 +473,19 @@ p{margin:0 0 14px}
   .feat{grid-template-columns:1fr}
   .auth{padding:6px 18px 22px}.auth-tabs{margin:0 -18px 20px}
   .ev-table{padding:4px 10px 12px}.ev-table td{font-size:22px;padding:12px 6px}.ev-table th{padding:10px 6px}
+}
+@media (max-width:1180px){
+  .model-grid{grid-template-columns:minmax(0,1fr)}
+  .model-side{position:static}
+  .model-frame{order:-1;height:min(70svh,620px);min-height:440px}
+}
+@media (max-width:640px){
+  .model-frame{height:480px;min-height:0;border-radius:var(--r)}
+  .m-tag:not(.on){opacity:0}
+  .m-hint{display:none}
+  .m-ro{left:10px;right:10px;bottom:10px;width:auto;padding:12px 14px}.m-ro dd{font-size:21px}
+  .storeys button{grid-template-columns:64px minmax(0,1fr) auto;gap:10px;padding:8px 10px}
+  .storeys button:hover{transform:none}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
