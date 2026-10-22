@@ -65,6 +65,8 @@ The look is "site grade": structural-steel graphite with construction-yellow act
 
 Keep charts as SVG in `charts.js`.
 
+The vendored `ui-ux-pro-max` skill (`.claude/skills/ui-ux-pro-max/`, MIT, from nextlevelbuilder/ui-ux-pro-max-skill) is advisory: use it for UX, accessibility and layout checks, but the design language above and ground rule 11 (no CDN links, vendored fonts) win over any palette, font or link it suggests.
+
 ## Useful next tasks
 - Collect more completed projects, run `evaluate`, then merge and retrain.
 - Replace `bim/sample_building.ifc` and `bim/schedule.csv` with the real case-study model and baseline programme.
