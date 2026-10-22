@@ -69,12 +69,29 @@ def stage(dest: Path, subdomain: str) -> int:
 
 
 def main() -> int:
-    token, space = os.environ.get("HF_TOKEN"), os.environ.get("HF_SPACE", "taha94753/revive")
+    # secrets pasted from a browser often carry a trailing newline, spaces or quotes
+    token = (os.environ.get("HF_TOKEN") or "").strip().strip('"').strip("'").strip()
+    space = (os.environ.get("HF_SPACE") or "taha94753/revive").strip()
     private = os.environ.get("HF_PRIVATE", "true").strip().lower() not in ("false", "0", "no")
     if not token:
         print("HF_TOKEN is not set", file=sys.stderr)
         return 1
+    if not token.startswith("hf_"):
+        print("::error::HF_TOKEN does not look like a Hugging Face access token (they start with hf_). "
+              "Paste the token itself, not its name or your password.", file=sys.stderr)
+        return 1
     api = HfApi(token=token)
+    try:
+        me = api.whoami()
+    except Exception as exc:  # 401: the token is wrong, expired or was deleted
+        print(f"::error::Hugging Face rejected HF_TOKEN ({exc.__class__.__name__}). Create a new token with "
+              "Write access at huggingface.co/settings/tokens and replace the HF_TOKEN secret.", file=sys.stderr)
+        return 1
+    role = ((me.get("auth") or {}).get("accessToken") or {}).get("role", "unknown")
+    print(f"Token belongs to {me.get('name')} (access: {role}).")
+    if role == "read":
+        print("::error::This token is read-only. Create one with Write access and replace HF_TOKEN.", file=sys.stderr)
+        return 1
     api.create_repo(space, repo_type="space", space_sdk="docker", private=private, exist_ok=True)
     subdomain = space.replace("/", "-").replace("_", "-").replace(".", "-").lower()
     with tempfile.TemporaryDirectory() as tmp:
