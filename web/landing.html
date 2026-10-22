@@ -5,22 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>REVIVE · See the delay you have, and the one that is coming</title>
   <meta name="description" content="REVIVE measures how late a construction project is today, forecasts where it is heading, explains why, and finds the cheapest recovery on the baseline schedule and the BIM model.">
-  <meta name="theme-color" content="#120E1C">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0E12'/%3E%3Cpath d='M23.78 8.22A11 11 0 1 0 27 16M23.6 18.4 27 15l3.4 3.4' fill='none' stroke='%23FFB81C' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.5 21.5v-4M16 21.5v-7M20.5 21.5v-10' stroke='%23EEF1F4' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#EFECE6">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/cinzel-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/landing.css?v=4.0.0">
-  <script src="/assets/js/intro.js?v=4.0.0"></script>
+  <link rel="stylesheet" href="/assets/css/landing.css?v=6.0.0">
+  <script src="/assets/js/intro.js?v=6.0.0"></script>
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
-  <script type="module" src="/assets/js/landing.js?v=4.0.0"></script>
+  <script type="module" src="/assets/js/landing.js?v=6.0.0"></script>
 </head>
 <body>
 <div id="intro" aria-hidden="true">
   <div class="intro-core">
-    <svg class="rv intro-mark" viewBox="0 0 32 32"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg>
+    <svg class="rv intro-mark" viewBox="0 0 32 32"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg>
     <p class="intro-word"><span>R</span><span>E</span><span>V</span><span>I</span><span>V</span><span>E</span></p>
     <p class="intro-line"><i></i></p>
     <p class="intro-cap">Delay analysis, forecast and recovery for construction projects</p>
@@ -28,68 +26,76 @@
 </div>
 <a class="skip" href="#start">Skip to sign in</a>
 <header class="nav" id="nav">
-  <a class="mark" href="/" aria-label="REVIVE"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><span>REVIVE</span></a>
+  <a class="mark" href="/" aria-label="REVIVE"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></a>
   <nav aria-label="Page">
     <a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a>
   </nav>
   <span class="grow"></span>
-  <a class="btn ghost" href="#start" data-auth="signin" id="nav-signin">Sign in</a>
-  <a class="btn amber" href="#start" data-auth="register" id="nav-cta">Create workspace</a>
+  <a class="btn text" href="#start" data-auth="signin" id="nav-signin">Sign in</a>
+  <a class="btn signal" href="#start" data-auth="register" id="nav-cta">Create workspace</a>
 </header>
 
 <main>
   <section class="hero" id="top">
-    <div class="sky" aria-hidden="true">
-      <i class="sun"></i><i class="rays"></i>
-      <i class="cloud c1"></i><i class="cloud c2"></i><i class="cloud c3"></i><i class="cloud c4"></i>
-      <svg class="city far" viewBox="0 0 1600 220" preserveAspectRatio="none"></svg>
-      <svg class="city near" viewBox="0 0 1600 220" preserveAspectRatio="none"></svg>
-      <i class="birds"><b></b><b></b><b></b></i>
-    </div>
-    <canvas id="scene" aria-hidden="true"></canvas>
-    <div class="hero-vignette" aria-hidden="true"></div>
     <div class="hero-copy">
-      <p class="eyebrow"><span>AI</span><i></i><span>BIM</span><i></i><span>Recovery</span></p>
-      <h1 class="h-split"><span><span>See the delay you have,</span></span><span><span class="amber-t">and the one that is coming.</span></span></h1>
-      <p class="lede">REVIVE measures how late a project is today, forecasts where it is heading and finds the cheapest way back.</p>
+      <p class="eyebrow"><i aria-hidden="true"></i>Delay analysis, forecast and recovery for construction</p>
+      <h1 class="h-split"><span><span>See the delay you have,</span></span><span><span><em class="hl">and the one that is coming.</em></span></span></h1>
+      <p class="lede">REVIVE measures how late a project is today, forecasts where it is heading and finds the cheapest way back, on your own baseline schedule and BIM model.</p>
       <div class="cta-row">
-        <a class="btn amber lg" href="#start" data-auth="register">Create workspace</a>
-        <a class="btn ghost lg" href="#how">See how it works</a>
+        <a class="btn signal lg" href="#start" data-auth="register">Create workspace <svg class="arr" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5 15.5 10 11 14.5"/></svg></a>
+        <a class="btn line lg" href="#how">See how it works</a>
       </div>
+      <ul class="proof" aria-label="At a glance">
+        <li><b>P6 .xer, MS Project, CSV</b><span>baseline schedules</span></li>
+        <li><b>IFC</b><span>optional BIM link</span></li>
+        <li><b>Offline</b><span>runs on your network</span></li>
+      </ul>
     </div>
-    <aside class="hud" aria-label="Illustrative readout">
-      <p class="hud-t">Status readout <em>illustrative</em></p>
-      <dl>
-        <div><dt>Actual time</dt><dd data-hud="at">day 0</dd></div>
-        <div><dt>Earned schedule</dt><dd data-hud="es">day 0</dd></div>
-        <div><dt>SPI(t)</dt><dd data-hud="spi">1.00</dd></div>
-        <div class="hot"><dt>Delay to date</dt><dd data-hud="dl">0 d</dd></div>
-      </dl>
-      <div class="hud-bar"><i id="hud-scan"></i></div>
-      <p class="hud-f" id="hud-phase">Assembling the baseline</p>
-    </aside>
+    <figure class="hero-frame">
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <span class="frame-tag" aria-hidden="true"><i></i>Live model</span>
+      <aside class="hud" aria-label="Illustrative readout">
+        <p class="hud-t">Status readout <em>illustrative</em></p>
+        <dl>
+          <div><dt>Actual time</dt><dd data-hud="at">day 0</dd></div>
+          <div><dt>Earned schedule</dt><dd data-hud="es">day 0</dd></div>
+          <div><dt>SPI(t)</dt><dd data-hud="spi">1.00</dd></div>
+          <div class="hot"><dt>Delay to date</dt><dd data-hud="dl">0 d</dd></div>
+        </dl>
+        <div class="hud-bar"><i id="hud-scan"></i></div>
+        <p class="hud-f" id="hud-phase">Assembling the baseline</p>
+      </aside>
+      <figcaption>The building assembles to the baseline, a scan colours each storey by delay risk, and the recovery plan pulses pink.</figcaption>
+    </figure>
   </section>
 
   <section class="band numbers" id="numbers">
     <div class="wrap">
-      <h2 class="reveal-up">Most projects find out they are late when it is too late to be cheap.</h2>
-      <p class="statement reveal-up">In our survey data, <b class="num" data-count="over10" data-suffix="%"></b> of <b class="num" data-count="projects"></b> Pakistani construction project records overran their contract time by more than 10%. The median overrun was <b class="num" data-count="median" data-suffix="%"></b>.</p>
-      <p class="statement small reveal-up">At 25% of contract time, REVIVE's cross-validated forecast error is <b class="num go" data-count="mae" data-dec="1" data-suffix=" points"></b>, against <b class="num quiet" data-fill="base"></b> points for guessing the median.</p>
+      <div class="sec-head">
+        <p class="kicker"><span>01</span>The problem</p>
+        <h2 class="reveal-up">Most projects find out they are late when it is too late to be cheap.</h2>
+      </div>
+      <dl class="stats">
+        <div class="reveal-up"><dt>of project records overran contract time by more than 10%</dt><dd><b class="num" data-count="over10" data-suffix="%"></b></dd></div>
+        <div class="reveal-up"><dt>Pakistani construction project records in the survey</dt><dd><b class="num" data-count="projects"></b></dd></div>
+        <div class="reveal-up"><dt>median time overrun</dt><dd><b class="num" data-count="median" data-suffix="%"></b></dd></div>
+        <div class="reveal-up"><dt>forecast error at 25% of contract time, against <b class="num quiet" data-fill="base"></b> points for guessing the median</dt><dd><b class="num" data-count="mae" data-dec="1"></b><small>points</small></dd></div>
+      </dl>
       <p class="fine" id="numbers-note">Figures load from the trained model card. Some records are hypothetical scenarios; they are labelled in the app and in every result.</p>
     </div>
   </section>
 
   <section class="band how" id="how">
     <div class="wrap">
-      <h2 class="reveal-up">Six questions, answered from the schedule you already have.</h2>
+      <div class="sec-head"><p class="kicker"><span>02</span>How it works</p><h2 class="reveal-up">Six questions, answered from the schedule you already have.</h2></div>
       <div class="xtabs" role="tablist" aria-label="What REVIVE answers" id="xtabs">
         <b class="xt-ind" aria-hidden="true"></b>
-        <button type="button" role="tab" aria-selected="true" aria-controls="xp-now" id="xt-now" data-x="now"><span>How late are we now?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="xp-next" id="xt-next" data-x="next" tabindex="-1"><span>Where is it heading?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="xp-why" id="xt-why" data-x="why" tabindex="-1"><span>Why?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="xp-fix" id="xt-fix" data-x="fix" tabindex="-1"><span>Cheapest way back?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="xp-live" id="xt-live" data-x="live" tabindex="-1"><span>What changed on site?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="xp-bim" id="xt-bim" data-x="bim" tabindex="-1"><span>Where on the building?</span><svg class="rv xr" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-track" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="true" aria-controls="xp-now" id="xt-now" data-x="now"><span>How late are we now?</span><span class="xn" aria-hidden="true">01</span><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="xp-next" id="xt-next" data-x="next" tabindex="-1"><span>Where is it heading?</span><span class="xn" aria-hidden="true">02</span><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="xp-why" id="xt-why" data-x="why" tabindex="-1"><span>Why?</span><span class="xn" aria-hidden="true">03</span><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="xp-fix" id="xt-fix" data-x="fix" tabindex="-1"><span>Cheapest way back?</span><span class="xn" aria-hidden="true">04</span><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="xp-live" id="xt-live" data-x="live" tabindex="-1"><span>What changed on site?</span><span class="xn" aria-hidden="true">05</span><b class="prog"></b></button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="xp-bim" id="xt-bim" data-x="bim" tabindex="-1"><span>Where on the building?</span><span class="xn" aria-hidden="true">06</span><b class="prog"></b></button>
       </div>
       <div class="xpanels">
         <article class="xpanel" role="tabpanel" id="xp-now" aria-labelledby="xt-now" data-x="now" tabindex="0">
@@ -162,7 +168,7 @@
   <section class="pipe" id="now">
     <div class="pipe-pin">
       <div class="wrap">
-        <h2>From a site report to a decision in about a second.</h2>
+        <div class="sec-head"><p class="kicker"><span>03</span>Site to decision</p><h2>From a site report to a decision in about a second.</h2></div>
         <ol class="steps" id="steps">
           <li><b>Baseline</b><span>P6 .xer or CSV, CPM network</span></li>
           <li><b>Site update</b><span>phone: SPI, events, weather</span></li>
@@ -180,7 +186,7 @@
   <section class="band companies" id="companies">
     <div class="wrap two">
       <div class="companies-head">
-        <h2 class="reveal-up">Each company sees only its own projects.</h2>
+        <p class="kicker"><span>04</span>For companies</p><h2 class="reveal-up">Each company sees only its own projects.</h2>
         <p class="muted reveal-up">A workspace holds a company's projects, people and site links. Nothing in it is visible to anyone else, and the test suite checks it.</p>
       </div>
       <ul class="feat">
@@ -203,7 +209,7 @@
   <section class="band evidence" id="evidence">
     <div class="wrap two">
       <div>
-        <h2 class="reveal-up">Numbers you can defend.</h2>
+        <p class="kicker"><span>05</span>Evidence</p><h2 class="reveal-up">Numbers you can defend.</h2>
         <p class="muted reveal-up">Every figure is cross-validated: each project was scored by a model that never saw it, and the hardest test leaves a whole company out. The Evidence sheet in the app adds the model comparison, robustness checks and the limits.</p>
       </div>
       <div class="ev-table reveal-up">
@@ -216,7 +222,7 @@
   <section class="band start" id="start">
     <div class="wrap two">
       <div class="start-copy">
-        <h2>Open your company's workspace.</h2>
+        <p class="kicker"><span>06</span>Start</p><h2>Open your company's workspace.</h2>
         <p class="muted">Create a workspace in under a minute, then add your first project or load a sample one. Site staff never need an account: they use the link you give them.</p>
         <p class="fine" id="reg-closed" hidden>New sign-ups are closed on this server. Ask its administrator for an account.</p>
       </div>
@@ -232,25 +238,33 @@
           <label>Work e-mail<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
           <label>Password <small>10 characters or more</small><input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
           <div class="pw" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-          <button class="btn amber lg" type="submit">Create workspace</button>
+          <button class="btn signal lg" type="submit">Create workspace</button>
           <p class="err" role="alert"></p>
         </form>
         <form id="f-signin" data-a="signin" role="tabpanel" aria-labelledby="at-signin" novalidate hidden>
           <label>E-mail<input name="email" type="email" required maxlength="254" autocomplete="username"></label>
           <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
-          <button class="btn amber lg" type="submit">Sign in</button>
+          <button class="btn signal lg" type="submit">Sign in</button>
           <p class="err" role="alert"></p>
         </form>
-        <div id="signed-in" hidden><p>Signed in as <b id="si-who"></b>.</p><a class="btn amber lg" href="/app">Open the workspace</a></div>
+        <div id="signed-in" hidden><p>Signed in as <b id="si-who"></b>.</p><a class="btn signal lg" href="/app">Open the workspace</a></div>
       </div>
     </div>
   </section>
 </main>
 
 <footer class="foot">
-  <span class="mark small"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><span>REVIVE</span></span>
-  <p>Final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
-  <p class="fine">Weather: Open-Meteo (CC BY 4.0). 3D: Three.js. Animation: Motion.</p>
+  <div class="wrap">
+    <div class="foot-top">
+      <span class="mark"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></span>
+      <nav aria-label="Footer"><a href="#how">How it works</a><a href="#now">Site to decision</a><a href="#companies">For companies</a><a href="#evidence">Evidence</a><a href="#start">Sign in</a></nav>
+    </div>
+    <p class="foot-word" aria-hidden="true">REVIVE</p>
+    <div class="foot-bot">
+      <p>Final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
+      <p>Weather: Open-Meteo (CC BY 4.0). 3D: Three.js. Animation: Motion.</p>
+    </div>
+  </div>
 </footer>
 </body>
 </html>

@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>REVIVE workspace</title>
   <meta name="robots" content="noindex">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0E12'/%3E%3Cpath d='M23.78 8.22A11 11 0 1 0 27 16M23.6 18.4 27 15l3.4 3.4' fill='none' stroke='%23FFB81C' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.5 21.5v-4M16 21.5v-7M20.5 21.5v-10' stroke='%23EEF1F4' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=4.0.1">
+  <link rel="stylesheet" href="/assets/css/app.css?v=6.0.0">
   <link rel="stylesheet" href="/assets/css/cockpit.css?v=5.0.0">
+  <link rel="stylesheet" href="/assets/css/workspace.css?v=6.0.0">
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js", "three/addons/": "/vendor/three/addons/"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
   <script type="module" src="/assets/js/app.js?v=5.0.0"></script>
@@ -17,7 +18,7 @@
 <body class="app cockpit">
 <a class="skip" href="#main">Skip to the content</a>
 <header class="topbar">
-  <a class="wordmark" href="/" aria-label="REVIVE home"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg><span>REVIVE</span></a>
+  <a class="wordmark" href="/" aria-label="REVIVE home"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></a>
   <div class="proj-switch">
     <button type="button" id="proj-btn" aria-haspopup="listbox" aria-expanded="false">
       <span class="ps-label">Project</span><b id="proj-name">Choose a project</b><i aria-hidden="true"></i></button>
@@ -37,7 +38,7 @@
   </div>
 </header>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Sheets">
-  <span class="tabs-mark" aria-hidden="true"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg></span>
+  <span class="tabs-mark" aria-hidden="true"><svg class="rv rv-go" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg></span>
   <a href="#projects" role="tab" data-tab="projects" id="tab-projects" aria-controls="projects" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect pathLength="1" x="3" y="3" width="7" height="7" rx="1.5"/><rect pathLength="1" x="14" y="3" width="7" height="7" rx="1.5"/><rect pathLength="1" x="3" y="14" width="7" height="7" rx="1.5"/><rect pathLength="1" x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Projects</span></a>
   <a href="#delay" role="tab" data-tab="delay" id="tab-delay" aria-controls="delay" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="13" r="8"/><path pathLength="1" d="M12 9v4l2.5 2"/><path pathLength="1" d="M9 2h6"/></svg><span>Current delay</span></a>
   <a href="#assess" role="tab" data-tab="assess" id="tab-assess" aria-controls="assess" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M3 17l6-6 4 4 8-8"/><path pathLength="1" d="M15 7h6v6"/></svg><span>Forecast</span></a>
@@ -56,7 +57,7 @@
 </div>
 <div class="conn-overlay" id="conn-overlay" hidden>
   <div class="conn-card">
-    <svg class="rv loading" viewBox="0 0 32 32" aria-hidden="true"><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M23.78 8.22A11 11 0 1 0 27 16"/><path class="rv-head" d="M23.6 18.4 27 15l3.4 3.4"/></g><path class="rv-bar" d="M11.5 21.5v-4"/><path class="rv-bar" d="M16 21.5v-7"/><path class="rv-bar" d="M20.5 21.5v-10"/></svg>
+    <svg class="rv loading" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg>
     <h2>Waiting for the REVIVE server</h2>
     <p>The forecasts come from a Python server on this computer. It is not answering yet.</p>
     <ol>

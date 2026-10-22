@@ -54,12 +54,13 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
 
 ## Design language (frontend)
+v6 "concrete and signal": the landing page (`landing.css`) is light concrete paper (`--paper`) with near-black ink, Archivo set heavy and condensed for headlines and figures, one construction-yellow signal colour used only as a flat fill under black text, and ink bands for rhythm; the 3D site sits in a framed daylight panel. The workspace keeps the dark cockpit, cleaned up by `workspace.css` (loaded after cockpit.css): flat graphite, no grid texture, glows or gradients, labels at 6:1 or better. Every text pair must meet WCAG AA (4.5:1). No Cinzel or Manrope.
 v5 "site cockpit" (`web/assets/css/cockpit.css`, loaded after app.css and only overriding it): the workspace as a vehicle instrument cluster on a construction site. Vertical icon rail (a bottom dock on phones), graphite instrument bezels, construction-yellow ambient light, and on the Forecast sheet a cluster of arc gauges (`charts.gauge`) either side of an isometric building with leader-line callouts (`charts.building`) plus warning lights. Earlier layers below still define the base tokens.
 The look is "site grade": structural-steel graphite with construction-yellow actions (v3).
 - Archivo (variable width, `font-variation-settings:"wdth" N`) for headings and figures, Inter for body text, JetBrains Mono for codes and labels. All three are vendored variable fonts in `web/assets/fonts/`.
 - Graphite surfaces (`--ink-*`, `--surface`), steel-blue `--cyan` for data linework; construction yellow (`--amber`) for primary actions only; hazard stripes (`--hazard`) as a small accent.
 - Green/amber/orange/red for risk only, and survey-marking pink (`--mark`) only for the recovery plan.
-- The REVIVE mark (recovery arrow around three rising columns, `.rv`) is the logo, the tab-bar emblem, the loader (`.rv.loading`) and the landing tab progress ring. Add `.rv-go` to replay its draw-in (not `.play`, which is the BIM timeline button).
+- The REVIVE mark (`.rv`) is a structural frame (columns, floor slabs, an unfinished bay) on a yellow site-sign plate, with the recovery arrow rising out of the bay being built. Children: `rv-plate`, `rv-fl`, `rv-slab`, the `rv-ring` group (`rv-arc`, `rv-head`), then three `rv-bar` columns (keep them last). It is the logo, the rail emblem and the loader (`.rv.loading`); every copy and the favicons use identical markup. Add `.rv-go` to replay its draw-in (not `.play`, which is the BIM timeline button).
 - 3D hover cards: `tilt.js`; mark a container `data-tilt` and its layers `data-z="40"`.
 - Sentence-case copy, no all-caps labels in the workspace.
 

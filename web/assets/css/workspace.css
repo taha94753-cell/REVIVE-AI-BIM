@@ -1,0 +1,120 @@
+/* REVIVE v6 workspace: the cockpit, cleaned up to match the "concrete and signal" landing page. Loaded after
+   cockpit.css and only overrides it, so every id and behaviour stays.
+   - flat graphite instead of the carbon weave, setting-out grid and ambient glow: the data is the only texture
+   - every label passes WCAG AA on its panel (chalk-3 was 3.9:1 on the bezels; now 6:1)
+   - construction yellow is a flat fill under black text, never a gradient or a glow
+   - Archivo set heavy and condensed for headings and figures, Inter for everything else (no Cinzel, no Manrope) */
+
+body.cockpit{
+  --bg:#0C0D0F; --bezel-1:#16181C; --bezel-2:#121417; --edge:rgba(242,244,247,.09); --edge-2:rgba(242,244,247,.16);
+  --amber:#FFC21A; --amber-2:#FFD24D; --amber-ink:#111214;
+  --gold:var(--amber);
+  --chalk:#F2F4F7; --chalk-2:#B4BCC7; --chalk-3:#8E97A3;             /* 16.7, 9.6 and 6.2:1 on the page */
+  --line:rgba(242,244,247,.08); --line-strong:rgba(242,244,247,.15);
+  --glass:var(--bezel-1); --glass-strong:#1A1D21;
+  --glass-hi:none; --glass-shadow:none;
+  --r:12px; --r-lg:16px;
+  --ui:"Inter","Segoe UI",system-ui,sans-serif;
+  --figure:"Archivo","Arial Narrow",sans-serif;
+  --hazard:repeating-linear-gradient(-45deg,var(--amber) 0 6px,#111214 6px 12px);
+  background:var(--bg);
+}
+body.cockpit,body.cockpit::before{background-image:none}
+body.cockpit::before{background:var(--bg)}
+body.cockpit::after{display:none}
+body.cockpit :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---- side rail: the mark is its own yellow plate, the selected sheet is a solid tile */
+body.cockpit .tabs{background:#0F1012;border-right:1px solid var(--edge);box-shadow:none}
+body.cockpit .tabs-mark{width:48px;height:48px;margin:2px auto 16px;border:0;border-radius:0;background:none;box-shadow:none}
+body.cockpit .tabs-mark .rv{width:44px;height:44px}
+body.cockpit .tabs a{font:600 11px/1.2 var(--text);color:var(--chalk-2);border-radius:10px}
+body.cockpit .tabs a:hover{color:var(--chalk);background:rgba(242,244,247,.04)}
+body.cockpit .tabs a[aria-selected=true]{color:var(--chalk)}
+body.cockpit .tabs a[aria-selected=true] .ti{color:var(--amber);filter:none}
+body.cockpit .tab-ind{border-radius:10px;background:#1E2125;border:1px solid var(--edge-2);box-shadow:none}
+body.cockpit .tab-ind em{background:var(--amber);box-shadow:none;left:-11px;width:4px;border-radius:0 3px 3px 0}
+body.cockpit .tab-hover{border-radius:10px;background:rgba(242,244,247,.04)}
+
+/* ---- top bar */
+body.cockpit .topbar{background:rgba(12,13,15,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+body.cockpit .wordmark{font:900 24px/1 var(--figure);font-variation-settings:"wdth" 84;letter-spacing:.04em;color:var(--chalk)}
+body.cockpit #proj-btn{border-radius:10px;background:var(--bezel-1);border:1px solid var(--edge-2);box-shadow:none}
+body.cockpit #proj-btn:hover{border-color:var(--chalk-3)}
+body.cockpit #proj-btn .ps-label{color:var(--chalk-3)}
+body.cockpit #user-btn{background:var(--amber);color:var(--amber-ink);border-color:var(--amber);font-family:var(--figure);font-weight:800}
+body.cockpit .conn{color:var(--chalk-2)}
+
+/* ---- sheet heads: condensed and heavy, like the landing page, closer to the top bar */
+body.cockpit .sheet{padding-top:28px}
+body.cockpit .sheet-head h2,body.cockpit .ws-head h2,body.cockpit .pm-head h2{font:900 clamp(40px,4.6vw,64px)/.95 var(--figure);font-variation-settings:"wdth" 78;letter-spacing:-.03em}
+body.cockpit .sheet-head p,body.cockpit .ws-head p{color:var(--chalk-2)}
+body.cockpit .titleblock{border-radius:6px;background:var(--bezel-1)}
+body.cockpit .titleblock span{color:var(--chalk-2)}
+body.cockpit .titleblock span:first-child{color:var(--amber-ink)}
+body.cockpit h3{font-family:var(--figure);font-weight:800;font-variation-settings:"wdth" 86;letter-spacing:-.01em}
+
+/* ---- panels: flat bezels with a hairline edge, no deep shadows */
+body.cockpit :is(.panel,.result,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.table-wrap,.empty-state,.card:not(.proj-card):not(.new):not(.skeleton),.actions-card){
+  background:var(--bezel-1);border:1px solid var(--edge);box-shadow:none;border-radius:var(--r-lg)}
+body.cockpit :is(.inspector,.legend,.menu,.conn-card,dialog.modal,.timeline){background:#1A1D21;border-color:var(--edge-2);box-shadow:0 24px 60px -20px rgba(0,0,0,.8)}
+body.cockpit :is(.proj-card,.dl-big){background:var(--bezel-1);border:1px solid var(--edge);box-shadow:none}
+body.cockpit .proj-card:hover{border-color:var(--chalk-3);box-shadow:none;transform:translateY(-2px)}
+body.cockpit .proj-card.current{border-color:var(--amber);box-shadow:inset 0 3px 0 var(--amber)}
+body.cockpit .proj-card::before{background:none}
+body.cockpit .card.new{border:1.5px dashed var(--edge-2);background:transparent}
+body.cockpit .card.new:hover{border-color:var(--amber);background:rgba(255,194,26,.04)}
+body.cockpit .stage{background:linear-gradient(180deg,#15181C,#0E1013);border-color:var(--edge)}
+body.cockpit .grid th{background:#121417;color:var(--chalk-2)}
+body.cockpit .grid tr.prod td{background:rgba(255,194,26,.07)}
+body.cockpit .pack-bar{border-radius:var(--r-lg);border:1px solid var(--edge);border-left:4px solid var(--amber);background:var(--bezel-1)}
+body.cockpit .callout-warn{border-radius:10px}
+
+/* figures: the same heavy condensed Archivo as the landing page's statistics */
+body.cockpit :is(.kpis dd,.impact dd,.ws-kpis dd,.dl-kpis dd,.ov-kpis dd,.metrics dd,.lb-cells dd,.sim-big,.big,.dl-big .big,.cg b){
+  font-family:var(--figure);font-variation-settings:"wdth" 80;font-weight:850;letter-spacing:-.02em}
+body.cockpit :is(.ws-kpis,.dl-kpis,.kpis,.impact,.metrics) dt{color:var(--chalk-2)}
+body.cockpit .g-val{font-variation-settings:"wdth" 80;font-weight:850}
+body.cockpit :is(.b-v,.cl-health b,.crit .cp,.rc-head b){font-variation-settings:"wdth" 82;font-weight:800}
+body.cockpit .g-tick,body.cockpit .g-sub,body.cockpit .b-k,body.cockpit .cl-cap,body.cockpit .cl-gate,body.cockpit .cl-health{fill:var(--chalk-3);color:var(--chalk-3)}
+
+/* ---- the Forecast cluster: keep the hazard edge, drop the ambient glow */
+body.cockpit .cluster{background:linear-gradient(180deg,#16181C,#101215);box-shadow:none;border-radius:20px}
+body.cockpit .cluster::after{display:none}
+body.cockpit .cl-bar b{box-shadow:none}
+body.cockpit .telltales li.on{box-shadow:none}
+body.cockpit .telltales li.on i{box-shadow:none}
+
+/* ---- buttons and inputs: flat signal yellow under black text, an outlined secondary */
+body.cockpit .btn{border-radius:8px;font:700 15px/1 var(--text);letter-spacing:-.005em}
+body.cockpit :is(.btn.primary,.play){background:var(--amber);color:var(--amber-ink);border-color:var(--amber);box-shadow:none;filter:none}
+body.cockpit :is(.btn.primary,.play):not([disabled]):hover{background:var(--amber-2);box-shadow:none;filter:none}
+body.cockpit .btn.mark{box-shadow:none;filter:none}
+body.cockpit .btn.ghost{background:transparent;border:1.5px solid var(--edge-2);color:var(--chalk)}
+body.cockpit .btn.ghost:hover{border-color:var(--chalk);background:rgba(242,244,247,.04)}
+body.cockpit :is(input,select){background:#0F1113;border:1px solid var(--edge-2);border-radius:8px}
+body.cockpit :is(input,select):hover{border-color:var(--chalk-3)}
+body.cockpit :is(input,select):focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,194,26,.22);outline:none}
+body.cockpit input::placeholder{color:var(--chalk-3)}
+body.cockpit .seg{background:#0F1113;border-color:var(--edge-2);border-radius:10px}
+body.cockpit .seg button{color:var(--chalk-2)}
+body.cockpit :is(.seg-thumb,.seg button[aria-pressed=true],.seg button[aria-checked=true],.seg button[aria-selected=true]){background:#2A2E33;color:var(--chalk);box-shadow:inset 0 0 0 1px var(--chalk-3)}
+body.cockpit .seg.has-thumb button[aria-pressed=true],body.cockpit .seg.has-thumb button[aria-checked=true],body.cockpit .seg.has-thumb button[aria-selected=true]{background:transparent;box-shadow:none;color:var(--chalk)}
+body.cockpit .seg.pm-tabs .seg-thumb{background:var(--amber);box-shadow:none}
+body.cockpit .seg.pm-tabs button[aria-selected=true]{background:var(--amber);color:var(--amber-ink);box-shadow:none}
+body.cockpit legend .step{border-color:var(--amber);background:var(--amber);color:var(--amber-ink)}
+
+/* ---- phones: the rail is a dock, so the top bar carries the mark and loses the long labels */
+@media (max-width:820px){
+  body.cockpit .wordmark .rv{display:block;width:30px;height:30px}
+  body.cockpit .wordmark>span{display:none}
+  body.cockpit .topbar{gap:12px;padding:0 12px}
+  body.cockpit .proj-switch{min-width:0;flex:1 1 auto}
+  body.cockpit #proj-btn{max-width:100%}
+  body.cockpit #proj-btn .ps-label{display:none}
+  body.cockpit #proj-btn b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  body.cockpit .topbar .grow{display:none}
+  body.cockpit #live-pill-text,body.cockpit #status{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  body.cockpit .live-pill,body.cockpit .conn{padding:8px;min-width:0}
+  body.cockpit .tabs{background:#0F1012}
+}

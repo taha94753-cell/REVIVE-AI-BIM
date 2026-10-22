@@ -743,36 +743,36 @@ h2{font-weight:750}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 code{background:var(--ink-700);border:1px solid var(--line)}
 
-/* ---- the REVIVE mark: a recovery arrow around rising columns */
+/* ---- the REVIVE mark: a structural frame on a yellow site-sign plate, the recovery arrow rising out of the bay
+   being built. Children: plate, floor lines, slab, arrow group, then the three columns. */
 .rv{display:block;width:28px;height:28px;flex:none;overflow:visible}
-.rv .rv-arc,.rv .rv-head{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.rv .rv-arc{stroke:var(--amber);stroke-width:2.6;stroke-dasharray:1;stroke-dashoffset:0}
-.rv .rv-head{stroke:var(--amber);stroke-width:2.6}
-.rv .rv-bar{stroke:var(--chalk);stroke-width:2.8;stroke-linecap:round;transform-box:fill-box;transform-origin:50% 100%}
-.rv .rv-bar:last-child{stroke:var(--amber-2)}
-.rv .rv-ring{transform-box:view-box;transform-origin:16px 16px}
-.rv.rv-go .rv-arc{animation:rvDraw .9s var(--ease) both}
-.rv.rv-go .rv-head{animation:rvHead .35s .7s var(--spring) both}
-.rv.rv-go .rv-ring{animation:rvTurn .9s var(--ease) both}
+.rv .rv-plate{fill:#FFC21A}
+.rv .rv-arc,.rv .rv-head{fill:none;stroke:#111214;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.rv .rv-arc{stroke-dasharray:1;stroke-dashoffset:0}
+.rv .rv-slab,.rv .rv-bar{stroke:#111214;stroke-width:2.6;stroke-linecap:square}
+.rv .rv-fl{stroke:#111214;stroke-width:2;stroke-linecap:square}
+.rv .rv-bar{transform-box:fill-box;transform-origin:50% 100%}
+.rv .rv-head{transform-box:fill-box;transform-origin:50% 50%}
+.rv.rv-go .rv-arc{animation:rvDraw .8s .3s var(--ease) both}
+.rv.rv-go .rv-head{animation:rvHead .35s .95s var(--spring) both}
 .rv.rv-go .rv-bar{animation:rvRise .55s var(--spring) both}
-.rv.rv-go .rv-bar:nth-child(3){animation-delay:.08s}.rv.rv-go .rv-bar:nth-child(4){animation-delay:.16s}
+.rv.rv-go .rv-bar:nth-last-child(2){animation-delay:.08s}.rv.rv-go .rv-bar:last-child{animation-delay:.16s}
 @keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@keyframes rvHead{from{opacity:0}to{opacity:1}}
+@keyframes rvHead{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
 @keyframes rvRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-@keyframes rvTurn{from{transform:rotate(140deg)}to{transform:rotate(0)}}
-.rv.loading .rv-ring{animation:rvSpin 1.1s linear infinite}
-.rv.loading .rv-arc{stroke-dasharray:.62 .38}
-.rv.loading .rv-head{opacity:0}
-.rv.loading .rv-bar{animation:rvPulse 1.1s ease-in-out infinite}
-.rv.loading .rv-bar:nth-child(3){animation-delay:.15s}.rv.loading .rv-bar:nth-child(4){animation-delay:.3s}
-@keyframes rvSpin{to{transform:rotate(-360deg)}}
-@keyframes rvPulse{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+.rv.loading .rv-arc{animation:rvLoop 1.4s var(--ease) infinite}
+.rv.loading .rv-head{animation:rvBlink 1.4s ease-in-out infinite}
+.rv.loading .rv-bar{animation:rvPulse 1.4s ease-in-out infinite}
+.rv.loading .rv-bar:nth-last-child(2){animation-delay:.15s}.rv.loading .rv-bar:last-child{animation-delay:.3s}
+@keyframes rvLoop{0%{stroke-dashoffset:1}60%,100%{stroke-dashoffset:0}}
+@keyframes rvBlink{0%,45%{opacity:0}60%,100%{opacity:1}}
+@keyframes rvPulse{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
 
 /* ---- top bar and wordmark */
 .topbar{height:60px;background:linear-gradient(180deg,rgba(11,14,18,.94),rgba(11,14,18,.8));backdrop-filter:blur(14px) saturate(1.2);border-bottom:1px solid var(--line)}
 .wordmark{display:inline-flex;align-items:center;gap:10px;font:800 20px/1 var(--display);font-variation-settings:"wdth" 112;letter-spacing:.14em}
 .wordmark .rv{width:30px;height:30px}
-.wordmark:hover .rv .rv-ring{animation:rvTurn .9s var(--ease)}
+.wordmark:hover .rv .rv-arc{animation:rvDraw .8s var(--ease)}
 #proj-btn{border-radius:var(--r-sm);background:rgba(29,35,44,.7);box-shadow:var(--hi)}
 #proj-btn:hover{border-color:rgba(255,184,28,.55)}
 #proj-btn b{font:700 16px var(--display)}
@@ -1041,8 +1041,8 @@ select option{background:#0B1E3C}
 .toast2,.tip{border-radius:14px}
 .toast2.live{background:var(--glass-strong);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur)}
 
-/* the REVIVE wordmark is set in Cinzel everywhere, as on the landing page */
-.wordmark{font-family:"Cinzel","Trajan Pro",Georgia,serif;font-weight:700;font-variation-settings:normal;letter-spacing:.2em}
+/* the REVIVE wordmark is set in Archivo, heavy and condensed, as on the landing page */
+.wordmark{font-family:var(--display);font-weight:900;font-variation-settings:"wdth" 84;letter-spacing:.04em}
 
 /* the phone page keeps its plain backdrop (no fixed layers on site phones) */
 body.site{background:#061430}

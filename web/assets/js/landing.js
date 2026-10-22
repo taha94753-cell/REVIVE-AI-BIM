@@ -1,5 +1,5 @@
 // REVIVE landing page (the intro before it is intro.js).
-//  * hero: a procedural building assembles floor by floor under a tower crane at sunset, then a scan
+//  * hero: a procedural building assembles floor by floor under a tower crane in daylight, then a scan
 //    plane sweeps up and recolours it by delay risk, then recovery activities pulse pink (Three.js)
 //  * the HUD numbers follow that animation (labelled illustrative)
 //  * real figures come from /api/public/overview (cross-validated model card), never hard-coded
@@ -16,34 +16,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const HDR = { 'Content-Type': 'application/json', 'X-Revive-Request': '1' };
 
-// =================================================================== sunset sky (CSS layer under the 3D canvas)
-/** Draw a city silhouette into an SVG: seeded so it is the same skyline on every visit; some windows twinkle. */
-function skyline(svg, seed, { min, max, w0, w1, lit }) {
-  if (!svg) return;
-  let r = seed; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-  let x = 0, out = '', win = '';
-  while (x < 1600) {
-    const w = w0 + rnd() * (w1 - w0), h = min + rnd() * (max - min), y = 220 - h;
-    out += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(w + 0.6).toFixed(1)}" height="${h.toFixed(1)}"/>`;
-    if (rnd() < 0.18) out += `<rect x="${(x + w / 2 - 1).toFixed(1)}" y="${(y - 14).toFixed(1)}" width="2" height="14"/>`;   // mast
-    for (let k = 0; k < lit * h / 40; k++) {
-      const wx = x + 3 + rnd() * (w - 7), wy = y + 6 + rnd() * (h - 12);
-      win += `<rect class="w${k % 3}" x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="2.2" height="3"/>`;
-    }
-    x += w + rnd() * 6;
-  }
-  svg.innerHTML = `<g class="bld">${out}</g><g class="win">${win}</g>`;
-}
-
-function sunsetSky() {
-  skyline($('.city.far'), 7, { min: 30, max: 120, w0: 18, w1: 46, lit: 0.6 });
-  skyline($('.city.near'), 31, { min: 18, max: 80, w0: 30, w1: 80, lit: 1.2 });
-  // scrolling away lets the sun go down: it sinks behind the ground and the sky deepens to dusk
-  if (M && !REDUCED) M.scroll(k => { $('.sky').style.setProperty('--dusk', k.toFixed(3)); }, { target: $('.hero'), offset: ['start start', 'end start'] });
-}
-
-// =================================================================== 3D site at sunset
-function nightSite() {
+// =================================================================== 3D site in daylight (an architectural model in the hero frame)
+function siteModel() {
   const canvas = $('#scene');
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
@@ -51,26 +25,26 @@ function nightSite() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene();
-  renderer.setClearColor(0x000000, 0);                 // the sky is the CSS layer underneath
-  scene.fog = new THREE.Fog(0xB4583F, 70, 230);         // haze matches the sky at the horizon
+  renderer.setClearColor(0x000000, 0);                 // the sky is the frame's CSS gradient underneath
+  scene.fog = new THREE.Fog(0xE4E5E2, 60, 190);         // haze matches the bottom of that gradient, so the ground meets it
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 500);
-  const target = new THREE.Vector3(-20, 12, 0);
+  const target = new THREE.Vector3(0, 9, 0);
 
-  scene.add(new THREE.HemisphereLight(0xFFB48A, 0x1A0F1C, 0.75));
-  const key = new THREE.DirectionalLight(0xFF9A4A, 1.7); key.position.set(-40, 8, -30); scene.add(key);   // low sun
-  const rim = new THREE.DirectionalLight(0x9F7BFF, 0.45); rim.position.set(30, 30, 30); scene.add(rim);   // violet sky fill
+  scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xB9B3A8, 1.15));
+  const key = new THREE.DirectionalLight(0xFFF3E0, 1.5); key.position.set(-40, 60, 30); scene.add(key);   // high sun
+  const fill = new THREE.DirectionalLight(0xD6E4F5, 0.45); fill.position.set(40, 20, -30); scene.add(fill);
 
-  // ground: a dark plain that fades into the haze, so the horizon meets the sky
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(420, 64), new THREE.MeshStandardMaterial({ color: 0x1B1219, roughness: 0.95 }));
+  // ground: a concrete plain that fades into the haze, so the horizon meets the sky
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(420, 64), new THREE.MeshStandardMaterial({ color: 0xD3CEC4, roughness: 0.95 }));
   ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; scene.add(ground);
 
-  // ground: blueprint grid and a floodlit pool under the building
-  const grid = new THREE.GridHelper(240, 120, 0xFFB27A, 0x4A2C3A);
-  grid.material.transparent = true; grid.material.opacity = 0.3; scene.add(grid);
+  // ground: the setting-out grid and a yellow pool marking the site under the building
+  const grid = new THREE.GridHelper(240, 120, 0x8E8A82, 0xB4AFA5);
+  grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
   const glowTex = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d'), r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-    r.addColorStop(0, 'rgba(255,184,28,0.35)'); r.addColorStop(0.5, 'rgba(255,184,28,0.08)'); r.addColorStop(1, 'rgba(255,184,28,0)');
+    r.addColorStop(0, 'rgba(255,194,26,0.30)'); r.addColorStop(0.5, 'rgba(255,194,26,0.08)'); r.addColorStop(1, 'rgba(255,194,26,0)');
     g.fillStyle = r; g.fillRect(0, 0, 256, 256);
     return new THREE.CanvasTexture(c);
   })();
@@ -96,46 +70,37 @@ function nightSite() {
   const slabs = [];
   const slabGeo = new THREE.BoxGeometry(BX * SP + 0.8, 0.3, BZ * SP + 0.8), slabEdges = new THREE.EdgesGeometry(slabGeo);
   for (let s = 0; s < NS; s++) {
-    const m = new THREE.Mesh(slabGeo, new THREE.MeshStandardMaterial({ color: 0xC4CBD2, roughness: 0.8, transparent: true, opacity: 0.9 }));
+    const m = new THREE.Mesh(slabGeo, new THREE.MeshStandardMaterial({ color: 0xF2EFE9, roughness: 0.8, transparent: true, opacity: 0.9 }));
     m.position.set(0, (s + 1) * SH, 0);
-    const e = new THREE.LineSegments(slabEdges, new THREE.LineBasicMaterial({ color: 0xFFD3A0, transparent: true, opacity: 0.7 }));
+    const e = new THREE.LineSegments(slabEdges, new THREE.LineBasicMaterial({ color: 0x2A2D31, transparent: true, opacity: 0.5 }));
     m.add(e); scene.add(m); slabs.push(m);
   }
   // risk colour of each storey after the scan (lower floors done, upper floors carry the delay)
-  const C = { built: new THREE.Color(0xC4CBD2), done: new THREE.Color(0x8E98A3), go: new THREE.Color(0x34D399), watch: new THREE.Color(0xF5D547),
-    risk: new THREE.Color(0xFF8A3D), crit: new THREE.Color(0xFF5468), mark: new THREE.Color(0xFF4FA3), active: new THREE.Color(0xFFB81C) };
+  const C = { built: new THREE.Color(0xE9E5DD), done: new THREE.Color(0x9AA2AB), go: new THREE.Color(0x22B07A), watch: new THREE.Color(0xF2C230),
+    risk: new THREE.Color(0xF07A2A), crit: new THREE.Color(0xE03A50), mark: new THREE.Color(0xE8378F), active: new THREE.Color(0xFFC21A) };
   const riskOf = [C.done, C.done, C.go, C.watch, C.risk, C.crit];
   const crashed = new Set([4, 5]);
 
   // scan plane
-  const scan = new THREE.Mesh(new THREE.PlaneGeometry(BX * SP + 8, BZ * SP + 8), new THREE.MeshBasicMaterial({ color: 0x8FBFFF, transparent: true, opacity: 0.0, side: THREE.DoubleSide, depthWrite: false }));
+  const scan = new THREE.Mesh(new THREE.PlaneGeometry(BX * SP + 8, BZ * SP + 8), new THREE.MeshBasicMaterial({ color: 0x1F5FAD, transparent: true, opacity: 0.0, side: THREE.DoubleSide, depthWrite: false }));
   scan.rotation.x = -Math.PI / 2; scene.add(scan);
-  const scanEdge = new THREE.LineSegments(new THREE.EdgesGeometry(scan.geometry), new THREE.LineBasicMaterial({ color: 0x8FBFFF, transparent: true, opacity: 0 }));
+  const scanEdge = new THREE.LineSegments(new THREE.EdgesGeometry(scan.geometry), new THREE.LineBasicMaterial({ color: 0x1F5FAD, transparent: true, opacity: 0 }));
   scan.add(scanEdge);
 
   // tower crane in linework
   const crane = new THREE.Group(); crane.position.set(-22, 0, -14); scene.add(crane);
-  const line = (geo, c = 0x24161F, o = 0.95) => new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o }));
+  const line = (geo, c = 0x2A2D31, o = 0.9) => new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o }));
   const H = 34;
   for (let y = 0; y < H; y += 2) { const seg = line(new THREE.BoxGeometry(1.2, 2, 1.2)); seg.position.y = y + 1; crane.add(seg); }
   const slew = new THREE.Group(); slew.position.y = H; crane.add(slew);
   const jib = line(new THREE.BoxGeometry(32, 1, 1)); jib.position.x = 15; slew.add(jib);
   const cjib = line(new THREE.BoxGeometry(10, 1, 1)); cjib.position.x = -6; slew.add(cjib);
-  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.6), new THREE.MeshBasicMaterial({ color: 0xFFB81C })); cab.position.set(0, -1, 0.4); slew.add(cab);
-  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xFF5468 })); tip.position.set(31, 0.8, 0); slew.add(tip);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.6), new THREE.MeshBasicMaterial({ color: 0xFFC21A })); cab.position.set(0, -1, 0.4); slew.add(cab);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xE03A50 })); tip.position.set(31, 0.8, 0); slew.add(tip);
   const trolley = new THREE.Group(); slew.add(trolley);
   const cableGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -10, 0)]);
-  const cable = new THREE.Line(cableGeo, new THREE.LineBasicMaterial({ color: 0xAAB3BF, transparent: true, opacity: 0.7 })); trolley.add(cable);
-  const hook = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshBasicMaterial({ color: 0xFFB81C })); trolley.add(hook);
-  const flood = new THREE.SpotLight(0xFFB81C, 220, 90, 0.5, 0.6, 1.6); flood.position.set(-22, H + 2, -14); flood.target.position.set(0, 6, 0);
-  scene.add(flood, flood.target);
-
-  // stars of distant site lights
-  const pts = new Float32Array(600 * 3);
-  for (let i = 0; i < 600; i++) { const a = Math.random() * Math.PI * 2, r = 70 + Math.random() * 60; pts[i * 3] = Math.cos(a) * r; pts[i * 3 + 1] = Math.random() * 2; pts[i * 3 + 2] = Math.sin(a) * r; }
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xFFB81C, size: 0.35, transparent: true, opacity: 0.6 })));
-
+  const cable = new THREE.Line(cableGeo, new THREE.LineBasicMaterial({ color: 0x2A2D31, transparent: true, opacity: 0.7 })); trolley.add(cable);
+  const hook = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshBasicMaterial({ color: 0x2A2D31 })); trolley.add(hook);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(), col = new THREE.Color();
   const PERIOD = 17, ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
   const hud = { at: $('[data-hud=at]'), es: $('[data-hud=es]'), spi: $('[data-hud=spi]'), dl: $('[data-hud=dl]'), bar: $('#hud-scan'), phase: $('#hud-phase') };
@@ -168,7 +133,7 @@ function nightSite() {
     });
     const sp = Math.min(1, Math.max(0, scanP));
     scan.position.y = sp * NS * SH + 0.4;
-    scan.material.opacity = scanP > 0 && scanP < 1.05 ? 0.12 : 0;
+    scan.material.opacity = scanP > 0 && scanP < 1.05 ? 0.16 : 0;
     scanEdge.material.opacity = scanP > 0 && scanP < 1.05 ? 0.9 : 0;
     // crane works while the building rises
     slew.rotation.y = -0.6 + Math.sin(t * 0.22) * 0.55;
@@ -190,7 +155,7 @@ function nightSite() {
   function resize() {
     const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
-    target.x = w < 900 ? 0 : -20;
+    camera.zoom = w / h < 0.9 ? 0.78 : 1; camera.updateProjectionMatrix();   // narrow frames pull back
   }
   new ResizeObserver(resize).observe(canvas); resize();
   // behind the intro cover the scene draws one frame and waits: the building starts rising as the cover lifts
@@ -201,7 +166,7 @@ function nightSite() {
   function place(t) {
     px += (tx - px) * 0.04; py += (ty - py) * 0.04;
     const a = 0.75 + t * 0.035 + px * 0.5;
-    camera.position.set(Math.cos(a) * 84, 9 + py * -3, Math.sin(a) * 84);   // low eye: the frame rises against the sky
+    camera.position.set(Math.cos(a) * 74, 24 + py * -4, Math.sin(a) * 74);   // a model-maker's eye: above the site, the crane against the sky
     camera.lookAt(target);
   }
   function loop() {
@@ -310,12 +275,8 @@ function playPanel(x, dir) {
   if (x === 'bim') A($$('.cell', p), { opacity: [0, 1], y: [-30, 0] }, { duration: 0.5, delay: S(0.035), ease: OUT });
 }
 
-/** Fill the REVIVE ring of a tab: k = 0..1 (the arrowhead appears when the cycle completes). */
-function ring(b, k) {
-  const arc = b?.querySelector('.rv-arc');
-  if (arc) arc.style.strokeDashoffset = String(1 - k);
-  b?.classList.toggle('done', k >= 0.995);
-}
+/** Mark a tab's autoplay cycle as complete (its progress bar is drawn by runProgress). */
+function ring(b, k) { b?.classList.toggle('done', k >= 0.995); }
 
 function selectTab(x, { auto = false } = {}) {
   const dir = Math.sign(ORDER.indexOf(x) - ORDER.indexOf(cur));
@@ -373,8 +334,8 @@ function scrollMotion() {
   if (!M) { nav.classList.add('solid'); return; }
   M.scroll((_, info) => nav.classList.toggle('solid', info.y.current > 40));
   if (REDUCED) { $$('#steps li').forEach(li => li.classList.add('on')); return; }
-  // the hero copy drifts up and dims as the night site scrolls away
-  M.scroll(M.animate($('.hero-copy'), { y: [0, -90], opacity: [1, 0.15] }, { ease: 'linear' }), { target: $('.hero'), offset: ['start start', 'end start'] });
+  // the hero frame eases back as the page scrolls away from it
+  M.scroll(M.animate($('.hero-frame'), { scale: [1, 0.96], opacity: [1, 0.6] }, { ease: 'linear' }), { target: $('.hero'), offset: ['start start', 'end start'] });
   M.inView('.reveal-up', el => { M.animate(el, { opacity: [0, 1], y: [40, 0] }, { duration: 0.9, ease: OUT }); }, { margin: '0px 0px -10% 0px' });
   // site to decision: the section stays in view (CSS sticky) while each step lights up in turn
   const steps = $$('#steps li'), fill = $('#pipe-fill');
@@ -454,8 +415,7 @@ async function wireAuth() {
 }
 
 // =================================================================== boot
-sunsetSky();
-nightSite();
+siteModel();
 isoBuilding();
 wireAuth();
 plate($('.xt-ind'), $('#xt-now'), { instant: true });

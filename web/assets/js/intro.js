@@ -1,6 +1,6 @@
 // The REVIVE intro before the landing page. Runs before the first paint and decides whether it plays: once per
-// browser session (add ?intro to the address to replay it), never under reduced motion. When it plays, the mark draws
-// its recovery arc, the name rises, and the cover lifts like a site hoarding (about 4.2 s; any key or click skips it).
+// browser session (add ?intro to the address to replay it), never under reduced motion. When it plays, the frame rises
+// and the mark draws its recovery arrow, the name rises, and the cover lifts like a site hoarding (about 4.2 s; any key or click skips it).
 // It needs only Motion (vendored, loaded with defer), so it starts without waiting for the 3D scene. If anything
 // fails, CSS lifts the cover after 7 s on its own (landing.css, introSafety).
 (() => {
@@ -24,12 +24,11 @@
     await Promise.race([document.fonts?.ready, wait(700)]);     // the name is set in Archivo: never animate the fallback face
     const A = M.animate, q = s => cover.querySelector(s), qa = s => cover.querySelectorAll(s);
     A(q('.intro-mark'), { opacity: [0, 1], scale: [0.86, 1], filter: ['blur(10px)', 'blur(0px)'] }, { duration: 1.1, ease: OUT });
-    A(q('.rv-ring'), { rotate: [200, 0] }, { duration: 1.8, ease: OUT });
     A(q('.rv-arc'), { strokeDashoffset: [1, 0] }, { duration: 1.8, ease: OUT });
     A(qa('.rv-bar'), { scaleY: [0, 1] }, { type: 'spring', stiffness: 200, damping: 14, delay: M.stagger(0.16, { startDelay: 0.35 }) });
     A(q('.rv-head'), { opacity: [0, 1], scale: [0.3, 1] }, { type: 'spring', stiffness: 420, damping: 16, delay: 1.5 });
     A(qa('.intro-word span'), { y: ['110%', '0%'], opacity: [0, 1], filter: ['blur(10px)', 'blur(0px)'] }, { duration: 1.1, ease: OUT, delay: M.stagger(0.09, { startDelay: 0.7 }) });
-    A(q('.intro-word'), { letterSpacing: ['0.42em', '0.16em'] }, { duration: 2.2, ease: OUT, delay: 0.7 });
+    A(q('.intro-word'), { letterSpacing: ['0.3em', '0.06em'] }, { duration: 2.2, ease: OUT, delay: 0.7 });
     A(q('.intro-line i'), { scaleX: [0, 1] }, { duration: 2, ease: OUT, delay: 0.9 });
     A(q('.intro-cap'), { opacity: [0, 1], y: [10, 0] }, { duration: 0.9, ease: OUT, delay: 1.7 });
     await Promise.race([wait(3300), skipped]);
