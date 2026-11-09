@@ -7,7 +7,7 @@
 
 :root{
   --ink-950:#07090C; --ink-900:#0B0E12; --ink-850:#10141A; --ink-800:#151A21; --ink-700:#1D232C; --ink-600:#28303B;
-  --line:rgba(214,226,240,.075); --line-strong:rgba(214,226,240,.15);
+  --line:rgba(214,226,240,.075); --line-strong:rgba(214,226,240,.15); --wash:rgba(230,238,241,.09);
   --chalk:#EEF1F4; --chalk-2:#AAB3BF; --chalk-3:#7A8492;
   --cyan:#6CB2FF; --amber:#FFB81C; --amber-2:#FFCD5A; --amber-ink:#1A1300;
   --go:#34D399; --watch:#F5D547; --risk:#FF8A3D; --crit:#FF5468; --mark:#FF4FA3; --concrete:#8E98A3;
@@ -629,7 +629,7 @@ body.app .sheet{padding:44px var(--gutter) 80px;border-top:0}
 .dl-hero{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(0,1.6fr);gap:28px;align-items:stretch;margin-bottom:18px}
 .dl-big{position:relative;border:1px solid var(--line-strong);border-radius:8px;padding:22px 24px;overflow:hidden;
   background:radial-gradient(500px 260px at 0% 0%,rgba(255,84,104,.10),transparent 70%),linear-gradient(180deg,rgba(29,35,44,.55),rgba(13,16,21,.8))}
-.dl-big .big{font-size:clamp(96px,10vw,148px);margin:10px 0 4px}
+.dl-big .big{font-size:clamp(96px,10vw,148px);margin:10px 0 4px;color:var(--c)}
 .dl-big .big::after{content:" " attr(data-unit);font:600 28px var(--display);color:var(--chalk-2);letter-spacing:0}
 .dl-source{font:400 12px var(--mono);color:var(--chalk-3);margin:12px 0 0;border-top:1px dashed var(--line);padding-top:10px}
 .dl-source b{color:var(--amber);font-weight:500}
@@ -923,16 +923,14 @@ dialog.modal[open]{animation:dlgIn .45s var(--spring)}
    v4 "blueprint glass": the workspace sits on a drafting sheet (deep blueprint blue, setting-out grid and a
    general-arrangement plan, web/assets/img/blueprint.svg) that drifts slowly. Every card, panel and the tab bar
    is Apple-style glass: frosted, a hairline edge, a specular top highlight and layered soft shadows.
-   Manrope for cards and tabs; the sunset gold of the landing page for primary actions.
+   Inter for cards and tabs; the sunset gold of the landing page for primary actions.
    ===================================================================== */
-@font-face{font-family:"Cinzel";src:url(/assets/fonts/cinzel-latin-wght-normal.woff2) format("woff2-variations"),url(/assets/fonts/cinzel-latin-wght-normal.woff2) format("woff2");font-weight:400 900;font-display:swap}
-@font-face{font-family:"Manrope";src:url(/assets/fonts/manrope-latin-wght-normal.woff2) format("woff2-variations"),url(/assets/fonts/manrope-latin-wght-normal.woff2) format("woff2");font-weight:200 800;font-display:swap}
 :root{
   --chalk:#F5F7FA; --chalk-2:#B6C4D8; --chalk-3:#8297B2;
   --line:rgba(190,215,255,.09); --line-strong:rgba(190,215,255,.17);
   --amber:#FFB547; --amber-2:#FFD08A;
   --gold:linear-gradient(135deg,#FFE0A3 0%,#FFB547 42%,#FF7A59 100%);
-  --ui:"Manrope","Inter",system-ui,sans-serif;
+  --ui:"Inter",system-ui,sans-serif;
   --r:16px; --r-lg:22px;
   --glass:linear-gradient(150deg,rgba(255,255,255,.11),rgba(255,255,255,.04) 42%,rgba(255,255,255,.02)),rgba(8,20,42,.58);
   --glass-strong:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,.05) 42%,rgba(255,255,255,.03)),rgba(7,17,36,.86);
@@ -999,7 +997,7 @@ dialog.modal,.conn-card{border-radius:26px}
 .card.new{border:1.5px dashed rgba(200,225,255,.28);background:rgba(255,255,255,.03);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .card.new:hover{background:rgba(255,181,71,.07);border-color:var(--amber)}
 
-/* ---- type in cards and tabs: Manrope, Apple-like tracking */
+/* ---- type in cards and tabs: Inter, Apple-like tracking */
 :is(.panel,.card,.result,.dl-big,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.empty-state,.inspector,dialog.modal,.menu,.impact,.kpis) :is(h3,h4,dd,legend,.big,.menu-head b,.drop b,.pm-choice b,.sim-big,.live-state,.lb-head b,output,strong){
   font-family:var(--ui);font-variation-settings:normal}
 :is(.panel,.card,.dl-big,.result,.ws-kpis,.dl-kpis,.overview) h3,legend,.inspector h4{font-weight:700;letter-spacing:-.022em}

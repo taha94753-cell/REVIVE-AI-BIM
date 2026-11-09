@@ -1,11 +1,14 @@
 // REVIVE landing page (the intro before it is intro.js).
-//  * hero: one building goes from frame to handover in daylight (Three.js): the frame rises under a tower crane,
-//    a scan recolours it by delay risk, the recovery pulses pink, then cladding, glazing, roof and landscaping
-//  * the HUD numbers follow that animation (labelled illustrative)
+//  * the film: one building at dusk (Three.js), pinned full screen and scrubbed by the scroll from frame to handover:
+//    the frame rises under a tower crane, a scan recolours it by delay risk, the recovery pulses pink, then cladding,
+//    lantern-lit glazing, roof and landscaping. Five chapters of copy fade through it, changing sides each time, and
+//    the camera leans away from the side the text is on (after scrolltide's Rann Mahal)
+//  * the HUD numbers follow the scene (labelled illustrative)
 //  * real figures come from /api/public/overview (cross-validated model card), never hard-coded
 //  * motion: Motion (vendored, the Framer Motion engine) for the intro, tabs, scroll and reveals
 //  * sign in / create workspace talk to /api/auth/*
-//  * "For companies": six isometric site models (iso.js) that tilt in depth under the pointer (tilt.js)
+//  * "How it works": glass tabs, a liquid lens that squeezes and wobbles between tabs
+//  * "For companies": a spotlight rail of six isometric site models (iso.js) that tilt under the pointer (tilt.js)
 import * as THREE from 'three';
 import { REDUCED, enter, plate, roving } from './tabs.js';
 import { isoScenes } from './iso.js';
@@ -20,16 +23,19 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const HDR = { 'Content-Type': 'application/json', 'X-Revive-Request': '1' };
 
-// =================================================================== 3D site in daylight: one building, frame to handover
-// A 4 x 3 bay, six-storey block goes through a real sequence in one loop (PERIOD seconds):
+// =================================================================== 3D site at dusk: one building, frame to handover
+// A 4 x 3 bay, six-storey block goes through a real sequence; the scroll sets where in it we are (u, in seconds of T):
 //   frame      columns, beams and slabs storey by storey under a working tower crane
 //   scan       a scan plane sweeps up and tints each storey by delay risk; the late storeys pulse pink (recovery)
 //   envelope   precast pilasters and spandrels, then glazing with aluminium mullions, storey by storey
 //   roof       parapet, plant room and rooftop units
-//   handover   the crane is dismantled, paving, canopy and trees go in, and the finished block holds in the sun
+//   handover   the crane is dismantled, paving, canopy and trees go in, and the lanterns come on
 // Every member is an instance with its own storey and trade, so each one is placed, not faded in.
-const PERIOD = 30;
-const T = { frame: [0.4, 7.4], scan: [7.6, 10.2], rec: [10.2, 12.4], env: [12.2, 19.6], roof: [19.2, 21], out: [20.6, 23.4], fade: [28.6, 30] };
+const T = { frame: [0.4, 7.4], scan: [7.6, 10.2], rec: [10.2, 12.4], env: [12.2, 19.6], roof: [19.2, 21], out: [20.6, 23.4] };
+// film progress (0..1) -> u: one chapter per phase, so each chapter's words sit over the work they describe
+const KEYS = [[0, 3.6], [0.2, 7.5], [0.4, 10.3], [0.6, 12.8], [0.8, 19.4], [0.96, 24], [1, 24]];
+const uAt = k => { for (let i = 1; i < KEYS.length; i++) if (k <= KEYS[i][0]) { const [a, ua] = KEYS[i - 1], [b, ub] = KEYS[i]; return ua + (ub - ua) * (k - a) / (b - a); } return 24; };
+let filmK = 0, filmSide = -1;          // set by the scroll; -1 = text on the left, so the building leans right
 const span = (u, [a, b]) => Math.min(1, Math.max(0, (u - a) / (b - a)));
 
 function siteModel() {
@@ -39,25 +45,25 @@ function siteModel() {
   catch { canvas.hidden = true; return null; }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
-  renderer.setClearColor(0x000000, 0);                 // the sky is the frame's CSS gradient underneath
-  scene.fog = new THREE.Fog(0xE4E5E2, 70, 210);         // haze matches the bottom of that gradient, so the ground meets it
+  scene.background = new THREE.Color(0x2A1D15);          // dusk: the ground runs into a warm haze
+  scene.fog = new THREE.Fog(0x2A1D15, 80, 230);
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 500);
   const target = new THREE.Vector3(0, 10, 0);
 
   // a sky to reflect: glazing and aluminium need something to mirror or they read as flat paint
   const sky = document.createElement('canvas'); sky.width = 16; sky.height = 256;
   const sg = sky.getContext('2d'), grad = sg.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#7E98B3'); grad.addColorStop(0.46, '#DCE3E8'); grad.addColorStop(0.5, '#C9C5BC'); grad.addColorStop(1, '#6F6B64');
+  grad.addColorStop(0, '#2E2433'); grad.addColorStop(0.44, '#D88F55'); grad.addColorStop(0.5, '#8A5A3A'); grad.addColorStop(1, '#2A1E16');
   sg.fillStyle = grad; sg.fillRect(0, 0, 16, 256);
   const skyTex = new THREE.CanvasTexture(sky); skyTex.mapping = THREE.EquirectangularReflectionMapping; skyTex.colorSpace = THREE.SRGBColorSpace;
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromEquirectangular(skyTex).texture;
 
-  scene.add(new THREE.HemisphereLight(0xEAF1FA, 0xA59F93, 0.55));
-  const sun = new THREE.DirectionalLight(0xFFF2DD, 2.4);
+  scene.add(new THREE.HemisphereLight(0xB9A6C0, 0x4A3626, 0.75));
+  const sun = new THREE.DirectionalLight(0xFFAA6A, 2.6);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
   Object.assign(sun.shadow.camera, { left: -42, right: 42, top: 42, bottom: -42, near: 1, far: 200 });
   scene.add(sun, sun.target);
@@ -74,12 +80,12 @@ function siteModel() {
   // ---- materials: what the block is actually made of
   const std = (color, rough, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
   const MAT = {
-    ground: std(0xC9C4B8, 0.95), grass: std(0x8E9C78, 1), paving: std(0xD9D3C7, 0.9), road: std(0x76797C, 0.95), kerb: std(0xBDB7AB, 0.9),
-    frame: std(0xBCB7AD, 0.88),                                   // in-situ concrete
-    slab: std(0xC7C2B8, 0.9),
-    precast: std(0xE9E3D7, 0.78),                                 // light stone precast cladding
-    spandrel: std(0xDDD6C8, 0.8),
-    glass: std(0xFFFFFF, 0.12, 0.25, { map: glazing(), envMapIntensity: 0.9 }),   // tinted double glazing, the sky reflected in it
+    ground: std(0x8A7A66, 0.95), grass: std(0x55603F, 1), paving: std(0xB8A88F, 0.9), road: std(0x4A4440, 0.95), kerb: std(0xA39581, 0.9),
+    frame: std(0xBDB6AA, 0.88),                                   // in-situ concrete
+    slab: std(0xC6BEB0, 0.9),
+    precast: std(0xE6D2B0, 0.78),                                 // sandstone precast cladding
+    spandrel: std(0xD8C29E, 0.8),
+    glass: std(0xFFFFFF, 0.12, 0.25, { map: glazing(), envMapIntensity: 0.9, emissive: 0xFFA24A, emissiveIntensity: 0 }),   // glazing; lit from inside at dusk
     alu: std(0x3D4248, 0.35, 0.8),                                // anodised mullions and coping
     plant: std(0xA2A7AC, 0.55, 0.4), louvre: std(0x7D838A, 0.5, 0.5),
     trunk: std(0x6B5A48, 0.9), leaf: std(0x6F8A58, 0.95, 0, { flatShading: true }), leaf2: std(0x5E7A4D, 0.95, 0, { flatShading: true }),
@@ -93,7 +99,7 @@ function siteModel() {
   plane(120, 90, MAT.grass, -0.01);
   plane(40, 32, MAT.paving, 0.005);
   plane(9, 140, MAT.road, 0.008, 28.5, 0);
-  const grid = new THREE.GridHelper(40, 20, 0xA9A396, 0xBEB8AC);       // setting-out grid on the apron, gone at handover
+  const grid = new THREE.GridHelper(40, 20, 0x9C8B74, 0x7A6B58);       // setting-out grid on the apron, gone at handover
   grid.material.transparent = true; grid.material.opacity = 0.5; grid.position.y = 0.02; scene.add(grid);
 
   // ---- every placed member is an instance with a storey, a trade and its resting transform
@@ -212,7 +218,7 @@ function siteModel() {
   scan.add(scanEdge);
 
   const C = { built: new THREE.Color(1, 1, 1), go: new THREE.Color(0x22B07A), watch: new THREE.Color(0xF2C230), risk: new THREE.Color(0xF07A2A),
-    crit: new THREE.Color(0xE03A50), mark: new THREE.Color(0xE8378F), active: new THREE.Color(0xFFC21A), done: new THREE.Color(0xD9D6D0) };
+    crit: new THREE.Color(0xE03A50), mark: new THREE.Color(0xFF79C6), active: new THREE.Color(0xFFC21A), done: new THREE.Color(0xD9D6D0) };
   const riskOf = [C.done, C.done, C.go, C.watch, C.risk, C.crit];
   const crashed = new Set([4, 5]);
 
@@ -234,9 +240,8 @@ function siteModel() {
     return ease(b * (it.name === 'col' ? 1.7 : 1.3) - (it.name === 'col' ? 0 : it.name === 'slab' ? 0.75 : 0.4));
   }
 
-  function frame(t) {
-    const u = t % PERIOD;
-    const fade = 1 - ease(span(u, T.fade) * 1.4);           // the finished block steps back before the next loop
+  function frame(u, t) {
+    const fade = 1;
     const scanP = span(u, T.scan), recP = span(u, T.rec), outP = span(u, T.out);
     const restore = ease(span(u, [T.rec[1], T.rec[1] + 1.4]));   // recovery bought: the risk tint leaves the frame
     for (const it of items) {
@@ -253,7 +258,7 @@ function siteModel() {
         const scanned = scanP > 0 && scanP * NS * 1.05 > it.s;
         if (placing) col.copy(C.active); else col.copy(C.built);
         if (scanned) col.lerp(riskOf[it.s], 0.85 * (1 - restore));
-        if (recP > 0 && crashed.has(it.s) && restore < 1) col.lerp(C.mark, (0.45 + 0.4 * Math.sin(t * 6)) * (1 - restore));
+        if (recP > 0 && crashed.has(it.s) && restore < 1) col.lerp(C.mark, (0.86 + 0.14 * Math.sin(t * 6)) * (1 - restore));
         it.m.setColorAt(it.i, col);
       }
     }
@@ -274,9 +279,11 @@ function siteModel() {
     crane.position.y = -H * ease(outP * 1.2 - 0.2) * 1.02;
     craneMats.forEach(([mat, o]) => { mat.opacity = o * working; });
     crane.visible = working > 0.01 && fade > 0.02;
-    // the sun moves across the afternoon, so the finished block's shadows travel
+    // the sun sinks as the work goes on, so the shadows lengthen; the glazing lights up storey by storey at handover
     const sa = 0.9 + u * 0.018;
-    sun.position.set(Math.cos(sa) * 60, 70, Math.sin(sa) * 60 - 20); sun.target.position.set(0, 0, 0);
+    sun.position.set(Math.cos(sa) * 70, 44 - u * 1.1, Math.sin(sa) * 70 - 20); sun.target.position.set(0, 0, 0);
+    sun.intensity = 2.6 - span(u, [14, 24]) * 1.3;
+    MAT.glass.emissiveIntensity = 0.15 + ease(span(u, [16, 23.6])) * 1.25;
 
     // illustrative readout, tied to the scene: the frame runs late, the recovery buys the days back
     const atD = Math.round(320 * Math.min(1, u / T.out[1]));
@@ -292,39 +299,41 @@ function siteModel() {
     if (phase !== lastPhase) { hud.phase.textContent = phase; lastPhase = phase; }
   }
 
-  let px = 0, py = 0, tx = 0, ty = 0;
+  let px = 0, py = 0, tx = 0, ty = 0, ox = -0.12, uCur = 0, W = 1, Hh = 1;
   addEventListener('pointermove', e => { tx = (e.clientX / innerWidth - 0.5); ty = (e.clientY / innerHeight - 0.5); }, { passive: true });
   function resize() {
-    const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
-    renderer.setSize(w, h, false); camera.aspect = w / h;
-    camera.zoom = w / h < 0.9 ? 0.74 : 0.86;                                   // narrow frames pull back further
-    camera.setViewOffset(w, h, -w * 0.08, h * 0.07, w, h);                      // the block sits up and right, clear of the readout
+    W = canvas.clientWidth || innerWidth; Hh = canvas.clientHeight || innerHeight;
+    renderer.setSize(W, Hh, false); camera.aspect = W / Hh;
+    camera.zoom = W / Hh < 0.9 ? 0.62 : 0.84;                                   // narrow screens pull back further
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(canvas); resize();
-  // behind the intro cover the scene draws one frame and waits: the building starts rising as the cover lifts
+  // behind the intro cover the scene draws one frame and waits: the frame starts rising as the cover lifts
   const root = document.documentElement, covered = () => root.classList.contains('intro');
   const canRun = () => !REDUCED && !covered();
-  let visible = true, raf = 0, t0 = performance.now();
+  let visible = true, raf = 0, t0 = performance.now(), tLast = 0;
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !raf && canRun()) loop(); }).observe(canvas);
-  function place(t) {
+  function place(u) {
     px += (tx - px) * 0.04; py += (ty - py) * 0.04;
-    const a = 0.72 + Math.sin(t * 0.05) * 0.35 + px * 0.4;          // sways across the front corner instead of circling to the back
-    camera.position.set(Math.cos(a) * 84, 21 + py * -4, Math.sin(a) * 84);
+    ox += ((W / Hh < 0.9 ? 0 : filmSide * (0.17 + u * 0.006)) - ox) * 0.05;          // lean away from the chapter's text
+    camera.setViewOffset(W, Hh, ox * W, -Hh * 0.04, W, Hh);
+    const a = 0.32 + u * 0.042 + px * 0.25, r = 98 - u * 0.45;          // the camera walks round the front corner as the work goes on
+    camera.position.set(Math.cos(a) * r, 18 + u * 0.35 + py * -4, Math.sin(a) * r);
     camera.lookAt(target);
   }
   function loop() {
     raf = 0;
     if (!visible || document.hidden) return;
-    const t = (performance.now() - t0) / 1000;
-    frame(t); place(t); renderer.render(scene, camera);
+    const t = (performance.now() - t0) / 1000, dt = Math.min(0.5, t - tLast); tLast = t;
+    uCur += (uAt(filmK) - uCur) * (1 - Math.exp(-dt * 3.5));             // an inertial scrub, the same on slow machines
+    frame(uCur, t); place(uCur); renderer.render(scene, camera);
     raf = requestAnimationFrame(loop);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && visible && !raf && canRun()) loop(); });
-  if (REDUCED) { frame(26); place(0); renderer.render(scene, camera); }       // reduced motion: the finished building, still
+  if (REDUCED) { frame(24, 0); place(24); renderer.render(scene, camera); }  // reduced motion: the finished building, still
   else if (covered()) {
-    frame(0); place(0); renderer.render(scene, camera);
-    new MutationObserver((_, mo) => { if (!covered()) { mo.disconnect(); t0 = performance.now(); loop(); } })
+    frame(0, 0); place(0); renderer.render(scene, camera);
+    new MutationObserver((_, mo) => { if (!covered()) { mo.disconnect(); t0 = performance.now(); tLast = 0; loop(); } })
       .observe(root, { attributes: true, attributeFilter: ['class'] });
   } else loop();
   return { frame, place, render: () => renderer.render(scene, camera) };
@@ -432,6 +441,7 @@ function selectTab(x, { auto = false } = {}) {
     ring(b, on && (!M || REDUCED) ? 1 : 0);
   });
   plate($('.xt-ind'), $(`#xt-${x}`));
+  if (M && !REDUCED && dir) M.animate($('.xt-ind'), { scaleX: [1, 1.16, 0.93, 1.03, 1], scaleY: [1, 0.82, 1.07, 0.98, 1] }, { duration: 0.75, ease: 'easeOut' });   // the lens squeezes, lands, wobbles
   $$('.xpanel').forEach(p => { p.hidden = p.dataset.x !== x; });
   playPanel(x, dir);
   if (!auto) paused = false;
@@ -472,23 +482,36 @@ function wireTabs() {
   }, { amount: 0.25 });
 }
 
-// =================================================================== scroll
+// =================================================================== scroll: the film and the reveals
 function scrollMotion() {
   const nav = $('#nav');
   if (!M) { nav.classList.add('solid'); return; }
-  M.scroll((_, info) => nav.classList.toggle('solid', info.y.current > 40));
-  if (REDUCED) { $$('#steps li').forEach(li => li.classList.add('on')); return; }
-  // the hero frame eases back as the page scrolls away from it
-  M.scroll(M.animate($('.hero-frame'), { scale: [1, 0.96], opacity: [1, 0.6] }, { ease: 'linear' }), { target: $('.hero'), offset: ['start start', 'end start'] });
+  M.scroll((_, info) => nav.classList.toggle('solid', info.y.current > innerHeight * 0.6));
+  if (REDUCED) return;
   M.inView('.reveal-up', el => { M.animate(el, { opacity: [0, 1], y: [40, 0] }, { duration: 0.9, ease: OUT }); }, { margin: '0px 0px -10% 0px' });
-  // site to decision: the section stays in view (CSS sticky) while each step lights up in turn
-  const steps = $$('#steps li'), fill = $('#pipe-fill');
-  if (matchMedia('(max-width: 640px)').matches) { steps.forEach(li => li.classList.add('on')); return; }
+  // five chapters cross-fade in place while the film holds; each rises in, then lifts away blurred
+  const chaps = $$('.chap'), marks = $$('.film-index li'), fill = $('#film-fill'), cue = $('.film-cue'), n = chaps.length;
   M.scroll(k => {
-    const n = Math.min(steps.length - 1, Math.floor(k * steps.length * 1.02));
-    steps.forEach((li, i) => { li.classList.toggle('on', i <= n); li.classList.toggle('cur', i === n); });
-    fill.style.transform = `scaleX(${k})`;
-  }, { target: $('.pipe'), offset: ['start start', 'end end'] });
+    filmK = k;
+    const at = Math.min(n - 1, Math.floor(k * n));
+    filmSide = chaps[at].classList.contains('right') ? 1 : -1;
+    chaps.forEach((c, i) => {
+      const l = k * n - i, fin = i === 0 ? 1 : Math.min(1, Math.max(0, (l + 0.1) / 0.22)), fout = i === n - 1 ? 1 : Math.min(1, Math.max(0, (0.9 - l) / 0.22));
+      const o = Math.min(fin, fout), dy = (fin < 1 ? 1 : -1) * (1 - o) * 34;
+      c.style.opacity = o; c.style.transform = `translateY(${dy}px)`; c.style.filter = o < 1 ? `blur(${(1 - o) * 8}px)` : '';
+      c.style.visibility = o ? '' : 'hidden';
+    });
+    marks.forEach((m, i) => m.classList.toggle('on', i === at));
+    fill.style.transform = `scaleY(${k})`;
+    cue.style.opacity = k > 0.02 ? 0 : 1;
+  }, { target: $('.film'), offset: ['start start', 'end end'] });
+}
+
+/** Spotlight rail: the model in focus opens out to carry its caption; the frame widens over it instead of stretching it. */
+function spotlight() {
+  const items = $$('#feat > li');
+  const open = li => items.forEach(x => x.classList.toggle('on', x === li));
+  items.forEach(li => ['pointerenter', 'focusin', 'click'].forEach(ev => li.addEventListener(ev, () => open(li))));
 }
 
 // =================================================================== sign in / create workspace
@@ -559,7 +582,8 @@ async function wireAuth() {
 }
 
 // =================================================================== boot
-glassAll(document.querySelector('.hero'));
+glassAll(document.querySelector('.film'));
+if (document.getElementById('revive-glass-bend')) $('.xt-ind').classList.add('bend');      // the lens bends the track (Chromium)
 siteModel();
 isoBuilding();
 wireAuth();
@@ -569,3 +593,4 @@ overview();
 scrollMotion();
 isoScenes();
 tilt();
+spotlight();
