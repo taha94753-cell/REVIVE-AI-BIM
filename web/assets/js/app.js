@@ -1499,7 +1499,7 @@ function renderDelay() {
   const b = d.delay_band, st = d.status;
   $('#dl-band').style.setProperty('--c', b.color); $('#dl-band').textContent = b.name;
   const big = $('#dl-days');
-  big.style.color = b.color;
+  big.style.setProperty('--c', b.color);
   fx.countUp(big, d.delay_days, v => `${v > 0.05 ? "+" : ""}${Math.round(v)}`, 1100);
   big.dataset.unit = Math.abs(d.delay_days) === 1 ? 'day' : 'days';
   $('#dl-cap').innerHTML = d.delay_days > 0.5

@@ -73,7 +73,7 @@ export function rangeBar(el, { value, lo, hi, bands }) {
     if (end > prev) b += `<rect x="${x(prev)}" y="24" width="${x(end) - x(prev)}" height="8" style="fill:${bd.color};opacity:.4"/>`;
     prev = Math.max(prev, end);
   });
-  b += `<rect x="${x(lo)}" y="17" width="${Math.max(2, x(hi) - x(lo))}" height="22" style="fill:rgba(230,238,241,.12);stroke:var(--chalk-2)"/>`;
+  b += `<rect x="${x(lo)}" y="17" width="${Math.max(2, x(hi) - x(lo))}" height="22" style="fill:var(--wash);stroke:var(--chalk-2)"/>`;
   b += `<line x1="${x(value)}" x2="${x(value)}" y1="10" y2="46" style="stroke:var(--chalk);stroke-width:3"/>`;
   for (let t = Math.ceil(min / 25) * 25; t <= max; t += 25) b += `<text x="${x(t)}" y="62" text-anchor="middle" class="ax">${t}%</text>`;
   el.innerHTML = svg(W, H, `Forecast ${value}%, 80% range ${lo}% to ${hi}%`, b);
@@ -233,10 +233,10 @@ export function trajectory(el, pts, bands) {
   b += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" class="ax">Contract time elapsed</text>`;
   if (pts.length > 1) {
     const top = pts.map(p => `${x(p.x).toFixed(1)},${y(p.hi).toFixed(1)}`), bot = [...pts].reverse().map(p => `${x(p.x).toFixed(1)},${y(p.lo).toFixed(1)}`);
-    b += `<polygon points="${top.concat(bot).join(' ')}" style="fill:rgba(230,238,241,.09)"/>`;
+    b += `<polygon points="${top.concat(bot).join(' ')}" style="fill:var(--wash)"/>`;
     b += `<path d="${pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.x).toFixed(1)} ${y(p.y).toFixed(1)}`).join(' ')}" pathLength="1"${A('dr')} style="fill:none;stroke:var(--chalk);stroke-width:2.5"/>`;
   } else {
-    b += `<line x1="${x(pts[0].x)}" x2="${x(pts[0].x)}" y1="${y(pts[0].lo)}" y2="${y(pts[0].hi)}" style="stroke:rgba(230,238,241,.3);stroke-width:8"/>`;
+    b += `<line x1="${x(pts[0].x)}" x2="${x(pts[0].x)}" y1="${y(pts[0].lo)}" y2="${y(pts[0].hi)}" style="stroke:var(--line-strong);stroke-width:8"/>`;
   }
   pts.forEach((p, i) => {
     const last = i === pts.length - 1;
@@ -281,7 +281,7 @@ export function weatherStrip(el, w) {
   const W = 660, H = 150, L = 8, R = 8, T = 20, B = 34, bw = (W - L - R) / n;
   const y = lin(0, Math.max(20, ...days.map(d => d.rain_mm || 0)), H - B, T);
   const tx = L + w.past.length * bw;
-  let b = `<rect x="${tx}" y="${T - 16}" width="${W - R - tx}" height="${H - B - T + 16}" style="fill:rgba(230,238,241,.05)"/>`;
+  let b = `<rect x="${tx}" y="${T - 16}" width="${W - R - tx}" height="${H - B - T + 16}" style="fill:var(--wash)"/>`;
   b += `<line x1="${tx}" x2="${tx}" y1="${T - 16}" y2="${H - B}" style="stroke:var(--chalk-2);stroke-dasharray:3 3"/>`;
   b += `<text x="${tx + 5}" y="${T - 5}" class="ax">Today and forecast</text><text x="${tx - 5}" y="${T - 5}" text-anchor="end" class="ax">Observed</text>`;
   days.forEach((d, i) => {
