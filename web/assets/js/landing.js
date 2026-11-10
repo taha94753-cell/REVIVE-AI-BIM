@@ -1,19 +1,13 @@
-// REVIVE landing page (the intro before it is intro.js).
-//  * the film: one building at dusk (Three.js), pinned full screen and scrubbed by the scroll from frame to handover:
-//    the frame rises under a tower crane, a scan recolours it by delay risk, the recovery pulses pink, then cladding,
-//    lantern-lit glazing, roof and landscaping. Five chapters of copy fade through it, changing sides each time, and
-//    the camera leans away from the side the text is on (after scrolltide's Rann Mahal)
-//  * the HUD numbers follow the scene (labelled illustrative)
+// REVIVE landing page.
+//  * the film: one tower (Three.js), pinned full screen and built by the scroll from frame to handover: the frame rises
+//    under a tower crane, a scan recolours it by delay risk, the recovery pulses pink, then limestone, glazing lit from
+//    inside, roof and landscaping. Five chapters morph through it, changing sides each time, and the camera leans
+//    away from the side the text is on
 //  * real figures come from /api/public/overview (cross-validated model card), never hard-coded
-//  * motion: Motion (vendored, the Framer Motion engine) for the intro, tabs, scroll and reveals
+//  * motion: Motion (vendored) for the scroll, tabs and reveals; view transitions morph the tab panels
 //  * sign in / create workspace talk to /api/auth/*
-//  * "How it works": glass tabs, a liquid lens that squeezes and wobbles between tabs
-//  * "For companies": a spotlight rail of six isometric site models (iso.js) that tilt under the pointer (tilt.js)
 import * as THREE from 'three';
 import { REDUCED, enter, plate, roving } from './tabs.js';
-import { isoScenes } from './iso.js';
-import { tilt } from './tilt.js';
-import { glassAll } from './glass.js';
 
 const M = globalThis.Motion;
 const OUT = [0.16, 1, 0.3, 1];
@@ -23,11 +17,11 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const HDR = { 'Content-Type': 'application/json', 'X-Revive-Request': '1' };
 
-// =================================================================== 3D site at dusk: one building, frame to handover
-// A 4 x 3 bay, six-storey block goes through a real sequence; the scroll sets where in it we are (u, in seconds of T):
+// =================================================================== 3D site: one tower, frame to handover
+// A 3 x 2 bay, ten-storey tower goes through a real sequence; the scroll sets where in it we are (u, in seconds of T):
 //   frame      columns, beams and slabs storey by storey under a working tower crane
 //   scan       a scan plane sweeps up and tints each storey by delay risk; the late storeys pulse pink (recovery)
-//   envelope   precast pilasters and spandrels, then glazing with aluminium mullions, storey by storey
+//   envelope   slim limestone piers and spandrels, then full bay glazing with bronze mullions, storey by storey
 //   roof       parapet, plant room and rooftop units
 //   handover   the crane is dismantled, paving, canopy and trees go in, and the lanterns come on
 // Every member is an instance with its own storey and trade, so each one is placed, not faded in.
@@ -45,25 +39,26 @@ function siteModel() {
   catch { canvas.hidden = true; return null; }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.18;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2A1D15);          // dusk: the ground runs into a warm haze
-  scene.fog = new THREE.Fog(0x2A1D15, 80, 230);
+  scene.background = new THREE.Color(0x131209);          // the page's own ground: the site fades into it
+  scene.fog = new THREE.Fog(0x131209, 90, 240);
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 500);
-  const target = new THREE.Vector3(0, 10, 0);
+  const target = new THREE.Vector3(0, 8, 0);
 
   // a sky to reflect: glazing and aluminium need something to mirror or they read as flat paint
   const sky = document.createElement('canvas'); sky.width = 16; sky.height = 256;
   const sg = sky.getContext('2d'), grad = sg.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#2E2433'); grad.addColorStop(0.44, '#D88F55'); grad.addColorStop(0.5, '#8A5A3A'); grad.addColorStop(1, '#2A1E16');
+  grad.addColorStop(0, '#232833'); grad.addColorStop(0.44, '#F0D9B5'); grad.addColorStop(0.5, '#7A6A55'); grad.addColorStop(1, '#15140F');
   sg.fillStyle = grad; sg.fillRect(0, 0, 16, 256);
   const skyTex = new THREE.CanvasTexture(sky); skyTex.mapping = THREE.EquirectangularReflectionMapping; skyTex.colorSpace = THREE.SRGBColorSpace;
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromEquirectangular(skyTex).texture;
 
-  scene.add(new THREE.HemisphereLight(0xB9A6C0, 0x4A3626, 0.75));
-  const sun = new THREE.DirectionalLight(0xFFAA6A, 2.6);
+  scene.add(new THREE.HemisphereLight(0xC4D0E6, 0x2A241C, 0.95));
+  const rim = new THREE.DirectionalLight(0x9FC0FF, 1.5); rim.position.set(-60, 8, -50); scene.add(rim);   // a cool rim so the form reads
+  const sun = new THREE.DirectionalLight(0xFFD9AE, 3.2);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
   Object.assign(sun.shadow.camera, { left: -42, right: 42, top: 42, bottom: -42, near: 1, far: 200 });
   scene.add(sun, sun.target);
@@ -79,14 +74,15 @@ function siteModel() {
   }
   // ---- materials: what the block is actually made of
   const std = (color, rough, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+  const matte = color => new THREE.MeshLambertMaterial({ color });        // the ground takes no highlight from the rim light
   const MAT = {
-    ground: std(0x8A7A66, 0.95), grass: std(0x55603F, 1), paving: std(0xB8A88F, 0.9), road: std(0x4A4440, 0.95), kerb: std(0xA39581, 0.9),
+    ground: matte(0x15140F), grass: matte(0x1A1D14), paving: std(0x7A7368, 0.9), road: matte(0x1B1B1B), kerb: std(0x8A8377, 0.9),
     frame: std(0xBDB6AA, 0.88),                                   // in-situ concrete
     slab: std(0xC6BEB0, 0.9),
-    precast: std(0xE6D2B0, 0.78),                                 // sandstone precast cladding
-    spandrel: std(0xD8C29E, 0.8),
+    precast: std(0xF1E9DC, 0.72),                                 // pale limestone piers and spandrels
+    spandrel: std(0xE6DCCB, 0.75),
     glass: std(0xFFFFFF, 0.12, 0.25, { map: glazing(), envMapIntensity: 0.9, emissive: 0xFFA24A, emissiveIntensity: 0 }),   // glazing; lit from inside at dusk
-    alu: std(0x3D4248, 0.35, 0.8),                                // anodised mullions and coping
+    alu: std(0x4A3B2E, 0.35, 0.8),                                // bronze mullions and coping
     plant: std(0xA2A7AC, 0.55, 0.4), louvre: std(0x7D838A, 0.5, 0.5),
     trunk: std(0x6B5A48, 0.9), leaf: std(0x6F8A58, 0.95, 0, { flatShading: true }), leaf2: std(0x5E7A4D, 0.95, 0, { flatShading: true }),
   };
@@ -99,11 +95,11 @@ function siteModel() {
   plane(120, 90, MAT.grass, -0.01);
   plane(40, 32, MAT.paving, 0.005);
   plane(9, 140, MAT.road, 0.008, 28.5, 0);
-  const grid = new THREE.GridHelper(40, 20, 0x9C8B74, 0x7A6B58);       // setting-out grid on the apron, gone at handover
+  const grid = new THREE.GridHelper(40, 20, 0x8A8377, 0x5E584F);       // setting-out grid on the apron, gone at handover
   grid.material.transparent = true; grid.material.opacity = 0.5; grid.position.y = 0.02; scene.add(grid);
 
   // ---- every placed member is an instance with a storey, a trade and its resting transform
-  const BX = 4, BZ = 3, SP = 6, SH = 3.6, NS = 6, HX = (BX * SP) / 2, HZ = (BZ * SP) / 2;
+  const BX = 3, BZ = 2, SP = 6, SH = 3.6, NS = 10, HX = (BX * SP) / 2, HZ = (BZ * SP) / 2;
   const kinds = {};
   const items = [];
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -136,24 +132,24 @@ function siteModel() {
   const faces = [];                                      // [axis length, bays, normal x, normal z]
   for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) faces.push({ nx, nz, bays: nx ? BZ : BX, half: nx ? HZ : HX, out: (nx ? HX : HZ) + 0.32 });
   const per = faces.reduce((a, f) => a + f.bays, 0), lines = faces.reduce((a, f) => a + f.bays + 1, 0);
-  kind('pil', box(0.85, SH, 0.5), MAT.precast, lines * NS);
-  kind('spd', box(SP - 0.85, 1.05, 0.42), MAT.spandrel, per * NS);
-  kind('gls', box(SP - 0.85, 1, 0.08), MAT.glass, per * NS, { shadow: false });
+  kind('pil', box(0.45, SH, 0.5), MAT.precast, lines * NS);
+  kind('spd', box(SP - 0.45, 0.7, 0.42), MAT.spandrel, per * NS);
+  kind('gls', box(SP - 0.45, 1, 0.08), MAT.glass, per * NS, { shadow: false });
   kind('mul', box(0.09, 1, 0.16), MAT.alu, per * NS * 3);
   const along = (f, u) => f.nx ? [f.nx * f.out, u] : [u, f.nz * f.out];
   for (let s = 0; s < NS; s++) {
-    const y0 = s * SH, winB = s === 0 ? 0.05 : y0 + 0.25, winT = y0 + SH - 0.62, winH = winT - winB;
+    const y0 = s * SH, winB = s === 0 ? 0.05 : y0 + 0.25, winT = y0 + SH - 0.45, winH = winT - winB;
     for (const f of faces) {
       const ry = f.nx ? Math.PI / 2 : 0;
       for (let b = 0; b <= f.bays; b++) { const [x, z] = along(f, -f.half + b * SP); put('pil', s, x, y0 + SH / 2, z, ry, 'up'); }
       for (let b = 0; b < f.bays; b++) {
         const u = -f.half + (b + 0.5) * SP;
         const [x, z] = along(f, u);
-        put('spd', s, x, y0 + SH - 0.2, z, ry, 'lift');
+        put('spd', s, x, y0 + SH - 0.1, z, ry, 'lift');
         const [gx, gz] = along({ ...f, out: f.out - 0.18 }, u);
         items.push({ m: kinds.gls, i: kinds.gls.count++, s, x: gx, y: winB + winH / 2, z: gz, ry, grow: 'lift', sy: winH, name: 'gls' });
         for (const k of [-1, 0, 1]) {
-          const [mx, mz] = along({ ...f, out: f.out - 0.12 }, u + k * (SP - 0.85) / 4);
+          const [mx, mz] = along({ ...f, out: f.out - 0.12 }, u + k * (SP - 0.45) / 4);
           items.push({ m: kinds.mul, i: kinds.mul.count++, s, x: mx, y: winB + winH / 2, z: mz, ry, grow: 'lift', sy: winH, name: 'mul' });
         }
       }
@@ -198,7 +194,7 @@ function siteModel() {
   const crane = new THREE.Group(); crane.position.set(-HX - 7, 0, -HZ - 5); scene.add(crane);
   const craneMats = [];
   const line = (geo, c = 0x2A2D31, o = 0.9) => { const mat = new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o }); craneMats.push([mat, o]); return new THREE.LineSegments(new THREE.EdgesGeometry(geo), mat); };
-  const H = 34;
+  const H = NS * SH + 8;
   for (let y = 0; y < H; y += 2) { const seg = line(box(1.2, 2, 1.2)); seg.position.y = y + 1; crane.add(seg); }
   const slew = new THREE.Group(); slew.position.y = H; crane.add(slew);
   const jib = line(box(32, 1, 1)); jib.position.x = 15; slew.add(jib);
@@ -219,13 +215,11 @@ function siteModel() {
 
   const C = { built: new THREE.Color(1, 1, 1), go: new THREE.Color(0x22B07A), watch: new THREE.Color(0xF2C230), risk: new THREE.Color(0xF07A2A),
     crit: new THREE.Color(0xE03A50), mark: new THREE.Color(0xFF79C6), active: new THREE.Color(0xFFC21A), done: new THREE.Color(0xD9D6D0) };
-  const riskOf = [C.done, C.done, C.go, C.watch, C.risk, C.crit];
-  const crashed = new Set([4, 5]);
+  const riskOf = s => [C.done, C.done, C.go, C.watch, C.risk, C.crit][Math.floor(s / NS * 6)];   // the higher storeys run later
+  const crashed = { has: s => s >= NS - 3 };
 
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(), col = new THREE.Color(), Y = new THREE.Vector3(0, 1, 0);
   const ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
-  const hud = { at: $('[data-hud=at]'), es: $('[data-hud=es]'), spi: $('[data-hud=spi]'), dl: $('[data-hud=dl]'), bar: $('#hud-scan'), phase: $('#hud-phase') };
-  let lastPhase = '';
   const ENV = new Set(['pil', 'spd', 'gls', 'mul']);
   const ENV_LAG = { pil: 0, spd: 0.25, gls: 0.55, mul: 0.7 };
 
@@ -257,7 +251,7 @@ function siteModel() {
         const placing = g > 0.02 && g < 0.98 && u < T.frame[1] + 0.3;
         const scanned = scanP > 0 && scanP * NS * 1.05 > it.s;
         if (placing) col.copy(C.active); else col.copy(C.built);
-        if (scanned) col.lerp(riskOf[it.s], 0.85 * (1 - restore));
+        if (scanned) col.lerp(riskOf(it.s), 0.85 * (1 - restore));
         if (recP > 0 && crashed.has(it.s) && restore < 1) col.lerp(C.mark, (0.86 + 0.14 * Math.sin(t * 6)) * (1 - restore));
         it.m.setColorAt(it.i, col);
       }
@@ -281,22 +275,10 @@ function siteModel() {
     crane.visible = working > 0.01 && fade > 0.02;
     // the sun sinks as the work goes on, so the shadows lengthen; the glazing lights up storey by storey at handover
     const sa = 0.9 + u * 0.018;
-    sun.position.set(Math.cos(sa) * 70, 44 - u * 1.1, Math.sin(sa) * 70 - 20); sun.target.position.set(0, 0, 0);
-    sun.intensity = 2.6 - span(u, [14, 24]) * 1.3;
-    MAT.glass.emissiveIntensity = 0.15 + ease(span(u, [16, 23.6])) * 1.25;
-
-    // illustrative readout, tied to the scene: the frame runs late, the recovery buys the days back
-    const atD = Math.round(320 * Math.min(1, u / T.out[1]));
-    const behind = 0.873 + (0.994 - 0.873) * ease(span(u, [T.rec[0], T.env[1]]));
-    const esD = Math.round(atD * behind);
-    hud.at.textContent = `day ${atD}`; hud.es.textContent = `day ${esD}`;
-    hud.spi.textContent = atD ? (esD / atD).toFixed(2) : '1.00';
-    hud.dl.textContent = `+${atD - esD} d`;
-    hud.bar.style.width = `${Math.min(100, (u / T.out[1]) * 100)}%`;
-    const phase = u < T.frame[1] ? 'Frame: columns, beams and slabs' : u < T.scan[1] ? 'Scanning progress against plan'
-      : u < T.rec[1] ? 'Optimising the recovery (pink)' : u < T.env[1] ? 'Envelope: cladding and glazing'
-      : u < T.roof[1] ? 'Roof, parapet and plant' : u < T.out[1] ? 'Crane out, landscaping in' : 'Handed over';
-    if (phase !== lastPhase) { hud.phase.textContent = phase; lastPhase = phase; }
+    sun.position.set(Math.cos(sa) * 70, 62 - u * 1.2, Math.sin(sa) * 70 - 20); sun.target.position.set(0, 0, 0);
+    sun.intensity = 3.2 - span(u, [14, 24]) * 1.4;
+    MAT.glass.emissiveIntensity = 0.1 + ease(span(u, [16, 23.6])) * 1.5;
+    target.y = 7 + ease(span(u, T.frame)) * 10;                            // the view rises with the frame
   }
 
   let px = 0, py = 0, tx = 0, ty = 0, ox = -0.12, uCur = 0, W = 1, Hh = 1;
@@ -304,21 +286,19 @@ function siteModel() {
   function resize() {
     W = canvas.clientWidth || innerWidth; Hh = canvas.clientHeight || innerHeight;
     renderer.setSize(W, Hh, false); camera.aspect = W / Hh;
-    camera.zoom = W / Hh < 0.9 ? 0.62 : 0.84;                                   // narrow screens pull back further
+    camera.zoom = W / Hh < 0.9 ? 0.6 : 1;                                   // narrow screens pull back further
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(canvas); resize();
-  // behind the intro cover the scene draws one frame and waits: the frame starts rising as the cover lifts
-  const root = document.documentElement, covered = () => root.classList.contains('intro');
-  const canRun = () => !REDUCED && !covered();
+  const canRun = () => !REDUCED;
   let visible = true, raf = 0, t0 = performance.now(), tLast = 0;
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !raf && canRun()) loop(); }).observe(canvas);
   function place(u) {
     px += (tx - px) * 0.04; py += (ty - py) * 0.04;
-    ox += ((W / Hh < 0.9 ? 0 : filmSide * (0.17 + u * 0.006)) - ox) * 0.05;          // lean away from the chapter's text
+    ox += ((W / Hh < 0.9 ? 0 : filmSide * (0.27 + u * 0.003)) - ox) * 0.05;          // lean away from the chapter's text
     camera.setViewOffset(W, Hh, ox * W, -Hh * 0.04, W, Hh);
-    const a = 0.32 + u * 0.042 + px * 0.25, r = 98 - u * 0.45;          // the camera walks round the front corner as the work goes on
-    camera.position.set(Math.cos(a) * r, 18 + u * 0.35 + py * -4, Math.sin(a) * r);
+    const a = 0.42 + u * 0.036 + px * 0.25, r = 92 - u * 0.5;          // the camera walks round the front corner as the work goes on
+    camera.position.set(Math.cos(a) * r, 9 + u * 0.3 + py * -4, Math.sin(a) * r);           // a low viewpoint: the tower stands over you
     camera.lookAt(target);
   }
   function loop() {
@@ -331,11 +311,7 @@ function siteModel() {
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && visible && !raf && canRun()) loop(); });
   if (REDUCED) { frame(24, 0); place(24); renderer.render(scene, camera); }  // reduced motion: the finished building, still
-  else if (covered()) {
-    frame(0, 0); place(0); renderer.render(scene, camera);
-    new MutationObserver((_, mo) => { if (!covered()) { mo.disconnect(); t0 = performance.now(); tLast = 0; loop(); } })
-      .observe(root, { attributes: true, attributeFilter: ['class'] });
-  } else loop();
+  else loop();
   return { frame, place, render: () => renderer.render(scene, camera) };
 }
 
@@ -352,8 +328,8 @@ async function overview() {
       el.dataset.to = v;
       if (M && !REDUCED) { const stop = M.inView(el, () => { countUp(el); stop(); }); } else countUp(el);
     });
-    const base = $('[data-fill=base]');
-    if (base) base.textContent = g.baseline_mae != null ? g.baseline_mae.toFixed(1) : 'n/a';
+    $('[data-fill=base]').textContent = g.baseline_mae != null ? g.baseline_mae.toFixed(1) : 'n/a';
+    $('[data-fill=real]').textContent = d.projects;
     $('#numbers-note').textContent = `Figures come from the trained model card. The survey holds ${d.records ?? d.projects} records, ${d.hypothetical || 0} of them hypothetical scenarios (labelled wherever they appear). The model is trained and tested on the ${d.projects} real completed projects only.`;
     $('#ev-rows').innerHTML = Object.entries(d.gates || {}).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50% of contract time' : 'At 25% of contract time'}</td>
       <td class="good">${v.mae.toFixed(1)}</td><td>${v.baseline_mae.toFixed(1)}</td><td>${v.r2.toFixed(2)}</td><td>${v.loco_r2 == null ? '\u2014' : v.loco_r2.toFixed(2)}</td><td>${v.auc.toFixed(2)}</td></tr>`).join('');
@@ -371,37 +347,16 @@ function countUp(el) {
   M.animate(0, to, { duration: 1.6, ease: OUT, onUpdate: show });
 }
 
-// =================================================================== isometric building for the BIM tab
-function isoBuilding() {
-  const svg = $('#v-bim'); if (!svg) return;
-  const s = 26, cx = 260, cy = 250;
-  const P = (x, y, z) => [cx + (x - y) * s * 0.866, cy + (x + y) * s * 0.5 - z * s];
-  const poly = (pts, fill, cls = '') => `<polygon class="iso-face ${cls}" points="${pts.map(p => p.join(',')).join(' ')}" style="fill:${fill}"/>`;
-  const risk = ['#8E98A3', '#34D399', '#F5D547', '#FF5468'];
-  const shade = (hex, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.slice(i, i + 2), 16) * f).toString(16).padStart(2, '0')).join('');
-  let out = '';
-  for (let z = 0; z < 4; z++) for (let x = 0; x < 3; x++) for (let y = 0; y < 3; y++) {
-    const c = risk[z], hgt = 0.92, x0 = x * 1.05, y0 = y * 1.05, z0 = z * 1.05;
-    const top = [P(x0, y0, z0 + hgt), P(x0 + 1, y0, z0 + hgt), P(x0 + 1, y0 + 1, z0 + hgt), P(x0, y0 + 1, z0 + hgt)];
-    const left = [P(x0, y0 + 1, z0), P(x0 + 1, y0 + 1, z0), P(x0 + 1, y0 + 1, z0 + hgt), P(x0, y0 + 1, z0 + hgt)];
-    const right = [P(x0 + 1, y0, z0), P(x0 + 1, y0 + 1, z0), P(x0 + 1, y0 + 1, z0 + hgt), P(x0 + 1, y0, z0 + hgt)];
-    out += `<g class="cell" data-z="${z}">${poly(left, shade(c, 0.62))}${poly(right, shade(c, 0.8))}${poly(top, c)}</g>`;
-  }
-  svg.innerHTML = out + '<text x="40" y="40" class="lbl">risk by storey: grey done, green, amber, red</text>';
-}
-
 // =================================================================== tabbed walkthrough
-const ORDER = ['now', 'next', 'why', 'fix', 'live', 'bim'];
+const ORDER = ['now', 'next', 'why', 'fix', 'live'];
 const AUTO_S = 7;            // seconds per question while nobody is interacting
 let cur = 'now', prog = null, paused = false, loops = [];
 
 /** Each panel's diagram builds itself the way the analysis does: curves draw, bars grow, the optimum lands. */
-function playPanel(x, dir) {
+function playPanel(x) {
   loops.forEach(l => l.stop()); loops = [];
   if (!M || REDUCED) return;
   const p = $(`#xp-${x}`), A = M.animate, S = M.stagger;
-  enter($('.xtext', p), dir, { distance: 36, blur: 6, duration: 0.55, stagger: 0.06, items: [...$$('h3, p', p), ...$$('li', p)] });
-  A($('.xvis', p), { opacity: [0, 1], scale: [0.96, 1], y: [14, 0], filter: ['blur(8px)', 'blur(0px)'] }, { duration: 0.65, ease: OUT });
   const draw = (el, duration = 1.2, delay = 0) => {
     if (!el) return;
     const L = el.getTotalLength();
@@ -425,7 +380,6 @@ function playPanel(x, dir) {
     loops.push(A($('.packet', p), { x: [0, 150], opacity: [1, 1, 0] }, { duration: 1.1, repeat: Infinity, repeatDelay: 0.5, ease: 'easeInOut' }));
     loops.push(A($('.psend', p), { opacity: [0.5, 1] }, { duration: 0.55, repeat: Infinity, repeatType: 'reverse' }));
   }
-  if (x === 'bim') A($$('.cell', p), { opacity: [0, 1], y: [-30, 0] }, { duration: 0.5, delay: S(0.035), ease: OUT });
 }
 
 /** Mark a tab's autoplay cycle as complete (its progress bar is drawn by runProgress). */
@@ -442,8 +396,8 @@ function selectTab(x, { auto = false } = {}) {
   });
   plate($('.xt-ind'), $(`#xt-${x}`));
   if (M && !REDUCED && dir) M.animate($('.xt-ind'), { scaleX: [1, 1.16, 0.93, 1.03, 1], scaleY: [1, 0.82, 1.07, 0.98, 1] }, { duration: 0.75, ease: 'easeOut' });   // the lens squeezes, lands, wobbles
-  $$('.xpanel').forEach(p => { p.hidden = p.dataset.x !== x; });
-  playPanel(x, dir);
+  const swap = () => { $$('.xpanel').forEach(p => { p.hidden = p.dataset.x !== x; }); playPanel(x); };
+  if (dir && !REDUCED && document.startViewTransition) document.startViewTransition(swap); else swap();   // one answer morphs into the next
   if (!auto) paused = false;
   runProgress();
 }
@@ -466,10 +420,6 @@ function wireTabs() {
   tabs().forEach(b => b.addEventListener('click', () => selectTab(b.dataset.x)));
   roving(box, tabs, { activate: t => selectTab(t.dataset.x) });
   new ResizeObserver(() => plate($('.xt-ind'), $(`#xt-${cur}`), { instant: true })).observe(box);
-  box.addEventListener('pointermove', e => {          // a floodlight that follows the pointer across the tab strip
-    const r = box.getBoundingClientRect();
-    box.style.setProperty('--mx', `${e.clientX - r.left}px`); box.style.setProperty('--my', `${e.clientY - r.top}px`);
-  }, { passive: true });
   const how = $('#how .wrap');
   how.addEventListener('pointerenter', () => hold(true));
   how.addEventListener('pointerleave', () => hold(false));
@@ -482,36 +432,30 @@ function wireTabs() {
   }, { amount: 0.25 });
 }
 
-// =================================================================== scroll: the film and the reveals
+// =================================================================== scroll: the film, the tagline and the reveals
 function scrollMotion() {
   const nav = $('#nav');
-  if (!M) { nav.classList.add('solid'); return; }
-  M.scroll((_, info) => nav.classList.toggle('solid', info.y.current > innerHeight * 0.6));
-  if (REDUCED) return;
-  M.inView('.reveal-up', el => { M.animate(el, { opacity: [0, 1], y: [40, 0] }, { duration: 0.9, ease: OUT }); }, { margin: '0px 0px -10% 0px' });
-  // five chapters cross-fade in place while the film holds; each rises in, then lifts away blurred
-  const chaps = $$('.chap'), marks = $$('.film-index li'), fill = $('#film-fill'), cue = $('.film-cue'), n = chaps.length;
+  $('#nav-toggle').addEventListener('click', e => e.currentTarget.setAttribute('aria-expanded', nav.classList.toggle('open')));
+  $('#nav-links').addEventListener('click', () => { nav.classList.remove('open'); $('#nav-toggle').setAttribute('aria-expanded', 'false'); });
+  if (!M || REDUCED) return;
+  M.inView('.reveal-up', el => { M.animate(el, { opacity: [0, 1], y: [32, 0] }, { duration: 0.7, ease: OUT }); }, { margin: '0px 0px -10% 0px' });
+  // five chapters morph into each other in place while the film holds: each sharpens and settles, then dissolves
+  const chaps = $$('.chap'), n = chaps.length;
   M.scroll(k => {
     filmK = k;
-    const at = Math.min(n - 1, Math.floor(k * n));
-    filmSide = chaps[at].classList.contains('right') ? 1 : -1;
+    filmSide = chaps[Math.min(n - 1, Math.floor(k * n))].classList.contains('right') ? 1 : -1;
     chaps.forEach((c, i) => {
       const l = k * n - i, fin = i === 0 ? 1 : Math.min(1, Math.max(0, (l + 0.1) / 0.22)), fout = i === n - 1 ? 1 : Math.min(1, Math.max(0, (0.9 - l) / 0.22));
-      const o = Math.min(fin, fout), dy = (fin < 1 ? 1 : -1) * (1 - o) * 34;
-      c.style.opacity = o; c.style.transform = `translateY(${dy}px)`; c.style.filter = o < 1 ? `blur(${(1 - o) * 8}px)` : '';
+      const o = Math.min(fin, fout);
+      c.style.opacity = o; c.style.transform = `scale(${fin < 1 ? 0.94 + 0.06 * o : 1.06 - 0.06 * o})`; c.style.filter = o < 1 ? `blur(${(1 - o) * 12}px)` : '';
       c.style.visibility = o ? '' : 'hidden';
     });
-    marks.forEach((m, i) => m.classList.toggle('on', i === at));
-    fill.style.transform = `scaleY(${k})`;
-    cue.style.opacity = k > 0.02 ? 0 : 1;
   }, { target: $('.film'), offset: ['start start', 'end end'] });
-}
-
-/** Spotlight rail: the model in focus opens out to carry its caption; the frame widens over it instead of stretching it. */
-function spotlight() {
-  const items = $$('#feat > li');
-  const open = li => items.forEach(x => x.classList.toggle('on', x === li));
-  items.forEach(li => ['pointerenter', 'focusin', 'click'].forEach(ev => li.addEventListener(ev, () => open(li))));
+  // the tagline: each word lights as it crosses the trigger line, in reading order
+  const tag = $('#tagline');
+  tag.innerHTML = tag.textContent.split(' ').map(w => `<span>${w}</span>`).join(' ');
+  const words = $$('span', tag);
+  M.scroll(k => words.forEach((w, i) => w.classList.toggle('on', i < k * (words.length + 1))), { target: tag, offset: ['start 0.85', 'end 0.4'] });
 }
 
 // =================================================================== sign in / create workspace
@@ -582,15 +526,9 @@ async function wireAuth() {
 }
 
 // =================================================================== boot
-glassAll(document.querySelector('.film'));
-if (document.getElementById('revive-glass-bend')) $('.xt-ind').classList.add('bend');      // the lens bends the track (Chromium)
 siteModel();
-isoBuilding();
 wireAuth();
 plate($('.xt-ind'), $('#xt-now'), { instant: true });
 wireTabs();
 overview();
 scrollMotion();
-isoScenes();
-tilt();
-spotlight();
