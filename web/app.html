@@ -43,9 +43,7 @@
   <a href="#live" role="tab" data-tab="live" id="tab-live" aria-controls="live" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="12" r="2"/><path pathLength="1" d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path pathLength="1" d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path pathLength="1" d="M19.1 4.9a10 10 0 0 1 0 14.2"/><path pathLength="1" d="M4.9 19.1a10 10 0 0 1 0-14.2"/></svg><span>Live site</span></a>
   <a href="#twin" role="tab" data-tab="twin" id="tab-twin" aria-controls="twin" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path pathLength="1" d="M3.5 7.25L12 12l8.5-4.75"/><path pathLength="1" d="M12 12v9.5"/></svg><span>BIM</span></a>
   <a href="#recover" role="tab" data-tab="recover" id="tab-recover" aria-controls="recover" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path pathLength="1" d="M3 3v5h5"/></svg><span>Recovery</span></a>
-  <a href="#impact" role="tab" data-tab="impact" id="tab-impact" aria-controls="impact" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path pathLength="1" d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg><span>Impact</span></a>
   <a href="#portfolio" role="tab" data-tab="portfolio" id="tab-portfolio" aria-controls="portfolio" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M4 20V10"/><path pathLength="1" d="M10 20V4"/><path pathLength="1" d="M16 20v-7"/><path pathLength="1" d="M22 20H2"/></svg><span>Benchmark</span></a>
-  <a href="#evidence" role="tab" data-tab="evidence" id="tab-evidence" aria-controls="evidence" tabindex="-1"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path pathLength="1" d="M9 12l2 2 4-4"/></svg><span>Evidence</span></a>
   <b class="tab-hover" id="tab-hover" aria-hidden="true"></b>
   <b class="tab-ind" id="tab-ind" aria-hidden="true"><em></em></b>
 </nav>
@@ -91,7 +89,7 @@
     <header class="sheet-head">
       <div><h2>Current delay</h2>
         <p>How late the project is today, measured from the baseline schedule and the latest site data. It does not use the machine-learning model, so it is an independent check on the forecast.</p></div>
-      <div class="titleblock"><span>Sheet 01</span><span>of 08</span><span id="tb-delay" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 01</span><span>of 06</span><span id="tb-delay" class="tb-proj">No project</span></div>
     </header>
     <div id="delay-empty" class="empty-state" hidden></div>
     <div id="delay-body" hidden>
@@ -150,7 +148,7 @@
     <header class="sheet-head reveal">
       <div><h2>Forecast</h2>
         <p>Where the project is heading. Ten answers from the contract and the monthly progress report (thirteen at the halfway point); anything you leave blank counts as average, never as an invented value.</p></div>
-      <div class="titleblock"><span>Sheet 02</span><span>of 08</span><span id="tb-assess" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 02</span><span>of 06</span><span id="tb-assess" class="tb-proj">No project</span></div>
     </header>
     <div class="cluster" id="cluster" aria-live="polite">
       <div class="cl-gauge"><div id="g-overrun" class="chart gauge"></div><p class="cl-cap" id="cl-overrun-cap">Forecast time overrun</p></div>
@@ -203,7 +201,7 @@
     <header class="sheet-head reveal">
       <div><h2>Live site link</h2>
         <p>Turn an assessment into a monitored project. Site staff send updates from a phone; every open dashboard re-forecasts, re-colours the model and re-plans the recovery the moment an update lands.</p></div>
-      <div class="titleblock"><span>Sheet 03</span><span>of 08</span><span id="tb-live" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 03</span><span>of 06</span><span id="tb-live" class="tb-proj">No project</span></div>
     </header>
     <div class="live-grid reveal">
       <div>
@@ -258,7 +256,7 @@
     <header class="sheet-head reveal">
       <div><h2>BIM view <span class="muted">(optional)</span></h2>
         <p>Everything else in REVIVE runs on the baseline schedule and site reports. Connect an IFC model and the same forecast, float and recovery appear on the columns, slabs and walls each activity builds.</p></div>
-      <div class="titleblock"><span>Sheet 04</span><span>of 08</span><span id="tb-twin" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 04</span><span>of 06</span><span id="tb-twin" class="tb-proj">No project</span></div>
     </header>
     <div class="stage reveal" id="stage">
       <canvas id="twin-canvas" aria-label="Interactive 3D model. Drag to orbit, scroll to zoom, select an element for details."></canvas>
@@ -303,7 +301,7 @@
     <header class="sheet-head reveal">
       <div><h2>Recovery plan</h2>
         <p id="recover-intro">A linear programme chooses which activities to accelerate, and by how many days, so that every day bought costs less than a day of liquidated damages.</p></div>
-      <div class="titleblock"><span>Sheet 05</span><span>of 08</span><span id="tb-recover" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 05</span><span>of 06</span><span id="tb-recover" class="tb-proj">No project</span></div>
     </header>
     <div class="sched-bar">
       <p id="sched-summary" class="muted">Reading the baseline schedule</p>
@@ -341,7 +339,7 @@
     <header class="sheet-head reveal">
       <div><h2>Time, cost and carbon</h2>
         <p>What finishing earlier is worth. Avoided figures come from the days recovered; the rework figure is exposure, not a saving.</p></div>
-      <div class="titleblock"><span>Sheet 06</span><span>of 08</span><span id="tb-impact" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 06</span><span>of 06</span><span id="tb-impact" class="tb-proj">No project</span></div>
     </header>
     <dl class="impact reveal" id="impact-figs"></dl>
     <h3 class="gap">Cost of the delay, with and without the recovery plan</h3>
@@ -353,7 +351,7 @@
     <header class="sheet-head reveal">
       <div><h2>Benchmark data</h2>
         <p>The anonymised survey projects. The model learned from the real completed ones, each shown with its cross-validated forecast (scored by a model that never saw it). Ongoing and hypothetical records were not used for training, so their forecast is out-of-sample. Open one in the Forecast sheet as a worked example.</p></div>
-      <div class="titleblock"><span>Sheet 07</span><span>of 08</span><span id="tb-portfolio" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 06</span><span>of 06</span><span id="tb-portfolio" class="tb-proj">No project</span></div>
     </header>
     <div class="overview reveal">
       <dl class="ov-kpis" id="ov-kpis"></dl>
@@ -387,7 +385,7 @@
     <header class="sheet-head reveal">
       <div><h2>Evidence</h2>
         <p>How well the model performs, what it learned from, and what it deliberately ignores. This is the page to open when an examiner asks how you know it works.</p></div>
-      <div class="titleblock"><span>Sheet 08</span><span>of 08</span><span id="tb-evidence" class="tb-proj">No project</span></div>
+      <div class="titleblock"><span>Sheet 08</span><span>of 06</span><span id="tb-evidence" class="tb-proj">No project</span></div>
     </header>
     <div class="ev-grid reveal">
       <div><h3>Cross-validated performance</h3><p class="fine" style="margin-top:0">Two tests: random folds, and <b>leave one company out</b> (train on the other contractors, predict the held-out one). The second is the honest answer to "will it work for a company it has never seen?".</p><div class="table-wrap"><table class="grid" id="metrics"></table></div><p class="fine" id="validation-note"></p></div>
