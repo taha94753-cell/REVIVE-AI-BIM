@@ -1095,7 +1095,7 @@ async function resync() {
 }
 
 // ================================================================== tabs (hash routing: #delay, #assess, ...)
-const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover', 'portfolio'];
+const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover'];
 const TAB_HINT = { projects: 'Every project and where it stands', delay: 'How late the project is today', assess: 'Where it is heading, and why',
   live: 'Phone updates from site', twin: 'The forecast on the building', recover: 'The cheapest way back', impact: 'Time, cost and carbon',
   portfolio: 'The survey projects', evidence: 'How far the numbers can be trusted' };
