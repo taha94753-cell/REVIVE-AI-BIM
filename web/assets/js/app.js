@@ -1095,7 +1095,7 @@ async function resync() {
 }
 
 // ================================================================== tabs (hash routing: #delay, #assess, ...)
-const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover', 'impact', 'portfolio', 'evidence'];
+const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover'];
 const TAB_HINT = { projects: 'Every project and where it stands', delay: 'How late the project is today', assess: 'Where it is heading, and why',
   live: 'Phone updates from site', twin: 'The forecast on the building', recover: 'The cheapest way back', impact: 'Time, cost and carbon',
   portfolio: 'The survey projects', evidence: 'How far the numbers can be trusted' };
@@ -1359,7 +1359,7 @@ function fillSelect(sel, opts, blank = 'Not set') {
 }
 
 function openProjectModal() {
-  const f = k => field(k)?.options || [];
+  const f = k => field(k)?.options || S.schema.details?.[k] || [];
   fillSelect('#pm-type', f('project_type')); fillSelect('#pm-province', f('province')); fillSelect('#pm-value', f('contract_value'));
   $('#pm-city').innerHTML = (S.places?.places || []).map(p => `<option>${esc(p.name)}</option>`).join('');
   $('#pm-form').reset(); $('#pm-err').textContent = ''; $('#pm-sched-name').textContent = ''; $('#pm-ifc-name').textContent = '';

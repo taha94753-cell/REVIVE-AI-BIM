@@ -249,6 +249,8 @@ def public_schema(gates: dict, feature_set: str = "all") -> dict:
     return {
         "groups": groups,
         "feature_set": feature_set,
+        # option lists for the new-project dialog, which asks for these even when the model does not
+        "details": {k: option_labels(FIELD_BY_KEY[k]) for k in ("project_type", "province", "contract_value")},
         "gates": {g: {"label": v["label"], "stages": v["stages"], "elapsed_fraction": v["elapsed_fraction"]}
                   for g, v in gates.items()},
     }
