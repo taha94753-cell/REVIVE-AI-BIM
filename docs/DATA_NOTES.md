@@ -62,11 +62,15 @@ real completed projects**. Three changes follow from the evidence below.
 | 25% | Linear, SPI only | 6.81 | 0.74 | 7.55 | 0.58 | — | — |
 | 25% | XGBoost, all 33 answers (old design) | 6.28 | 0.64 | 7.83 | 0.28 | 0.80 | 0.75 |
 | 25% | XGBoost, core questions | 6.57 | 0.63 | 7.73 | 0.29 | 0.82 | 0.82 |
+| 25% | Random Forest, core questions | 5.96 | 0.67 | 7.00 | 0.36 | 0.90 | 0.89 |
+| 25% | SVM (RBF), core questions | 6.90 | 0.25 | 7.76 | 0.08 | 0.84 | 0.82 |
 | 50% | Median guess | 9.75 | — | — | — | — | — |
 | 50% | **Linear, 13 core questions, sign-constrained (production)** | **4.23** | **0.91** | **5.20** | **0.74** | **0.91** | **0.89** |
 | 50% | Linear, SPI only | 3.99 | 0.91 | 4.56 | 0.83 | — | — |
 | 50% | XGBoost, all 36 answers (old design) | 5.27 | 0.77 | 6.99 | 0.35 | 0.88 | 0.87 |
 | 50% | XGBoost, core questions | 4.72 | 0.79 | 6.59 | 0.38 | 0.89 | 0.88 |
+| 50% | Random Forest, core questions | 4.53 | 0.73 | 6.34 | 0.38 | 0.92 | 0.91 |
+| 50% | SVM (RBF), core questions | 6.41 | 0.17 | 7.31 | 0.11 | 0.85 | 0.87 |
 
 Cost overrun (linear, core questions): R² **0.16** at 25% (MAE 4.4 points) and
 **0.81** at 50% (MAE 2.4 points). **The 25% cost forecast is barely better than
@@ -83,6 +87,14 @@ hypothetical rows.
   questions help inside a contractor and give the explanation its reasons (late
   IPCs, how the duration was set, design status), but they do not yet transfer.
   With only four company groups this comparison is itself noisy.
+- **Random Forest is the honest runner-up, not a clear loser.** On an unseen
+  contractor it ranks high-risk projects slightly better (LOCO AUC 0.89 vs 0.86 at
+  25%, 0.91 vs 0.89 at 50%) and has a lower error at 25% (7.0 vs 7.5 points). But
+  it explains far less of the variation in overrun (LOCO R² 0.36 vs 0.50 at 25%,
+  0.38 vs 0.74 at 50%) and is worse at 50% (6.3 vs 5.2 points), and it has no exact
+  per-answer explanation. The linear model stays in production for the time and
+  cost forecasts; the AUC gap is small enough to sit inside the noise of four
+  company groups. SVM is the weakest model on every measure.
 - **The high-risk classifier transfers well** (LOCO AUC 0.86 at 25%, 0.89 at 50%):
   "will this project overrun by more than 40%?" is the most dependable output.
 - Old headline figures (R² 0.77/0.81 on all 120 records) were inflated by the

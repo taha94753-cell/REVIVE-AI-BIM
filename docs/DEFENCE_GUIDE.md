@@ -56,9 +56,11 @@ If the network fails, open the phone link in a second browser window on the lapt
 - **What about the hypothetical rows?**
   - 32 records, labelled throughout. Without them, R² is 0.65 at 25% and 0.80 at 50%; on completed projects only it is 0.65 and 0.76.
 
-- **Why XGBoost and not Random Forest?**
-  - XGBoost has the higher R² at both checkpoints; Random Forest's error is 0.1 pts lower at 50%, which is within cross-validation noise.
-  - Native missing-value handling, exact TreeSHAP with missing data, and portable model files.
+- **Why a linear model and not Random Forest, XGBoost or SVM?**
+  - All four were tested on the same core questions, with random folds and with leave-one-company-out (`reports/model_comparison.csv`).
+  - On an unseen contractor the linear model explains far more of the overrun: R² 0.50 vs 0.36 (Random Forest), 0.29 (XGBoost) and 0.08 (SVM) at 25%; 0.74 vs 0.38, 0.38 and 0.11 at 50%. Its error at 50% is also the lowest (5.2 points vs 6.3 for Random Forest).
+  - Be honest about where Random Forest is better: a lower error at 25% (7.0 vs 7.5 points) and a slightly higher high-risk AUC (0.89 vs 0.86 at 25%, 0.91 vs 0.89 at 50%). With only four company groups those gaps are within the noise.
+  - The linear model's explanation is exact (coefficient x standardised answer), and its signs are constrained to engineering sense, so a site manager never sees "more late payments made the project faster".
 
 - **Is the BIM just a viewer?**
   - No. Quantities flow into the model.
