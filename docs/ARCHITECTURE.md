@@ -25,6 +25,8 @@ Each gate uses only information that exists at that point:
 An award-only model was tested and **had no predictive value** (cross-validated R² ≈ −0.1). That is why there is no "at award" forecast.
 
 ## 3. Models
+Production (since October 2026, `training.model: linear`) uses sign-constrained ridge (time, cost) and logistic (high risk) models on the core questions; see `docs/DATA_NOTES.md` for why. The XGBoost design below is the alternative family (`training.model: xgboost`) and one of the comparators.
+
 Three XGBoost models are trained per gate:
 - time overrun: regression with a pseudo-Huber loss;
 - cost overrun: regression;
@@ -32,7 +34,7 @@ Three XGBoost models are trained per gate:
 
 Settings: shallow trees (depth 2, 600 rounds, learning rate 0.03) suit 121 records. Missing answers stay missing (NaN); XGBoost learns a default branch, so nothing is imputed.
 
-**Validation:** 5-fold cross-validation repeated 3 times. Every project is predicted by models that never saw it (out-of-fold). The final models are then refitted on all records. Comparators on the same folds:
+**Validation:** 5-fold cross-validation repeated 3 times. Every project is predicted by models that never saw it (out-of-fold). The final models are then refitted on all records. Comparators on the same folds, each also scored leave-one-company-out:
 - median baseline;
 - Random Forest;
 - SVM (RBF);

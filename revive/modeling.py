@@ -365,7 +365,11 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
                 r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed)
                 c_model = _alt_models("clf")[{"Ridge regression": "Logistic regression"}.get(name, name)]
                 c, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed)
-                comparison.append(_comparison_row(gate, name if name != "Ridge regression" else "Linear (Ridge / Logistic)", r, c))
+                # same unseen-company test as the production model, so every row is judged alike
+                rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups)
+                cl, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, groups=groups)
+                comparison.append(_comparison_row(gate, name if name != "Ridge regression" else "Linear (Ridge / Logistic)",
+                                                  r, c, rl, cl))
 
     oof_rows.to_csv(out_dir / "oof_predictions.csv", index=False)
     if comparison:

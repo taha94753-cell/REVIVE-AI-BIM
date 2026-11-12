@@ -385,13 +385,13 @@
     {
       "gate": "G25",
       "model": "Random Forest",
-      "time_MAE": 5.95,
-      "time_R2": 0.667,
+      "time_MAE": 5.96,
+      "time_R2": 0.666,
       "risk_AUC": 0.897,
       "risk_F1": 0.75,
-      "loco_time_MAE": NaN,
-      "loco_time_R2": NaN,
-      "loco_risk_AUC": NaN
+      "loco_time_MAE": 7.0,
+      "loco_time_R2": 0.358,
+      "loco_risk_AUC": 0.887
     },
     {
       "gate": "G25",
@@ -400,9 +400,9 @@
       "time_R2": 0.251,
       "risk_AUC": 0.836,
       "risk_F1": 0.564,
-      "loco_time_MAE": NaN,
-      "loco_time_R2": NaN,
-      "loco_risk_AUC": NaN
+      "loco_time_MAE": 7.76,
+      "loco_time_R2": 0.077,
+      "loco_risk_AUC": 0.822
     },
     {
       "gate": "G50",
@@ -466,9 +466,9 @@
       "time_R2": 0.732,
       "risk_AUC": 0.922,
       "risk_F1": 0.829,
-      "loco_time_MAE": NaN,
-      "loco_time_R2": NaN,
-      "loco_risk_AUC": NaN
+      "loco_time_MAE": 6.34,
+      "loco_time_R2": 0.382,
+      "loco_risk_AUC": 0.907
     },
     {
       "gate": "G50",
@@ -477,9 +477,9 @@
       "time_R2": 0.172,
       "risk_AUC": 0.852,
       "risk_F1": 0.634,
-      "loco_time_MAE": NaN,
-      "loco_time_R2": NaN,
-      "loco_risk_AUC": NaN
+      "loco_time_MAE": 7.31,
+      "loco_time_R2": 0.106,
+      "loco_risk_AUC": 0.866
     }
   ],
   "training_seconds": 23.7
