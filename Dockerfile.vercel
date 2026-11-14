@@ -1,7 +1,8 @@
 # Vercel container build (vercel.com/docs/functions/container-images): same image as Dockerfile. Data in data/app.db
 # resets when the container scales to zero (5 minutes idle), so this is for showing the app.
 FROM python:3.12-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8000
+# REVIVE_TRUST_PROXY: the container is only reachable through Vercel's HTTPS proxy (Secure cookie, HSTS, real visitor IPs)
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8000 REVIVE_TRUST_PROXY=1
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # exact versions REVIVE is tested with

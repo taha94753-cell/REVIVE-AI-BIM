@@ -122,7 +122,8 @@ class SecurityHeaders:
                        (b"referrer-policy", b"no-referrer" if path.startswith(("/site", "/auth/link")) else b"same-origin"),
                        (b"permissions-policy", b"camera=(), microphone=(), geolocation=(), payment=(), usb=()"),
                        (b"cross-origin-opener-policy", b"same-origin"),
-                       (b"cross-origin-resource-policy", b"same-origin")]
+                       # the share image is the one file other sites (link previews) are meant to load
+                       (b"cross-origin-resource-policy", b"cross-origin" if path == "/assets/img/og.png" else b"same-origin")]
                 if not self.framable:          # embedding allowed only for the origins in the CSP frame-ancestors
                     add.append((b"x-frame-options", b"DENY"))
                 if b"content-security-policy" not in names:

@@ -149,5 +149,8 @@ def test_public_pages_robots_sitemap_and_404(anon):
     page = anon.get("/no-such-page", headers={"Accept": "text/html"})
     assert page.status_code == 404 and "text/html" in page.headers["content-type"] and "not on the programme" in page.text
     assert page.headers["x-content-type-options"] == "nosniff"
+    og = anon.get("/assets/img/og.png")                                # the share image named in og:image exists
+    assert og.status_code == 200 and og.headers["cross-origin-resource-policy"] == "cross-origin"
+    assert 'property="og:image" content="https://' in anon.get("/").text
     api = anon.get("/api/no-such-thing", headers={"Accept": "text/html"})
     assert api.status_code == 404 and api.json()["detail"] == "Not Found"

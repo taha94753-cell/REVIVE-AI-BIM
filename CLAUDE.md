@@ -52,7 +52,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 16. **Phones use the site token, never a row id.** `/api/site/<token>/*` is the only unauthenticated write path.
 17. **Inline scripts are allowed only by hash.** The CSP hashes the import maps at start-up; any other inline `<script>` will be blocked. Put code in `web/assets/js/`.
 19. **Accounts.** A new workspace exists only after the e-mailed code is confirmed (`auth.start_signup` / `finish_signup`; `REVIVE_EMAIL_VERIFICATION=0` only in tests). Codes and reset codes go through `mailer.send_code` and are stored hashed. The session cookie has no Max-Age and sessions idle out (`security.session_idle_minutes`): do not add "remember me". The forgotten-password answer must stay identical for known and unknown addresses. `REVIVE_TRUST_PROXY` is for hosted deployments behind one HTTPS proxy only.
-20. **Public pages.** `/privacy`, `/terms` and `web/404.html` use `landing.css` (`body.plain`, `.legal`) and `legal.js`; when what REVIVE stores changes, update `web/privacy.html` in the same change.
+20. **Public pages.** The public address is https://revive-ai-bim.vercel.app: `og:url`, `og:image` and the canonical link in `web/landing.html` name it in full (link previews need absolute URLs), so change them if the address changes. `web/assets/img/og.png` (1200 x 630) is the share image. `/privacy`, `/terms` and `web/404.html` use `landing.css` (`body.plain`, `.legal`) and `legal.js`; when what REVIVE stores changes, update `web/privacy.html` in the same change.
 18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
 
 ## Design language (frontend)
