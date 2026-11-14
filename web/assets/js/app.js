@@ -674,7 +674,7 @@ function renderPortfolio() {
   });
   markRiskMap();
   const hyp = S.portfolio.dataset.filter(r => r.hypothetical).length;
-  $('#portfolio-note').textContent = `${rows.length} of ${S.portfolio.dataset.length} projects shown. ${hyp} records are hypothetical scenarios and are labelled. For ongoing projects the "actual" completion is still a forecast.`;
+  $('#portfolio-note').textContent = `${rows.length} of ${S.portfolio.dataset.length} projects shown. ${hyp} records are augmented (scenario rows, not verified projects) and are labelled. For ongoing projects the "actual" completion is still a forecast.`;
 }
 
 async function loadProject(id) {
@@ -1037,7 +1037,7 @@ function renderEvidence() {
   $('#excluded').innerHTML = Object.entries(card.excluded_for_leakage).map(([k, v]) => `<li><b>${esc(k)}</b>: ${esc(v)}</li>`).join('');
   const n = card.dataset.n_projects, G = card.gates, spiOnly = G.G25?.leave_company_out?.spi_only_linear?.r2;
   $('#limits').innerHTML = [
-    `The model is trained on ${n} real completed projects from three contractors and a few external records: a pilot study, not a model for the whole industry. Hypothetical scenarios and ongoing projects are kept out of training and labelled wherever they appear.`,
+    `The model is scored on ${n} real completed projects from three contractors and a few external records: a pilot study, not a model for the whole industry. Augmented records (scenario rows, not verified projects) help train it, never count in its scores, and are labelled wherever they appear. Ongoing projects are kept out of training.`,
     `For a company it has never seen, the time forecast explains about ${Math.round((G.G25?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% of the variation at 25% and ${Math.round((G.G50?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% at 50%. SPI alone transfers about as well${spiOnly != null ? ` (${spiOnly.toFixed(2)} at 25%)` : ''}: the other questions mainly give the forecast its reasons.`,
     `The cost forecast at 25% is barely better than the average (R\u00b2 ${G.G25?.cost_overrun?.r2?.mean?.toFixed(2)}); treat it as indicative. At 50% it is usable (R\u00b2 ${G.G50?.cost_overrun?.r2?.mean?.toFixed(2)}).`,
     'Contract and site information alone does not predict overrun in this data; the signal appears once first-quarter events and earned value are known. REVIVE therefore forecasts at 25% and 50% of contract time, not at award.',
@@ -1058,7 +1058,7 @@ function renderInsightCharts() {
   if (ins.drivers) fx.whenVisible($('#beeswarm'), () => C.beeswarm($('#beeswarm'), ins.drivers[S.evGate].beeswarm));
   const famColor = { Client: '#6CB2FF', Contractor: '#E9C46A', 'Design & supervision': '#43C59E', External: '#F28C38' };
   fx.whenVisible($('#rii'), () => C.hbars($('#rii'), ins.rii, { max: 1, label: r => `${r.rank}. ${r.label}`, value: r => r.rii, color: r => famColor[r.family], text: r => r.rii.toFixed(2) }));
-  const comp = ins.composition, fixed = { 'Hypothetical scenarios': '#FF4FA3', 'External sources': '#B4BCC6', Unlabelled: '#5C6673' }, spare = ['#6CB2FF', '#43C59E', '#E9C46A', '#F28C38'];
+  const comp = ins.composition, fixed = { 'Augmented records': '#FF4FA3', 'External sources': '#B4BCC6', Unlabelled: '#5C6673' }, spare = ['#6CB2FF', '#43C59E', '#E9C46A', '#F28C38'];
   const palette = comp.by_source.map((s, i) => fixed[s.label] || spare[i % spare.length]);
   const total = comp.by_source.reduce((s, x) => s + x.n, 0);
   $('#composition').innerHTML = `<div class="stack">${comp.by_source.map((s, i) => `<i style="width:${(100 * s.n / total).toFixed(2)}%;background:${palette[i]};--d:${i * 120}ms" data-tip="${esc(s.label)}: ${s.n} records"></i>`).join('')}</div>

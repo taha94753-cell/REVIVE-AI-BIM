@@ -330,7 +330,7 @@ async function overview() {
     });
     $('[data-fill=base]').textContent = g.baseline_mae != null ? g.baseline_mae.toFixed(1) : 'n/a';
     $('[data-fill=real]').textContent = d.projects;
-    $('#numbers-note').textContent = `Figures come from the trained model card. The survey holds ${d.records ?? d.projects} records, ${d.hypothetical || 0} of them hypothetical scenarios (labelled wherever they appear). The model is trained and tested on the ${d.projects} real completed projects only.`;
+    $('#numbers-note').textContent = `Figures come from the trained model card. The survey holds ${d.records ?? d.projects} records, ${d.hypothetical || 0} of them augmented (scenario rows, not verified projects, labelled wherever they appear). They help train the model; every score is measured on the ${d.projects} real completed projects only.`;
     $('#ev-rows').innerHTML = Object.entries(d.gates || {}).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50% of contract time' : 'At 25% of contract time'}</td>
       <td class="good">${v.mae.toFixed(1)}</td><td>${v.baseline_mae.toFixed(1)}</td><td>${v.r2.toFixed(2)}</td><td>${v.loco_r2 == null ? '\u2014' : v.loco_r2.toFixed(2)}</td><td>${v.auc.toFixed(2)}</td></tr>`).join('');
     if (!d.registration_open) { $('#reg-closed').hidden = false; $('#at-register').hidden = true; setAuth('signin'); }

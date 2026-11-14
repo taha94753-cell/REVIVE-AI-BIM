@@ -7,7 +7,7 @@ import pandas as pd
 from .schema import CAUSE_FAMILY, DELAY_CAUSES
 
 SOURCE_LABELS = {"C01": "Contractor A records", "C02": "Contractor B records", "C03": "Contractor C records",
-                 "EXT": "External sources", "SYN": "Hypothetical scenarios", "UNCODED": "Unlabelled"}
+                 "EXT": "External sources", "SYN": "Augmented records", "UNCODED": "Unlabelled"}
 
 
 def relative_importance(df: pd.DataFrame) -> list[dict]:

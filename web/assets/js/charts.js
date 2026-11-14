@@ -174,7 +174,7 @@ export function scatter(el, pts) {
   b += `<text x="${(L + W - R) / 2}" y="${H - 8}" text-anchor="middle" class="ax">Actual time overrun (%)</text>`;
   b += `<text x="14" y="${(T + H - B) / 2}" transform="rotate(-90 14 ${(T + H - B) / 2})" text-anchor="middle" class="ax">Out-of-fold forecast (%)</text>`;
   el.innerHTML = svg(W, H, 'Cross-validated forecast against actual overrun', b) +
-    '<p class="fine">Filled: completed projects. Hollow: ongoing projects (pink = hypothetical scenarios), whose "actual" is a reported forecast.</p>';
+    '<p class="fine">Filled: completed projects. Hollow: ongoing projects (pink = augmented records), whose "actual" is a reported forecast.</p>';
 }
 
 // ---------------------------------------------------------------- SHAP beeswarm
@@ -333,7 +333,7 @@ export function riskMap(el, rows, bands, { isDim = () => false, selected = null 
   for (let v = Math.ceil(xmin * 10) / 10; v <= xmax + 1e-9; v += 0.1) b += `<text x="${x(v)}" y="${H - B + 16}" text-anchor="middle" class="ax">${v.toFixed(1)}</text>`;
   b += `<line x1="${x(1)}" x2="${x(1)}" y1="${T}" y2="${H - B}" style="stroke:var(--chalk-2);stroke-dasharray:4 4"/><text x="${x(1) - 6}" y="${T + 10}" text-anchor="end" class="ax">SPI 1.0 = on programme</text>`;
   b += `<circle cx="${L + 10}" cy="${T + 8}" r="4.5" style="fill:var(--chalk-2)"/><text x="${L + 19}" y="${T + 12}" class="ax">real project</text>` +
-    `<circle cx="${L + 100}" cy="${T + 8}" r="4.5" style="fill:none;stroke:var(--chalk-2);stroke-width:1.8"/><text x="${L + 109}" y="${T + 12}" class="ax">hypothetical scenario</text>`;
+    `<circle cx="${L + 100}" cy="${T + 8}" r="4.5" style="fill:none;stroke:var(--chalk-2);stroke-width:1.8"/><text x="${L + 109}" y="${T + 12}" class="ax">augmented record</text>`;
   b += `<text x="${(L + W - R) / 2}" y="${H - 8}" text-anchor="middle" class="ax">SPI at the checkpoint (lower = further behind)</text>`;
   b += `<text x="13" y="${(T + H - B) / 2}" transform="rotate(-90 13 ${(T + H - B) / 2})" text-anchor="middle" class="ax">Cross-validated forecast overrun</text>`;
   const sorted = [...pts].sort((a, c) => (isDim(c) - isDim(a)));
