@@ -169,3 +169,13 @@ Collect completed projects and score them before merging:
    to 0.38 and 0.44 to 0.38). Read that gap as: the gain is knowledge of
    contractors already in the data, not of a new one. Always quote both. The
    linear model gets worse with blended rows and does not use them.
+4. **45 extra scenario rows (`SCN-*`).** A workbook of 45 further projects arrived on
+   14 November 2026. Its origin could not be verified (written by a script minutes
+   before it was sent, project types spread evenly across all seven types, seven
+   overruns above 100% against two in the 81 real projects), so the rows are kept in
+   `data/processed/scenarios_extra.csv` and always loaded as hypothetical. 36 have an
+   outcome and join the training side. Effect, measured on the 81 real projects:
+   unseen-company R2 rises (linear 0.60 to 0.68 at 25%, 0.76 to 0.79 at 50%; Random
+   Forest 0.46 to 0.63 and 0.59 to 0.78), while the typical error gets worse in places
+   (linear 50% MAE 4.22 to 5.01; no-progress-report forest 5.34 to 7.02 and 5.46 to
+   6.35). Remove `data.extra_scenarios_file` from config.yaml and retrain to undo.

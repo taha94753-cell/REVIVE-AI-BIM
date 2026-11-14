@@ -17,6 +17,9 @@ data:
   raw_file: data/raw/AI-BIM_FYDP_120_projects_v3.xlsx
   raw_sheet: FORM ORDER (88 cols)
   clean_file: data/processed/projects_clean.csv
+  # Scenario rows whose origin could not be verified (added November 2026).
+  # Always loaded as hypothetical: they train, they are never scored.
+  extra_scenarios_file: data/processed/scenarios_extra.csv
   database: data/app.db
 
 training:
