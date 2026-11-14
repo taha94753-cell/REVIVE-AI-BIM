@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, compa
   progress TEXT, created_by INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_projects_company ON projects(company_id);
 CREATE TABLE IF NOT EXISTS project_files (path TEXT PRIMARY KEY, data BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS project_schedule (project_id INTEGER PRIMARY KEY, company_id INTEGER NOT NULL,
+  loading TEXT, updates TEXT, updated_at TEXT NOT NULL);
 """
 DETAIL_KEYS = ("project_type", "province", "contract_value", "contract_type", "client_sector", "planned_months",
                "floor_area_m2", "storeys", "length_km", "description")
@@ -191,6 +193,33 @@ def update(company_id: int, pid: int, **fields) -> dict | None:
     return get(company_id, pid)
 
 
+# ------------------------------------------------------------------ schedule loading and progress updates
+# Kept in their own table (not on the project row) because they can be large and the project list never needs them.
+def schedule_data(company_id: int, pid: int) -> dict:
+    """{"loading": cost/resource/progress data of the baseline file or None, "schedule_updates": [snapshots]}."""
+    with _conn() as c:
+        r = c.execute("SELECT loading, updates FROM project_schedule WHERE project_id = ? AND company_id = ?",
+                      (int(pid), int(company_id))).fetchone()
+    r = dict(r) if r else {}
+    return {"loading": json.loads(r["loading"]) if r.get("loading") else None,
+            "schedule_updates": json.loads(r["updates"]) if r.get("updates") else []}
+
+
+def set_schedule_data(company_id: int, pid: int, **fields) -> dict | None:
+    """fields: loading=dict|None and/or schedule_updates=list|None. Only for a project this company owns."""
+    if not get(company_id, pid):
+        return None
+    cur = schedule_data(company_id, pid)
+    cur.update({k: v for k, v in fields.items() if k in ("loading", "schedule_updates")})
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO project_schedule (project_id, company_id, loading, updates, updated_at) "
+                  "VALUES (?,?,?,?,?)",
+                  (int(pid), int(company_id), json.dumps(cur["loading"]) if cur["loading"] else None,
+                   json.dumps(cur["schedule_updates"]) if cur["schedule_updates"] else None, _now()))
+    touch(company_id, pid)
+    return cur
+
+
 def touch(company_id: int, pid: int) -> None:
     with _conn() as c:
         c.execute("UPDATE projects SET updated_at = ? WHERE id = ? AND company_id = ?", (_now(), int(pid), int(company_id)))
@@ -204,6 +233,7 @@ def delete(company_id: int, pid: int) -> bool:
     store.delete_for_project(company_id, pid)
     with _conn() as c:
         c.execute("DELETE FROM projects WHERE id = ? AND company_id = ?", (int(pid), int(company_id)))
+        c.execute("DELETE FROM project_schedule WHERE project_id = ? AND company_id = ?", (int(pid), int(company_id)))
     d = workspace_dir(company_id, pid)
     prefix = str(d / "x")[:-1]   # the folder plus separator, so p1 never matches p10
     with _conn() as c:

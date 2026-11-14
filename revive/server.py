@@ -26,12 +26,13 @@ import secrets
 import shutil
 import time
 from contextlib import asynccontextmanager
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import numpy as np
-from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
@@ -659,9 +660,19 @@ async def upload_schedule(request: Request, user: User, file: UploadFile = File(
         raise HTTPException(400, f"Schedule rejected: {msg[:300]}") from exc
     used = d / "schedule.csv"
     shutil.move(str(checked), used)
+    source = used
     if tmp.exists():
-        shutil.move(str(tmp), d / f"schedule_source{tmp.suffix}")
+        source = d / f"schedule_source{tmp.suffix}"
+        shutil.move(str(tmp), source)
     p = projects.update(user["company_id"], p["id"], schedule_file=str(used), progress=None)
+    # a new baseline: keep the cost, resource and progress data the file carries, drop updates made against the old one
+    from .schedule_import import read_loading
+    try:
+        _, loading = await run_in_threadpool(read_loading, source)
+    except Exception:   # the schedule itself was accepted; loading is an extra
+        log.exception("could not read cost/resource loading from the baseline")
+        loading = None
+    projects.set_schedule_data(user["company_id"], p["id"], loading=loading, schedule_updates=None)
     with projects.scope(p):
         summary = await run_in_threadpool(_bim_summary_now)
     summary["import_report"] = report
@@ -672,6 +683,7 @@ def _project_files(request: Request, user: dict, **fields) -> JSONResponse:
     p = header_project(request, user, required=True)
     if fields.get("schedule_file", "keep") is None:
         fields["progress"] = None             # progress was entered against the old schedule
+        projects.set_schedule_data(user["company_id"], p["id"], loading=None, schedule_updates=None)
     p = projects.update(user["company_id"], p["id"], **fields)
     with projects.scope(p):
         return ok(_bim_summary_now())
@@ -887,6 +899,87 @@ def set_progress(pid: int, req: ProgressBody, user: User):
     prog = projects.clean_progress(ids, req.model_dump())
     p = projects.update(user["company_id"], pid, progress=prog)
     return ok(_delay_for(user["company_id"], p, full=True))
+
+
+# ---- schedule analysis and progress updates (the baseline stays fixed; updates are dated snapshots)
+def _schedule_analysis(cid: int, p: dict) -> dict:
+    from . import schedule_analysis
+    with projects.scope(p):
+        acts = load_schedule()
+        return schedule_analysis.analyse({**p, **projects.schedule_data(cid, p["id"])}, acts)
+
+
+@app.get("/api/projects/{pid}/schedule-analysis")
+def project_schedule_analysis(pid: int, user: User):
+    """S-curves, earned value at each update, resources, cash flow and schedule quality. Never uses the ML model."""
+    p = own_project(user, pid)
+    try:
+        return ok(_schedule_analysis(user["company_id"], p))
+    except ValueError as exc:
+        raise HTTPException(400, f"Schedule analysis failed: {exc}") from exc
+
+
+@app.post("/api/projects/{pid}/schedule-update")
+async def project_schedule_update(pid: int, user: User, file: UploadFile = File(...),
+                                  as_of: Annotated[str | None, Form(max_length=10)] = None,
+                                  elapsed_pct: Annotated[float | None, Form(ge=0, le=300)] = None):
+    """A later export of the same programme: read its progress and actual cost against the fixed baseline."""
+    from . import schedule_analysis as sa
+    from .schedule_import import read_loading
+    p = own_project(user, pid)
+    cid = user["company_id"]
+    name = (file.filename or "").lower()
+    if not name.endswith((".csv", ".xer", ".xml")):
+        raise HTTPException(400, "Upload the updated schedule as a Primavera P6 .xer export, an MS Project .xml "
+                                 "(File > Save As > XML) or a REVIVE .csv with a pct_complete column.")
+    throttle(f"upload:{user['id']}", 20, 600)
+    kind = "xer" if name.endswith(".xer") else "mspdi" if name.endswith(".xml") else "schedule"
+    tmp = await _receive_upload(file, kind, workspace_dir(cid, p["id"]))
+    try:
+        upd_acts, upd_loading = await run_in_threadpool(read_loading, tmp)
+    except Exception as exc:
+        msg = str(exc) if isinstance(exc, (ValueError, KeyError)) else exc.__class__.__name__
+        raise HTTPException(400, f"Update rejected: {msg[:300]}") from exc
+    finally:
+        tmp.unlink(missing_ok=True)
+    with projects.scope(p):
+        base_acts = load_schedule()
+        planned = cpm(base_acts)["finish"]
+    sd = projects.schedule_data(cid, p["id"])
+    cmp_ = sa.compare(base_acts, upd_acts)
+    if cmp_["matched"] == 0:
+        raise HTTPException(400, "None of the activity IDs in this file match the baseline schedule. "
+                                 "Upload an update of the same programme, or upload it as a new baseline.")
+    la = upd_loading.get("activities") or {}
+    if not any((v or {}).get("pct") or (v or {}).get("actual_cost") for v in la.values()):
+        raise HTTPException(400, "This file carries no progress: no % complete, actual dates or actual cost. "
+                                 "Update the programme to its data date and export it again.")
+    status_date = projects.clean_date(as_of) or upd_loading.get("data_date") or date.today().isoformat()
+    elapsed = elapsed_pct if elapsed_pct is not None else sa.elapsed_pct(p, status_date, sd["loading"], upd_loading, planned)
+    if elapsed is None:
+        raise HTTPException(400, "The share of contract time elapsed could not be worked out. Enter it with the upload, "
+                                 "or set the project's start date and contract duration.")
+    fmt = {"xer": "Primavera P6 XER", "mspdi": "MS Project XML", "schedule": "CSV"}[kind]
+    snap = sa.snapshot(base_acts, upd_acts, upd_loading, status_date, elapsed, file.filename or "update", fmt)
+    updates = [u for u in sd["schedule_updates"] if u.get("as_of") != status_date] + [snap]   # one update per status date
+    updates = sorted(updates, key=lambda u: u.get("as_of") or "")[-sa.MAX_UPDATES:]
+    projects.set_schedule_data(cid, p["id"], schedule_updates=updates)
+    p = projects.update(cid, p["id"], progress=sa.progress_from(updates[-1]))
+    return ok(_schedule_analysis(cid, p))
+
+
+@app.delete("/api/projects/{pid}/schedule-update/{index}")
+def project_schedule_update_delete(pid: int, index: int, user: User):
+    from . import schedule_analysis as sa
+    p = own_project(user, pid)
+    cid = user["company_id"]
+    updates = projects.schedule_data(cid, p["id"])["schedule_updates"]
+    if not 0 <= index < len(updates):
+        raise HTTPException(404, "Update not found.")
+    updates.pop(index)
+    projects.set_schedule_data(cid, p["id"], schedule_updates=updates)
+    p = projects.update(cid, p["id"], progress=sa.progress_from(updates[-1]) if updates else None)
+    return ok(_schedule_analysis(cid, p))
 
 
 @app.post("/api/projects/{pid}/site-link")

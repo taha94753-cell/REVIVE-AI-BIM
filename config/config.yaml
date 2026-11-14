@@ -153,6 +153,20 @@ schedule:
   hours_per_day: 8                        # converts P6 .xer durations (hours) to days
   default_crash_cost_per_day_pkr: 150000  # VERIFY: used for imported P6 schedules that carry no crash data
 
+schedule_analysis:
+  working_days_per_month: 26   # period length when the contract duration is not known
+  min_cost_coverage: 0.5       # share of activities that must carry a budget before work is weighted by cost
+  max_periods: 120
+  top_resources: 6
+  # Schedule quality thresholds, after the DCMA 14-point assessment. VERIFY against the guideline you cite.
+  high_float_days: 44
+  long_activity_days: 44
+  open_ends_max_pct: 5
+  high_float_max_pct: 5
+  long_activity_max_pct: 5
+  critical_share_watch_pct: 40
+  gate_windows: {G25: [20, 32], G50: [44, 58]}   # elapsed % in which an update's SPI/CPI is offered to the forecast
+
 weather:
   provider: open-meteo        # free for non-commercial use, no API key (CC BY 4.0): https://open-meteo.com
   past_days: 14

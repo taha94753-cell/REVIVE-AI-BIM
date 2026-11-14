@@ -91,6 +91,18 @@ The landing page (`/`) explains the product and holds the sign-up and sign-in fo
 | Benchmark | The anonymised training dataset with cross-validated forecasts (formerly "Portfolio"); open a record as a worked example. |
 | Evidence | Cross-validated and leave-one-company-out metrics, model comparison against an SPI-only baseline and the old XGBoost design, robustness, predicted against actual, SHAP beeswarm, delay-cause ranking and limitations. |
 
+### Schedule analysis and progress updates
+
+The Current delay sheet also analyses the schedule itself, without the machine-learning model:
+
+- **From the baseline** (P6 `.xer`, MS Project `.xml` or CSV): early and late S-curves, resource load per month, planned cash flow and schedule quality checks (open ends, float, long activities, critical share).
+- **From each progress update**: SPI, SPI(t), CPI, cost variance and forecast cost at completion.
+- **CPI needs a cost-loaded schedule and actual cost.** Without them the app shows SPI only and says why; it never assumes a CPI.
+
+The schedule is not static. The baseline stays fixed; each month, update the programme to its data date, export it and use **Upload progress update**. REVIVE matches it to the baseline by activity ID, keeps every update, plots SPI and CPI over time, and re-measures the current delay from the latest one. If the programme itself was revised (activities added, removed or re-timed), the app says so; upload it as a new baseline when the revision is formal.
+
+A CSV update needs only `id` and `pct_complete` (plus `actual_cost_pkr` for CPI), with the same activity IDs as the baseline.
+
 ## Commands
 
 | Command | Purpose |

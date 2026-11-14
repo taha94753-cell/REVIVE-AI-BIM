@@ -1468,12 +1468,107 @@ function refreshDelay() {
 }
 
 async function loadDelay() {
-  if (!S.project) { renderNoProject('delay'); return; }
+  if (!S.project) { $('#sched').hidden = true; renderNoProject('delay'); return; }
   if (S.tab !== 'delay' && !S.booted) return;
+  loadSched();
   try {
     S.delay = await api(`/projects/${S.project.id}/delay`);
     if (S.tab === 'delay') renderDelay();
   } catch (e) { report(e); }
+}
+
+// ------------------------------------------------------------------ schedule analysis and progress updates
+async function loadSched() {
+  try {
+    S.sched = await api(`/projects/${S.project.id}/schedule-analysis`);
+    renderSched();
+  } catch (e) { $('#sched').hidden = true; report(e); }
+}
+
+function renderSched() {
+  const a = S.sched;
+  if (!a) return;
+  $('#sched').hidden = false;
+  const st = a.status, cost = a.basis === 'cost', q = a.quality;
+  $('#sched-basis').textContent = `${q.activities} activities, ${fmt.num(a.planned_days)} planned days. Work is weighted by ${cost ? `budget cost (${fmt.pkr(a.bac)} in total)` : 'activity duration'}. This analysis does not use the machine-learning model.`;
+  $('#sched-notes').innerHTML = a.notes.map(n => `<p class="note warn">${esc(n)}</p>`).join('');
+  const k = [];
+  if (st) {
+    k.push(['SPI', fmt.num(st.spi, 2), `earned ${fmt.num(st.ev_pct, 1)}% against ${fmt.num(st.pv_pct, 1)}% planned`]);
+    k.push(['SPI(t)', fmt.num(st.spi_t, 2), `${st.sv_days > 0 ? '+' : ''}${fmt.num(st.sv_days, 0)} days against the plan`]);
+    k.push(['CPI', st.cpi == null ? 'n/a' : fmt.num(st.cpi, 2), st.cpi == null ? st.cpi_reason : `${fmt.pkr(st.ev)} earned for ${fmt.pkr(st.ac)} spent`]);
+    if (st.cpi != null) {
+      k.push(['Cost variance', fmt.pkr(st.cv), st.cv < 0 ? 'over the value of work done' : 'under the value of work done']);
+      k.push(['Forecast cost at completion', fmt.pkr(st.eac), `budget ${fmt.pkr(st.bac)}, at the current CPI`]);
+      k.push(['CPI needed to finish on budget', st.tcpi == null ? 'n/a' : fmt.num(st.tcpi, 2), 'on the remaining work']);
+    }
+  } else {
+    k.push(['SPI and CPI', 'no update yet', 'upload a progress update below to measure them']);
+  }
+  k.push(['Peak resource load', `${fmt.num(a.resources.peak)} ${a.resources.unit}`, `in month ${a.resources.peak_period}${a.resources.peak_to_average ? `, ${fmt.num(a.resources.peak_to_average, 1)} times the average` : ''}`]);
+  k.push(['Critical activities', `${q.checks.find(c => c.key === 'critical_share').pct}%`, `${q.critical_days_share_pct}% of the planned work days`]);
+  if (a.cash_flow) k.push(['Peak planned spend', fmt.pkr(a.cash_flow.peak), `in month ${a.cash_flow.peak_period}`]);
+  $('#sched-kpis').innerHTML = k.map(([t, v, sub], i) => `<div class="kpi" style="--d:${i * 60}ms"><dt>${esc(t)}</dt><dd${String(v).length > 9 ? ' style="font-size:22px"' : ''}>${esc(v)}</dd><small>${esc(sub || '')}</small></div>`).join('');
+  C.banana($('#sched-curve'), a);
+  const r = a.resources;
+  $('#sched-res-note').textContent = r.unit;
+  C.stackBars($('#sched-res'), r.rows, { unit: r.unit, label: 'Resource load per month' });
+  $('#sched-res-fine').textContent = `From ${r.basis}, spread evenly over each activity's early dates.${r.materials.length ? ` Materials: ${r.materials.map(m => `${m.name} ${fmt.num(m.units)}`).join(', ')}.` : ''}`;
+  $('#sched-q-note').textContent = `${q.links} links, ${fmt.num(q.links_per_activity, 2)} per activity. Float: ${q.float.zero} at zero, ${q.float.up_to_10} up to 10 days, ${q.float.up_to_30} up to 30, ${q.float.above_30} above.`;
+  $('#sched-quality tbody').innerHTML = q.checks.map(c => `<tr><td><b>${esc(c.label)}</b><br><small class="muted">${esc(c.note)}${c.ids.length && !c.ok ? ` For example: ${esc(c.ids.join(', '))}.` : ''}</small></td>
+    <td class="n">${c.value}</td><td class="n">${c.pct}%</td><td class="${c.ok ? 'q-ok' : 'q-warn'}">${c.ok ? 'OK' : 'Check'}</td></tr>`).join('');
+  $('#sched-cash-wrap').hidden = !a.cash_flow;
+  if (a.cash_flow) C.stackBars($('#sched-cash'), [{ name: 'Early dates', by_period: a.cash_flow.early }], { unit: 'PKR', money: true, line: a.cash_flow.late, lineLabel: 'Planned cost per month on late dates', label: 'Planned cash flow per month' });
+  const h = a.history;
+  $('#sched-trend').hidden = h.length < 2;
+  if (h.length >= 2) C.indexTrend($('#sched-trend'), h);
+  $('#sched-updates tbody').innerHTML = h.length ? h.map(u => `<tr><td><b>${esc(u.as_of)}</b><br><small class="muted">${esc(u.file || '')}${u.compare?.revised ? ' <span class="tag demo">programme changed</span>' : ''}</small></td>
+    <td class="n">${fmt.num(u.elapsed_pct, 0)}%</td><td class="n">${fmt.num(u.ev_pct, 1)}%</td><td class="n">${fmt.num(u.spi, 2)}</td><td class="n">${u.cpi == null ? 'n/a' : fmt.num(u.cpi, 2)}</td>
+    <td class="n"><button type="button" class="btn ghost sm" data-del="${u.index}" aria-label="Remove the update of ${esc(u.as_of)}">Remove</button></td></tr>`).join('')
+    : '<tr><td colspan="6" class="muted">No progress update yet. The baseline alone gives the plan; an update gives SPI and CPI.</td></tr>';
+  $$('#sched-updates [data-del]').forEach(b => b.addEventListener('click', () => removeUpdate(Number(b.dataset.del))));
+  const sg = a.suggested_inputs;
+  $('#sched-suggest').innerHTML = sg ? `<p class="note"><span>The update of ${esc(sg.as_of)} sits at the ${sg.gate === 'G50' ? '50%' : '25%'} checkpoint: ${Object.entries(sg.inputs).map(([key, v]) => `${key.startsWith('spi') ? 'SPI' : 'CPI'} ${fmt.num(v, 2)}`).join(', ')}.</span><button type="button" class="btn ghost sm" id="sched-use">Use in the forecast</button></p>` : '';
+  if (sg) $('#sched-use').addEventListener('click', () => useSchedInputs(sg));
+  $('#sched-method').innerHTML = `<ul class="plain">
+    <li><b>Planned work</b>: CPM dates of the baseline. Early curve: every activity on its early dates. Late curve: on its late dates.</li>
+    <li><b>Earned value</b>: PV is the planned work at the status date, EV is the sum of each activity's weight times its % complete, AC is the actual cost in the update. SPI = EV / PV, CPI = EV / AC, forecast cost at completion = budget / CPI.</li>
+    <li><b>CPI</b> needs a cost-loaded schedule and actual cost in the update. Without them it is not shown; no value is assumed.</li>
+    <li><b>Updates</b> are matched to the baseline by activity ID. Activities not in the baseline are counted but not measured. The latest update also drives the current delay above.</li>
+    <li><b>Quality checks</b> follow the DCMA 14-point assessment; the thresholds are in config.yaml.</li></ul>`;
+}
+
+async function submitUpdate(e) {
+  e.preventDefault();
+  const f = $('#upd-file').files[0];
+  if (!f || !S.project) return;
+  const btn = $('#upd-go');
+  btn.disabled = true;
+  try {
+    S.sched = await upload(`/projects/${S.project.id}/schedule-update`, f, { fields: { as_of: $('#upd-date').value, elapsed_pct: $('#upd-elapsed').value } });
+    $('#upd-form').reset();
+    renderSched(); loadProjects();
+    S.delay = await api(`/projects/${S.project.id}/delay`);
+    renderDelay();
+    toast('Progress update read. SPI, CPI and the current delay are re-measured.', 'ok');
+  } catch (err) { report(err); } finally { btn.disabled = false; }
+}
+
+async function removeUpdate(index) {
+  try {
+    S.sched = await del(`/projects/${S.project.id}/schedule-update/${index}`);
+    renderSched(); loadProjects();
+    S.delay = await api(`/projects/${S.project.id}/delay`);
+    renderDelay();
+  } catch (err) { report(err); }
+}
+
+function useSchedInputs(sg) {
+  setGate(sg.gate);
+  Object.entries(sg.inputs).forEach(([key, v]) => { const el = $(`#f-${key}`); if (el) el.value = String(v); });
+  syncWhatIf();
+  location.hash = '#assess';
+  toast('SPI and CPI from the schedule update are in the form. Check the other answers, then run the forecast.', 'ok');
 }
 
 /** A thin meter under a figure: the value as a bar, its reference as a tick, and the gap between them in the
@@ -1594,6 +1689,7 @@ function wire() {
   $('#replay-play').addEventListener('click', toggleReplay);
   $('#replay-step').addEventListener('input', e => { stopReplay(); showReplayStep(Number(e.target.value)); });
   $('#assess-form').addEventListener('submit', e => { e.preventDefault(); runForecast({ base: true }); });
+  $('#upd-form').addEventListener('submit', submitUpdate);
   $$('#gate-switch button').forEach(b => b.addEventListener('click', () => { setGate(b.dataset.gate); if ($('#auto-run').checked && S.prediction) scheduleRun(100, { base: true }); }));
   $('#preset-select').addEventListener('change', e => {
     const p = S.presets.find(x => x.id === e.target.value);
