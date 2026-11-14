@@ -243,6 +243,21 @@ def delete(company_id: int, pid: int) -> bool:
 
 
 # ------------------------------------------------------------------ files and scope
+def delete_company(company_id: int) -> int:
+    """Everything a company owns: projects with their monitors, assessments, schedules and files, then anything
+    left that was not tied to a project, then the company's folder. Returns the number of projects removed."""
+    from . import live, store
+    pids = [p["id"] for p in list_for(company_id)]
+    for pid in pids:
+        delete(company_id, pid)
+    live.delete_for_company(company_id)
+    store.delete_for_company(company_id)
+    with _conn() as c:
+        c.execute("DELETE FROM project_schedule WHERE company_id = ?", (int(company_id),))
+    shutil.rmtree(workspace_dir(company_id), ignore_errors=True)
+    return len(pids)
+
+
 def files(p: dict | None) -> dict | None:
     """The scope dict config.use_scope() expects."""
     if not p:

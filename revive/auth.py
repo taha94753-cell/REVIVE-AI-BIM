@@ -174,6 +174,36 @@ def remove_member(company_id: int, user_id: int) -> bool:
     return True
 
 
+def check_account_removal(user_id: int, password: str) -> dict:
+    """Who is leaving and what goes with them. Raises AuthError on a wrong password, or when the only admin
+    would leave other people in a company nobody can manage."""
+    with _conn() as c:
+        r = c.execute("SELECT id, company_id, role, pw_hash FROM users WHERE id = ?", (int(user_id),)).fetchone()
+        if not r or not verify_password(password or "", r["pw_hash"]):
+            raise AuthError("That password is not right.")
+        people = c.execute("SELECT COUNT(*) FROM users WHERE company_id = ?", (r["company_id"],)).fetchone()[0]
+        admins_n = c.execute("SELECT COUNT(*) FROM users WHERE company_id = ? AND role = 'admin'",
+                             (r["company_id"],)).fetchone()[0]
+    if r["role"] == "admin" and admins_n <= 1 and people > 1:
+        raise AuthError("You are the only admin. Add another admin, or remove the other people in Team and access, "
+                        "before deleting your account.")
+    return {"company_id": r["company_id"], "last_person": people <= 1}
+
+
+def delete_user(user_id: int, with_company: int | None = None) -> None:
+    """Remove the user and every session; with_company also removes the (now empty) company record."""
+    with _conn() as c:
+        row = c.execute("SELECT email FROM users WHERE id = ?", (int(user_id),)).fetchone()
+        c.execute("DELETE FROM sessions WHERE user_id = ?", (int(user_id),))
+        c.execute("DELETE FROM admin_links WHERE user_id = ?", (int(user_id),))
+        if row:
+            c.execute("DELETE FROM email_codes WHERE email = ?", (row["email"],))
+        c.execute("DELETE FROM users WHERE id = ?", (int(user_id),))
+        if with_company is not None and not c.execute("SELECT 1 FROM users WHERE company_id = ?",
+                                                       (int(with_company),)).fetchone():
+            c.execute("DELETE FROM companies WHERE id = ?", (int(with_company),))
+
+
 def set_password(user_id: int, password: str) -> None:
     u = get_user(user_id)
     if not u:

@@ -70,6 +70,11 @@ def delete_for_project(company_id: int, project_id: int) -> None:
         c.execute("DELETE FROM assessments WHERE company_id = ? AND project_id = ?", (int(company_id), int(project_id)))
 
 
+def delete_for_company(company_id: int) -> None:
+    with _conn() as c:
+        c.execute("DELETE FROM assessments WHERE company_id = ?", (int(company_id),))
+
+
 def adopt_legacy(company_id: int) -> int:
     with _conn() as c:
         return c.execute("UPDATE assessments SET company_id = ? WHERE company_id IS NULL", (int(company_id),)).rowcount

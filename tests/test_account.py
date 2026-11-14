@@ -154,3 +154,68 @@ def test_public_pages_robots_sitemap_and_404(anon):
     assert 'property="og:image" content="https://' in anon.get("/").text
     api = anon.get("/api/no-such-thing", headers={"Accept": "text/html"})
     assert api.status_code == 404 and api.json()["detail"] == "Not Found"
+
+
+def _member(admin, role="member"):
+    email = f"m-{uuid.uuid4().hex[:8]}@example.com"
+    r = admin.post("/api/team", json={"name": "Mem", "email": email, "password": PASSWORD, "role": role})
+    assert r.status_code == 200, r.text
+    from revive.server import app
+    c = TestClient(app, headers={"X-Revive-Request": "1"})
+    assert c.post("/api/auth/login", json={"email": email, "password": PASSWORD}).status_code == 200
+    return c, email
+
+
+def test_member_deletes_only_their_own_account(client):
+    from conftest import new_project
+    p = new_project(client, "Stays with the team")
+    m, email = _member(client)
+    assert m.post("/api/auth/delete-account", json={"password": "not-the-password-1"}).status_code == 400
+    assert m.get("/api/auth/me").status_code == 200                    # a wrong password changes nothing
+    r = m.post("/api/auth/delete-account", json={"password": PASSWORD})
+    assert r.status_code == 200 and r.json() == {"deleted": True, "workspace_deleted": False}
+    assert m.get("/api/auth/me").status_code == 401 and auth.user_by_email(email) is None
+    assert m.post("/api/auth/login", json={"email": email, "password": PASSWORD}).status_code == 401
+    assert client.get(f"/api/projects/{p['id']}").status_code == 200   # the company and its projects are untouched
+
+
+def test_only_admin_must_hand_over_before_leaving(client):
+    m, _ = _member(client)
+    r = client.post("/api/auth/delete-account", json={"password": PASSWORD})
+    assert r.status_code == 400 and "only admin" in r.json()["detail"]
+    assert client.get("/api/auth/me").status_code == 200
+    _member(client, role="admin")                                      # with a second admin the first may leave
+    assert client.post("/api/auth/delete-account", json={"password": PASSWORD}).json()["workspace_deleted"] is False
+    assert m.get("/api/projects").status_code == 200
+
+
+def test_last_person_takes_the_workspace_with_them(client, other):
+    from conftest import new_project
+    from revive import live, projects, store
+    from revive.config import workspace_dir
+    from revive.presets import PRESETS
+    cid, pre = client.user["company_id"], PRESETS[0]
+    p = new_project(client, "Goes with the account")
+    keep = new_project(other, "Another company's project")
+    hdr = {"X-Revive-Project": str(p["id"])}
+    assert client.post("/api/live", json={"name": "L", "inputs": pre["inputs"], "gate": pre["gate"]}, headers=hdr).status_code == 200
+    assert client.post("/api/assessments", json={"name": "a", "inputs": pre["inputs"], "gate": pre["gate"],
+                                                 "project_id": p["id"]}).status_code == 200
+    folder = workspace_dir(cid)
+    r = client.post("/api/auth/delete-account", json={"password": PASSWORD})
+    assert r.status_code == 200 and r.json()["workspace_deleted"] is True
+    assert "max-age=0" in r.headers["set-cookie"].lower() and client.get("/api/auth/me").status_code == 401
+    assert projects.list_for(cid) == [] and live.list_projects(cid) == [] and store.list_all(cid) == []
+    assert not folder.exists() and auth.user_by_email(client.email) is None
+    assert other.get(f"/api/projects/{keep['id']}").status_code == 200  # nobody else's data is touched
+    # the e-mail is free again
+    assert client.post("/api/auth/register", json={"company": "Back", "name": "A", "email": client.email,
+                                                   "password": PASSWORD}).status_code == 200
+
+
+def test_delete_account_needs_a_session_and_the_csrf_header(client):
+    from revive.server import app
+    with TestClient(app) as bare:
+        assert bare.post("/api/auth/delete-account", json={"password": PASSWORD}).status_code == 403
+    with TestClient(app, headers={"X-Revive-Request": "1"}) as nobody:
+        assert nobody.post("/api/auth/delete-account", json={"password": PASSWORD}).status_code == 401
