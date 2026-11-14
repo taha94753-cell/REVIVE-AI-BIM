@@ -1262,6 +1262,32 @@ async function addMember(e) {
 
 const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 
+/** Delete account: says exactly what goes (just this person, or the whole workspace when they are the last one). */
+async function openDelete() {
+  closeMenus();
+  let alone = false;
+  try { alone = (await api('/team')).members.length <= 1; } catch (e) { report(e); return; }
+  $('#del-what').textContent = alone
+    ? `You are the only person in ${S.user.company_name}, so this deletes the whole workspace: every project, uploaded schedule and model, site link and saved assessment.`
+    : `This removes your sign-in (${S.user.email}) from ${S.user.company_name}. The company's projects stay with the rest of the team.`;
+  $('#del-form').reset(); $('#del-err').textContent = '';
+  $('#del-modal').showModal();
+}
+
+async function deleteAccount(e) {
+  e.preventDefault();
+  const btn = $('#del-form button[type=submit]');
+  btn.disabled = true; $('#del-err').textContent = '';
+  try {
+    await post('/auth/delete-account', { password: $('#del-pass').value });
+    try { ['revive-project', 'revive-follow', 'revive-base'].forEach(k => localStorage.removeItem(k)); } catch { /* */ }
+    location.href = '/';
+  } catch (err) {
+    if (err.network || err.status === 401) report(err); else $('#del-err').textContent = err.message;
+    btn.disabled = false;
+  }
+}
+
 async function signOut() {
   try { await post('/auth/logout', {}); } catch { /* signing out anyway */ }
   try { localStorage.removeItem('revive-project'); localStorage.removeItem('revive-follow'); } catch { /* */ }
@@ -1566,6 +1592,9 @@ function wire() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
   $('#signout').addEventListener('click', signOut);
   $('#team-open').addEventListener('click', openTeam);
+  $('#del-open').addEventListener('click', openDelete);
+  $('#del-form').addEventListener('submit', deleteAccount);
+  ['#del-close', '#del-cancel'].forEach(s => $(s).addEventListener('click', () => $('#del-modal').close()));
   $('#tm-close').addEventListener('click', () => $('#team-modal').close());
   $('#tm-form').addEventListener('submit', addMember);
   $('#new-project').addEventListener('click', openProjectModal);

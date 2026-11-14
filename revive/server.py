@@ -243,6 +243,10 @@ class ResetReq(CodeReq):
     password: Annotated[str, Field(max_length=256)]
 
 
+class DeleteAccountReq(BaseModel):
+    password: Annotated[str, Field(max_length=256)]
+
+
 class LoginReq(BaseModel):
     email: Annotated[str, Field(max_length=254)]
     password: Annotated[str, Field(max_length=256)]
@@ -491,6 +495,32 @@ def logout(request: Request):
     auth.end_session(request.cookies.get(COOKIE))
     resp = JSONResponse({"signed_out": True})
     if EMBED:   # a partitioned cookie is only removed by a cookie with the same attributes
+        _embedded_cookie(resp, '""', clear=True)
+    else:
+        resp.delete_cookie(COOKIE, path="/")
+    return resp
+
+
+@app.post("/api/auth/delete-account")
+def delete_account(req: DeleteAccountReq, request: Request, user: User):
+    """A person removes their own account, confirmed with their password. The last person in a company takes the
+    whole workspace with them (projects, uploads, site links, saved assessments); a member or one of several
+    admins only removes themselves. The only admin of a company with other people must hand over first."""
+    if LIMITER.count(f"login-fail:{user['email']}", 900) >= 5:
+        raise HTTPException(429, "Too many wrong passwords. Wait 15 minutes and try again.")
+    try:
+        plan = auth.check_account_removal(user["id"], req.password)
+    except auth.AuthError as exc:
+        if "password" in str(exc):
+            LIMITER.hit(f"login-fail:{user['email']}", 1000, 900)
+        raise HTTPException(400, str(exc)) from exc
+    if plan["last_person"]:
+        projects.delete_company(user["company_id"])
+    auth.delete_user(user["id"], with_company=user["company_id"] if plan["last_person"] else None)
+    log.warning("Account %s deleted by its owner from %s%s", user["email"], client_ip(request),
+                " (workspace removed)" if plan["last_person"] else "")
+    resp = JSONResponse({"deleted": True, "workspace_deleted": plan["last_person"]})
+    if EMBED:
         _embedded_cookie(resp, '""', clear=True)
     else:
         resp.delete_cookie(COOKIE, path="/")

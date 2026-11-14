@@ -32,6 +32,7 @@
       <button type="button" role="menuitem" id="team-open">Team and access</button>
       <a role="menuitem" href="/">Product page</a>
       <button type="button" role="menuitem" id="signout">Sign out</button>
+      <button type="button" role="menuitem" id="del-open" class="danger">Delete account</button>
     </div>
   </div>
 </header>
@@ -443,6 +444,18 @@
       <div class="form-actions"><button class="btn primary" type="submit">Add to the company</button></div>
     </form>
   </div>
+</dialog>
+<dialog class="modal narrow" id="del-modal" aria-labelledby="del-title">
+  <form id="del-form">
+    <header class="pm-head"><h2 id="del-title">Delete your account</h2><button type="button" class="x" id="del-close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button></header>
+    <p class="muted" id="del-what"></p>
+    <p class="del-warn">This cannot be undone.</p>
+    <div class="fields one">
+      <label class="field"><span>Your password, to confirm</span><input id="del-pass" type="password" required autocomplete="current-password"></label>
+    </div>
+    <p class="del-err" id="del-err" role="alert"></p>
+    <div class="form-actions"><button class="btn ghost" type="button" id="del-cancel">Keep my account</button><button class="btn danger" type="submit">Delete my account</button></div>
+  </form>
 </dialog>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>

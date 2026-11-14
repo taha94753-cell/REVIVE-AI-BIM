@@ -354,6 +354,13 @@ def delete_for_project(company_id: int, project_id: int) -> None:
             c.execute("DELETE FROM live_projects WHERE id = ?", (i,))
 
 
+def delete_for_company(company_id: int) -> None:
+    with _conn() as c:
+        for i in [r["id"] for r in c.execute("SELECT id FROM live_projects WHERE company_id = ?", (int(company_id),))]:
+            c.execute("DELETE FROM live_updates WHERE project_id = ?", (i,))
+            c.execute("DELETE FROM live_projects WHERE id = ?", (i,))
+
+
 def legacy_monitors() -> list[dict]:
     with _conn() as c:
         rows = c.execute("SELECT id, name, base_inputs, location FROM live_projects WHERE company_id IS NULL").fetchall()

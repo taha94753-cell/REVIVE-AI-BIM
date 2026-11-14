@@ -343,3 +343,13 @@ body.site .site-send:hover{background:var(--amber-2)}
 body.site .site-events .ev.set{background:rgba(255,194,26,.07)}
 body.site .site-events .ev.set output{color:var(--amber)}
 body.site :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---- delete account: the one destructive action, in the risk red and nowhere near the primary button colour */
+body.cockpit .menu .danger{color:#B4232C}
+dialog.modal.narrow{width:min(520px,calc(100vw - 28px))}
+body.cockpit .fields.one{grid-template-columns:minmax(0,1fr)}
+body.cockpit .del-warn{margin:0 0 16px;font-weight:700;color:#B4232C}
+body.cockpit .del-err{min-height:20px;margin:8px 0 0;color:#B4232C;font-size:14px}
+body.cockpit .btn.danger{background:#B4232C;color:#fff;border:0}
+body.cockpit .btn.danger:hover{background:#961B23}
+body.cockpit #del-form .form-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px}

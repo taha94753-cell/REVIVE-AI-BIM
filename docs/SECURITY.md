@@ -43,6 +43,7 @@ Already good in v1.2 and kept: every SQL query is parameterised; the frontend es
 | Bots | Hidden honeypot field on sign-up, on top of the rate limits and the e-mail code | `test_honeypot_field_gets_a_fake_success` |
 | Weak passwords | Common passwords and all-digit passwords refused | `test_registered_email_is_reported_and_weak_passwords_refused` |
 | Behind an HTTPS proxy the app believed it was on HTTP | `REVIVE_TRUST_PROXY=1` (set in `render.yaml` and the Space image): Secure cookie, HSTS, rate limits per real visitor. Off elsewhere, so a direct client cannot fake its address | `test_trusted_proxy_sets_secure_cookie_and_hsts_only_when_switched_on` |
+| Deleting an account | `POST /api/auth/delete-account`, confirmed with the password (wrong tries count toward the sign-in lockout). A member or one of several admins removes only themselves; the last person removes the whole workspace (projects, uploads, site links, assessments); the only admin with other people is refused until they hand over | `test_member_deletes_only_their_own_account`, `test_only_admin_must_hand_over_before_leaving`, `test_last_person_takes_the_workspace_with_them`, `test_delete_account_needs_a_session_and_the_csrf_header` |
 | Public pages | `/privacy`, `/terms`, a 404 page for people (JSON for the API), `robots.txt`, `sitemap.xml`; the `server` header is no longer sent | `test_public_pages_robots_sitemap_and_404` |
 
 ## Deploying safely
