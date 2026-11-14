@@ -3,9 +3,9 @@ Inference: one project in -> forecast, risk, health score and explanation out.
 
 Every prediction is split into (average prediction) + one contribution per
 input field, in percentage points of time overrun, and the contributions add
-up exactly. For the linear production model that is coefficient x
-standardised input; for an XGBoost model (training.model: xgboost) it is
-TreeSHAP. Both are SHAP values, so the panels read the same either way.
+up exactly. For the forest production model they are TreeSHAP values
+(forest.py); for the linear model coefficient x standardised
+input; for an XGBoost model TreeSHAP. The panels read the same either way.
 One-hot columns of the same field (e.g. all "project_type=..." columns) are
 summed so a manager sees one line per question, not per encoded column.
 """

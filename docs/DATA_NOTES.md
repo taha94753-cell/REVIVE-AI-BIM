@@ -179,3 +179,11 @@ Collect completed projects and score them before merging:
    Forest 0.46 to 0.63 and 0.59 to 0.78), while the typical error gets worse in places
    (linear 50% MAE 4.22 to 5.01; no-progress-report forest 5.34 to 7.02 and 5.46 to
    6.35). Remove `data.extra_scenarios_file` from config.yaml and retrain to undo.
+5. **Production model: random forest with blended rows** (`training.model: forest`). Scored on the 81
+   real projects: time-overrun MAE 4.30 at 25% and 3.60 at 50% (R2 0.92 and 0.94); on an
+   unseen contractor MAE 6.07 and 5.16 (R2 0.64 and 0.73). The sign-constrained
+   linear model has higher error but a slightly higher unseen-company R2 (0.68 and 0.79); it stays in the
+   comparison table. SPI alone still transfers better than either at 50% (MAE 3.76, R2 0.86). Monotone
+   constraints on a forest were tried and made it worse, so the forest has no direction constraints.
+   Explanations are TreeSHAP values (exact and additive). Without direction constraints an answer can
+   occasionally push the forecast the unexpected way; read the explanation before acting on it.
