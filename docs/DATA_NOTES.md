@@ -159,3 +159,13 @@ Collect completed projects and score them before merging:
    better than the median for an unseen contractor (MAE 9.9 against 9.75); the
    forest is (see `no_progress_report` in the model card). It is weaker than
    the standard model and the app says so on the forecast.
+3. **Blended training rows (mixup) for the tree models.** `training.blend` adds
+   rows that are weighted averages of two projects of the same training fold,
+   drawn more often from large overruns. They are made inside each fold, so no
+   held-out project leaks, and they are never scored. Random-fold R2 of the
+   forests rises sharply (Random Forest 0.71 to 0.90 at 25%, 0.81 to 0.93 at
+   50%; no-progress-report forest 0.64 to 0.86 and 0.71 to 0.87). The
+   unseen-company R2 hardly moves (0.46 to 0.49 and 0.59 to 0.63; fallback 0.35
+   to 0.38 and 0.44 to 0.38). Read that gap as: the gain is knowledge of
+   contractors already in the data, not of a new one. Always quote both. The
+   linear model gets worse with blended rows and does not use them.

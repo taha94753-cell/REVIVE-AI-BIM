@@ -48,6 +48,14 @@ training:
   cv_folds: 5
   cv_repeats: 3
   random_state: 42
+  # Blended training rows (mixup) for the tree models: each is a weighted average
+  # of two projects of the same training fold, drawn more often from projects
+  # with a large overrun. Made inside each fold, so held-out projects never leak.
+  # Used by the no-progress-report forest; it hurts the linear model, which stays without.
+  blend:
+    multiplier: 2                  # blended rows per training row (0 = off)
+    tail_above_pct: 60             # "large overrun" for the weighting
+    tail_weight: 15
   fallback_forest:            # no-progress-report model (SPI left blank)
     n_estimators: 400
     max_depth: 4

@@ -1,11 +1,16 @@
 {
-  "trained_at": "2026-11-14T07:41:04+00:00",
+  "trained_at": "2026-11-14T07:56:51+00:00",
   "training_scope": {
     "include_ongoing": false,
     "include_hypothetical": false
   },
   "augmentation": {
     "hypothetical_rows_in_training": 32,
+    "blend": {
+      "multiplier": 2,
+      "tail_above_pct": 60,
+      "tail_weight": 15
+    },
     "note": "Hypothetical scenario rows are added to the training side only. Every score in this card is measured on real completed projects."
   },
   "dataset": {
@@ -168,20 +173,20 @@
         "model": "random forest without SPI or CPI",
         "time_overrun": {
           "mae": {
-            "mean": 6.264,
-            "std": 0.106
+            "mean": 5.338,
+            "std": 0.094
           },
           "rmse": {
-            "mean": 12.03,
-            "std": 0.103
+            "mean": 7.356,
+            "std": 0.302
           },
           "r2": {
-            "mean": 0.638,
-            "std": 0.006
+            "mean": 0.864,
+            "std": 0.011
           },
           "interval_80pct_residuals": [
-            -5.52,
-            8.97
+            -5.29,
+            9.6
           ]
         },
         "cost_overrun": {
@@ -222,9 +227,9 @@
         },
         "leave_company_out": {
           "time_overrun": {
-            "mae": 7.791,
-            "rmse": 16.153,
-            "r2": 0.347
+            "mae": 7.339,
+            "rmse": 15.74,
+            "r2": 0.38
           },
           "high_risk_auc": 0.689
         }
@@ -355,20 +360,20 @@
         "model": "random forest without SPI or CPI",
         "time_overrun": {
           "mae": {
-            "mean": 6.049,
-            "std": 0.237
+            "mean": 5.464,
+            "std": 0.158
           },
           "rmse": {
-            "mean": 10.821,
-            "std": 0.25
+            "mean": 7.301,
+            "std": 0.137
           },
           "r2": {
-            "mean": 0.707,
-            "std": 0.014
+            "mean": 0.867,
+            "std": 0.005
           },
           "interval_80pct_residuals": [
-            -5.52,
-            8.59
+            -7.02,
+            9.01
           ]
         },
         "cost_overrun": {
@@ -409,9 +414,9 @@
         },
         "leave_company_out": {
           "time_overrun": {
-            "mae": 6.897,
-            "rmse": 14.978,
-            "r2": 0.439
+            "mae": 7.54,
+            "rmse": 15.811,
+            "r2": 0.375
           },
           "high_risk_auc": 0.787
         }
@@ -497,12 +502,12 @@
     {
       "gate": "G25",
       "model": "Random forest, no SPI or CPI (fallback)",
-      "time_MAE": 6.26,
-      "time_R2": 0.638,
+      "time_MAE": 5.34,
+      "time_R2": 0.864,
       "risk_AUC": 0.808,
       "risk_F1": 0.737,
-      "loco_time_MAE": 7.79,
-      "loco_time_R2": 0.347,
+      "loco_time_MAE": 7.34,
+      "loco_time_R2": 0.38,
       "loco_risk_AUC": 0.689
     },
     {
@@ -537,6 +542,17 @@
       "loco_time_MAE": 5.92,
       "loco_time_R2": 0.459,
       "loco_risk_AUC": 0.893
+    },
+    {
+      "gate": "G25",
+      "model": "Random Forest, blended training rows",
+      "time_MAE": 4.25,
+      "time_R2": 0.903,
+      "risk_AUC": NaN,
+      "risk_F1": NaN,
+      "loco_time_MAE": 6.57,
+      "loco_time_R2": 0.492,
+      "loco_risk_AUC": NaN
     },
     {
       "gate": "G25",
@@ -585,12 +601,12 @@
     {
       "gate": "G50",
       "model": "Random forest, no SPI or CPI (fallback)",
-      "time_MAE": 6.05,
-      "time_R2": 0.707,
+      "time_MAE": 5.46,
+      "time_R2": 0.867,
       "risk_AUC": 0.856,
       "risk_F1": 0.727,
-      "loco_time_MAE": 6.9,
-      "loco_time_R2": 0.439,
+      "loco_time_MAE": 7.54,
+      "loco_time_R2": 0.375,
       "loco_risk_AUC": 0.787
     },
     {
@@ -628,6 +644,17 @@
     },
     {
       "gate": "G50",
+      "model": "Random Forest, blended training rows",
+      "time_MAE": 3.12,
+      "time_R2": 0.932,
+      "risk_AUC": NaN,
+      "risk_F1": NaN,
+      "loco_time_MAE": 4.56,
+      "loco_time_R2": 0.632,
+      "loco_risk_AUC": NaN
+    },
+    {
+      "gate": "G50",
       "model": "SVM (RBF)",
       "time_MAE": 5.61,
       "time_R2": 0.454,
@@ -638,5 +665,5 @@
       "loco_risk_AUC": 0.9
     }
   ],
-  "training_seconds": 26.6
+  "training_seconds": 51.8
 }

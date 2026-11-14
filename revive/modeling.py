@@ -104,6 +104,27 @@ def _with_extra(X, y, extra):
             pd.concat([y, ya[keep]], ignore_index=True))
 
 
+def blend_rows(X: pd.DataFrame, y: pd.Series, seed: int) -> tuple[pd.DataFrame, pd.Series]:
+    """Blended training rows (mixup, training.blend in config.yaml).
+    Each new row is a weighted average of two projects of the SAME training
+    fold, inputs and outcome alike, so nothing from a held-out project can
+    leak in. Projects with a large overrun are drawn more often, because the
+    data has only a couple of them and tree models cannot extrapolate.
+    Returns the fold with the blended rows appended."""
+    cfg = load_config()["training"].get("blend") or {}
+    n = int(cfg.get("multiplier", 0) * len(y))
+    if n <= 0:
+        return X, y
+    rng = np.random.default_rng(seed)
+    A, t = X.to_numpy(float), y.to_numpy(float)
+    w = np.where(t > cfg.get("tail_above_pct", 60), cfg.get("tail_weight", 1.0), 1.0)
+    i, j = rng.choice(len(t), n, p=w / w.sum()), rng.choice(len(t), n)
+    lam = rng.uniform(0.2, 0.8, n)
+    Xm = pd.DataFrame(lam[:, None] * A[i] + (1 - lam[:, None]) * A[j], columns=X.columns)
+    return (pd.concat([X, Xm], ignore_index=True),
+            pd.concat([y, pd.Series(lam * t[i] + (1 - lam) * t[j])], ignore_index=True))
+
+
 def targets(df: pd.DataFrame) -> dict:
     cfg = load_config()["training"]
     y_time = df["time_overrun_pct"].clip(upper=cfg["time_overrun_clip_pct"])
@@ -178,7 +199,7 @@ def _alt_models(kind: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None, extra=None):
+def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None, extra=None, blend=False):
     """Repeated k-fold, or leave-one-group-out when groups are given (one pass).
     extra = (X, y) rows added to every training fold and never predicted."""
     if groups is not None:
@@ -188,7 +209,10 @@ def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None, extra=No
     oof = np.zeros((repeats, len(y)))
     for i, (tr, te) in enumerate(splits):
         m = make_model()
-        m.fit(*_with_extra(X.iloc[tr], y.iloc[tr], extra))
+        Xtr, ytr = _with_extra(X.iloc[tr], y.iloc[tr], extra)
+        if blend:
+            Xtr, ytr = blend_rows(Xtr, ytr, seed + i)
+        m.fit(Xtr, ytr)
         oof[0 if folds is None else i // folds, te] = m.predict(X.iloc[te])
     per_rep = [dict(mae=mean_absolute_error(y, o), rmse=float(np.sqrt(mean_squared_error(y, o))),
                     r2=r2_score(y, o)) for o in oof]
@@ -294,6 +318,7 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         "training_scope": {"include_ongoing": tcfg["include_ongoing"],
                            "include_hypothetical": tcfg["include_hypothetical"]},
         "augmentation": {"hypothetical_rows_in_training": int(len(aug)),
+                         "blend": tcfg.get("blend") or {},
                          "note": "Hypothetical scenario rows are added to the training side only. "
                                  "Every score in this card is measured on real completed projects."},
         "dataset": _dataset_summary(df),
@@ -362,14 +387,14 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         # inputs is no better than the median for an unseen contractor; the forest is.
         fb_cols = fallback_columns(X.columns)
         Xf, Xfc = X[fb_cols], Xc[fb_cols]
-        fb_time, fb_oof = _cv_regression(_fb_reg, Xf, T["time"], reps, folds, seed, extra=ex_t)
+        fb_time, fb_oof = _cv_regression(_fb_reg, Xf, T["time"], reps, folds, seed, extra=ex_t, blend=True)
         fb_cost, fb_oof_cost = _cv_regression(_fb_reg, Xfc, yc, reps, folds, seed, extra=ex_c)
         fb_risk, _ = _cv_classification(_fb_clf, Xf, T["risk"], reps, folds, seed, extra=ex_r)
-        fb_loco, _ = _cv_regression(_fb_reg, Xf, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+        fb_loco, _ = _cv_regression(_fb_reg, Xf, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=True)
         fb_loco_risk, _ = _cv_classification(_fb_clf, Xf, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
         fq_lo, fq_hi = np.quantile(T["time"].to_numpy() - fb_oof, [0.10, 0.90])
         fc_lo, fc_hi = np.quantile(yc.to_numpy() - fb_oof_cost, [0.10, 0.90])
-        _fb_reg().fit(*_with_extra(Xf, T["time"], ex_t)).save_model(gdir / "time_noevm.json")
+        _fb_reg().fit(*blend_rows(*_with_extra(Xf, T["time"], ex_t), seed)).save_model(gdir / "time_noevm.json")
         _fb_reg().fit(*_with_extra(Xfc, yc, ex_c)).save_model(gdir / "cost_noevm.json")
         _fb_clf().fit(*_with_extra(Xf, T["risk"], ex_r)).save_model(gdir / "risk_noevm.json")
 
@@ -453,6 +478,11 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
                 cl, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
                 comparison.append(_comparison_row(gate, name if name != "Ridge regression" else "Linear (Ridge / Logistic)",
                                                   r, c, rl, cl))
+                if name == "Random Forest":
+                    # same forest with blended training rows (time model only; the classifier is unchanged)
+                    r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], reps, folds, seed, extra=ex_t, blend=True)
+                    rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=True)
+                    comparison.append(_comparison_row(gate, "Random Forest, blended training rows", r, None, rl))
 
     oof_rows.to_csv(out_dir / "oof_predictions.csv", index=False)
     if comparison:
