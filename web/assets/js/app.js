@@ -1060,7 +1060,7 @@ function renderCards() {
       </div>
       <div class="spark chart" data-spark="${p.id}" data-z="35"></div>
       <footer data-z="15"><span>${d.status_date ? `Status ${esc(d.status_date)}` : 'No status yet'}</span><span>${p.schedule === 'uploaded' ? 'Own schedule' : 'Demo schedule'}${p.ifc_mode === 'file' ? ' \u00b7 IFC' : p.ifc_mode === 'demo' ? ' \u00b7 demo IFC' : ''}</span></footer>
-      ${S.user?.role === 'admin' ? `<button type="button" class="card-x" data-del="${p.id}" aria-label="Delete ${esc(p.name)}">${fx.CLOSE}</button>` : ''}
+      ${S.user?.role === 'admin' ? `<button type="button" class="card-x" data-del="${p.id}" aria-label="Delete ${esc(p.name)}" data-tip="Delete this project">${fx.TRASH}</button>` : ''}
     </article>`;
   }).join('') + newCard + sample;
   host.classList.remove('in'); void host.offsetWidth; host.classList.add('in');

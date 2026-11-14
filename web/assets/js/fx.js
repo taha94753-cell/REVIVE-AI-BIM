@@ -85,7 +85,7 @@ const ICON = {
   ok: svg('<path d="M3.8 8.4l2.7 2.7 5.7-6"/>'),
   live: svg('<circle cx="8" cy="8" r="2"/><path d="M11.2 4.8a4.5 4.5 0 0 1 0 6.4M4.8 11.2a4.5 4.5 0 0 1 0-6.4"/>'),
 };
-export const CLOSE = svg('<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>');
+export const TRASH = svg('<path d="M2.8 4.5h10.4M6.3 4.5V2.9h3.4v1.6M4.3 4.5l.6 8.6h6.2l.6-8.6M6.7 7v3.8M9.3 7v3.8"/>');
 /** Stacked toasts. opts.action = { label, run } adds a button; opts.sticky keeps it until closed. */
 export function toast(msg, kind = 'info', opts = {}) {
   const host = $('#toasts');
