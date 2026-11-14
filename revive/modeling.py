@@ -49,6 +49,7 @@ from sklearn.svm import SVC, SVR
 from .config import load_config, models_dir, reports_dir
 from .data import load_clean
 from .features import column_to_field, encode, feature_set
+from .forest import FORMAT as FOREST_FORMAT, ForestModel
 from .linear import LinearModel
 from .schema import CORE_DIRECTION, FIELD_BY_KEY, LEAKAGE_EXCLUDED
 
@@ -158,12 +159,16 @@ def _signs() -> dict:
 
 
 def _reg(params=None):
+    if model_kind() == "forest":
+        return ForestModel("reg")
     if model_kind() == "linear":
         return LinearModel("reg", alpha=load_config()["training"].get("linear", {}).get("alpha", 3.0), signs=_signs())
     return _xgb_reg(params)
 
 
 def _clf(params=None):
+    if model_kind() == "forest":
+        return ForestModel("clf")
     if model_kind() == "linear":
         return LinearModel("clf", C=load_config()["training"].get("linear", {}).get("C", 0.5), signs=_signs())
     return _xgb_clf(params)
@@ -176,7 +181,7 @@ def company_groups(df: pd.DataFrame) -> np.ndarray:
 
 def contributions(model, X: pd.DataFrame) -> tuple[float, np.ndarray]:
     """(base value, per-column contributions) for either model family; base + row sum = prediction."""
-    if isinstance(model, LinearModel):
+    if isinstance(model, (LinearModel, ForestModel)):
         return model.contributions(X)
     explainer = shap.TreeExplainer(model)
     return float(np.ravel(explainer.expected_value)[0]), np.asarray(explainer.shap_values(X))
@@ -250,7 +255,7 @@ def _summarise(per_rep: list[dict]) -> dict:
 
 def tune_regressor(X, y, seed) -> dict:
     """Small, transparent grid search on CV MAE (run with --tune; XGBoost only)."""
-    if model_kind() == "linear":
+    if model_kind() != "xgboost":
         return {}
     grid = [dict(max_depth=d, learning_rate=lr, n_estimators=n, min_child_weight=m)
             for d in (2, 3, 4) for lr in (0.03, 0.06) for n in (300, 600) for m in (1, 3)]
@@ -355,7 +360,8 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
             print(f"[{gate}] {len(X)} projects x {X.shape[1]} encoded columns" + (f", tuned {reg_params}" if tune else ""))
 
         # ---- time overrun -----------------------------------------------
-        m_time, oof_time = _cv_regression(lambda: _reg(reg_params), X, T["time"], reps, folds, seed, extra=ex_t)
+        blend = model_kind() == "forest"      # blended rows help the trees and hurt the linear model
+        m_time, oof_time = _cv_regression(lambda: _reg(reg_params), X, T["time"], reps, folds, seed, extra=ex_t, blend=blend)
         resid = T["time"].to_numpy() - oof_time
         q_lo, q_hi = np.quantile(resid, [0.10, 0.90])
         base_mae = mean_absolute_error(T["time"], np.full(len(T["time"]), T["time"].median()))
@@ -374,7 +380,7 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         majority = max(T["risk"].mean(), 1 - T["risk"].mean())
 
         # ---- leave-one-company-out (does it work for an unseen contractor?) --
-        loco_time, _ = _cv_regression(lambda: _reg(reg_params), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+        loco_time, _ = _cv_regression(lambda: _reg(reg_params), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=blend)
         loco_risk, _ = _cv_classification(lambda: _clf(), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
         spi_cols = [c for c in X.columns if c.startswith("spi_")]
         if not spi_cols:   # feature_set: all without EVM never happens, but stay safe
@@ -399,7 +405,10 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         _fb_clf().fit(*_with_extra(Xf, T["risk"], ex_r)).save_model(gdir / "risk_noevm.json")
 
         # ---- final fits on every record ---------------------------------
-        final_time = _reg(reg_params).fit(*_with_extra(X, T["time"], ex_t))
+        Xft, yft = _with_extra(X, T["time"], ex_t)
+        if blend:
+            Xft, yft = blend_rows(Xft, yft, seed)
+        final_time = _reg(reg_params).fit(Xft, yft)
         final_cost = _reg().fit(*_with_extra(Xc, yc, ex_c))
         final_risk = _clf().fit(*_with_extra(X, T["risk"], ex_r))
         final_time.save_model(gdir / "time.json")
@@ -448,7 +457,8 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
 
         # ---- model comparison (for the report) --------------------------
         if compare:
-            prod = "Linear, core questions (production)" if model_kind() == "linear" else "XGBoost (production)"
+            prod = {"linear": "Linear, core questions (production)",
+                    "forest": "Random Forest, blended training rows (production)"}.get(model_kind(), "XGBoost (production)")
             comparison.append(_comparison_row(gate, "Median baseline", {"mae": {"mean": base_mae, "std": 0}}, None))
             comparison.append(_comparison_row(gate, prod, m_time, m_risk, loco_time, loco_risk))
             comparison.append(_comparison_row(gate, "Linear, SPI only", spi_rand, None, spi_loco))
@@ -461,24 +471,34 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
             rl, _ = _cv_regression(lambda: _xgb_reg(), Xall, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
             cl, _ = _cv_classification(lambda: _xgb_clf(), Xall, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
             comparison.append(_comparison_row(gate, f"XGBoost, all {len(_fields_of(Xall))} answers", r, c, rl, cl))
-            if model_kind() == "linear":
+            if model_kind() != "linear":      # keep the sign-constrained linear model in view as the simple baseline
+                lin_r, lin_c = (lambda: LinearModel("reg", alpha=tcfg.get("linear", {}).get("alpha", 3.0), signs=dict(CORE_DIRECTION)),
+                                lambda: LinearModel("clf", C=tcfg.get("linear", {}).get("C", 0.5), signs=dict(CORE_DIRECTION)))
+                r, _ = _cv_regression(lin_r, X, T["time"], reps, folds, seed, extra=ex_t)
+                c, _ = _cv_classification(lin_c, X, T["risk"], reps, folds, seed, extra=ex_r)
+                rl, _ = _cv_regression(lin_r, X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+                cl, _ = _cv_classification(lin_c, X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
+                comparison.append(_comparison_row(gate, "Linear, core questions (sign-constrained)", r, c, rl, cl))
+            if model_kind() != "xgboost":
                 r, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed, extra=ex_t)
                 c, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed, extra=ex_r)
                 rl, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
                 cl, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
                 comparison.append(_comparison_row(gate, "XGBoost, core questions", r, c, rl, cl))
             for name, model in _alt_models("reg").items():
-                if name == "Ridge regression" and model_kind() == "linear":
-                    continue
+                if name == "Ridge regression" and model_kind() != "xgboost":
+                    continue                      # a linear row is already in the table
+                label = {"Ridge regression": "Linear (Ridge / Logistic)"}.get(name, name)
+                if name == "Random Forest" and model_kind() == "forest":
+                    label = "Random Forest, no blended rows"
                 r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, extra=ex_t)
                 c_model = _alt_models("clf")[{"Ridge regression": "Logistic regression"}.get(name, name)]
                 c, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, extra=ex_r)
                 # same unseen-company test as the production model, so every row is judged alike
                 rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
                 cl, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
-                comparison.append(_comparison_row(gate, name if name != "Ridge regression" else "Linear (Ridge / Logistic)",
-                                                  r, c, rl, cl))
-                if name == "Random Forest":
+                comparison.append(_comparison_row(gate, label, r, c, rl, cl))
+                if name == "Random Forest" and model_kind() != "forest":
                     # same forest with blended training rows (time model only; the classifier is unchanged)
                     r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], reps, folds, seed, extra=ex_t, blend=True)
                     rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=True)
@@ -547,6 +567,8 @@ def load_model(path, kind: str):
         d = {}
     if isinstance(d, dict) and d.get("format") == "revive-linear-1":
         return LinearModel.from_dict(d)
+    if isinstance(d, dict) and d.get("format") == FOREST_FORMAT:
+        return ForestModel.from_dict(d)
     m = xgb.XGBRegressor() if kind == "reg" else xgb.XGBClassifier()
     m.load_model(path)
     return m
