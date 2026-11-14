@@ -1049,3 +1049,13 @@ select option{background:#0B1E3C}
 body.site{background:#061430}
 
 @media (prefers-reduced-motion:reduce){body.app::before,body.app::after{animation:none}}
+
+/* schedule analysis (inside the current delay sheet) */
+#sched{margin-top:28px}
+.sched-head{margin:0 0 14px}
+.sched-head h3{margin:0 0 4px}
+#sched .dl-kpis{margin-bottom:22px}
+#sched-updates td .btn{padding:2px 10px}
+#sched-suggest .note{margin:12px 0 0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.q-ok{color:var(--go)}
+.q-warn{color:var(--watch)}

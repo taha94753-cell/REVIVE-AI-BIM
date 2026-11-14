@@ -569,3 +569,84 @@ export function building(el, { done = 0, color = 'var(--amber)', floors = 7, cal
   });
   el.innerHTML = svg(W, H, `Work done ${Math.round(done)}%`, b);
 }
+
+// ---------------------------------------------------------------- schedule analysis
+const SERIES = ['#6CB2FF', '#43C59E', '#E9C46A', '#F28C38', '#9B8CFF', '#FF8FB1', '#B4BCC6'];
+
+// Early and late S-curves (the "banana") with the earned work at each progress update.
+export function banana(el, a) {
+  const W = 660, H = 340, L = 50, R = 20, T = 18, B = 44, c = a.curve, hist = a.history || [];
+  const xmax = Math.max(100, Math.ceil((Math.max(0, ...hist.map(h => h.elapsed_pct)) + 5) / 10) * 10);
+  const x = lin(0, xmax, L, W - R), y = lin(0, 100, H - B, T);
+  let b = '';
+  for (let v = 0; v <= 100; v += 25) b += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="ax">${v}%</text>`;
+  for (let v = 0; v <= xmax; v += 25) b += `<text x="${x(v)}" y="${H - B + 16}" text-anchor="middle" class="ax">${v}%</text>`;
+  b += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" class="ax">Time, % of planned duration</text>`;
+  const line = k => c.t_pct.map((t, i) => `${i ? 'L' : 'M'}${x(t).toFixed(1)} ${y(c[k][i]).toFixed(1)}`).join(' ');
+  const back = c.t_pct.map((t, i) => `L${x(t).toFixed(1)} ${y(c.late_pct[i]).toFixed(1)}`).reverse().join(' ');
+  b += `<path d="${line('early_pct')} ${back} Z" style="fill:var(--cyan);fill-opacity:.12"${A('fd')}/>`;
+  b += `<path d="${line('late_pct')}" style="fill:none;stroke:var(--chalk-3);stroke-width:2;stroke-dasharray:6 5"${tip('Late dates: every activity as late as its float allows')}/>`;
+  b += `<path d="${line('early_pct')}" pathLength="1"${A('dr')} style="fill:none;stroke:var(--cyan);stroke-width:2.5"${tip('Early dates: the baseline plan')}/>`;
+  if (hist.length > 1) b += `<path d="${hist.map((h, i) => `${i ? 'L' : 'M'}${x(h.elapsed_pct).toFixed(1)} ${y(h.ev_pct).toFixed(1)}`).join(' ')}" style="fill:none;stroke:var(--amber);stroke-width:2"/>`;
+  hist.forEach((h, i) => {
+    const last = i === hist.length - 1;
+    b += `<circle cx="${x(h.elapsed_pct).toFixed(1)}" cy="${y(h.ev_pct).toFixed(1)}" r="${last ? 7 : 4.5}"${AC('pp', '')} style="fill:var(--amber);stroke:var(--ink-900);stroke-width:2;--d:${300 + i * 60}ms"${tip(`Update ${h.as_of}\n${h.elapsed_pct.toFixed(0)}% of time: ${h.ev_pct.toFixed(1)}% earned, ${h.pv_pct.toFixed(1)}% planned\nSPI ${h.spi ?? 'n/a'}${h.cpi != null ? `, CPI ${h.cpi}` : ''}`)}/>`;
+  });
+  b += `<line x1="${L + 8}" x2="${L + 30}" y1="${T + 6}" y2="${T + 6}" style="stroke:var(--cyan);stroke-width:2.5"/><text x="${L + 36}" y="${T + 10}" class="ax">early dates</text>`;
+  b += `<line x1="${L + 118}" x2="${L + 140}" y1="${T + 6}" y2="${T + 6}" style="stroke:var(--chalk-3);stroke-width:2;stroke-dasharray:6 5"/><text x="${L + 146}" y="${T + 10}" class="ax">late dates</text>`;
+  if (hist.length) b += `<circle cx="${L + 226}" cy="${T + 6}" r="4.5" style="fill:var(--amber)"/><text x="${L + 236}" y="${T + 10}" class="ax">earned at each update</text>`;
+  el.innerHTML = svg(W, H, 'Planned work on early and late dates, with earned work at each progress update', b);
+}
+
+// Stacked bars per period. rows = [{name, by_period}], optional line = values drawn over the bars.
+export function stackBars(el, rows, { unit = '', label = 'Stacked bars per period', money = false, line = null, lineLabel = '' } = {}) {
+  const n = rows[0]?.by_period.length || 0;
+  if (!n) { el.innerHTML = '<p class="fine">Nothing to show for this schedule.</p>'; return; }
+  const W = 660, H = 320, L = 58, R = 16, T = 30, B = 40;
+  const totals = Array.from({ length: n }, (_, i) => rows.reduce((t, r) => t + (r.by_period[i] || 0), 0));
+  const vmax = Math.max(1e-9, ...totals, ...(line || [])) * 1.08, y = lin(0, vmax, H - B, T), bw = (W - L - R) / n;
+  const short = v => money ? (v >= 1e9 ? `${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}k` : `${Math.round(v)}`) : (v >= 1e4 ? `${Math.round(v / 1e3)}k` : `${Math.round(v)}`);
+  let b = '';
+  for (let i = 0; i <= 4; i++) { const v = vmax * i / 4; b += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="ax">${short(v)}</text>`; }
+  const every = Math.max(1, Math.ceil(n / 12));
+  for (let i = 0; i < n; i++) {
+    let acc = 0;
+    rows.forEach((r, k) => {
+      const v = r.by_period[i] || 0;
+      if (v <= 0) return;
+      const y0 = y(acc), y1 = y(acc + v);
+      b += `<rect x="${(L + i * bw + bw * 0.14).toFixed(1)}" y="${y1.toFixed(1)}" width="${(bw * 0.72).toFixed(1)}" height="${Math.max(0.5, y0 - y1).toFixed(1)}"${A('gy')} style="fill:${SERIES[k % SERIES.length]};--d:${i * 25}ms"${tip(`${r.name}, period ${i + 1}\n${short(v)} ${unit}`)}/>`;
+      acc += v;
+    });
+    if (i % every === 0) b += `<text x="${(L + i * bw + bw / 2).toFixed(1)}" y="${H - B + 16}" text-anchor="middle" class="ax">${i + 1}</text>`;
+  }
+  if (line) b += `<path d="${line.map((v, i) => `${i ? 'L' : 'M'}${(L + i * bw + bw / 2).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')}" style="fill:none;stroke:var(--chalk-2);stroke-width:2;stroke-dasharray:5 4"${tip(lineLabel)}/>`;
+  b += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" class="ax">Period (month of the programme)</text>`;
+  let lx = L;
+  rows.forEach((r, k) => {
+    const name = trunc(r.name, 18);
+    b += `<rect x="${lx}" y="6" width="10" height="10" style="fill:${SERIES[k % SERIES.length]}"/><text x="${lx + 14}" y="15" class="ax">${esc(name)}</text>`;
+    lx += 22 + name.length * 6.6;
+  });
+  el.innerHTML = svg(W, H, label, b);
+}
+
+// SPI and CPI at each progress update, against 1.0.
+export function indexTrend(el, hist) {
+  const W = 660, H = 220, L = 46, R = 70, T = 16, B = 34;
+  const vals = hist.flatMap(h => [h.spi, h.cpi]).filter(v => v != null);
+  const lo = Math.min(0.8, ...vals) - 0.05, hi = Math.max(1.1, ...vals) + 0.05;
+  const x = lin(0, Math.max(1, hist.length - 1), L + 10, W - R), y = lin(lo, hi, H - B, T);
+  let b = `<line x1="${L}" x2="${W - R + 10}" y1="${y(1)}" y2="${y(1)}" style="stroke:var(--chalk-3);stroke-dasharray:4 4"/><text x="${L - 8}" y="${y(1) + 4}" text-anchor="end" class="ax">1.00</text>`;
+  [lo, hi].forEach(v => { b += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="ax">${v.toFixed(2)}</text>`; });
+  [['spi', 'SPI', 'var(--cyan)'], ['cpi', 'CPI', 'var(--amber)']].forEach(([k, lab, c]) => {
+    const pts = hist.map((h, i) => [i, h[k]]).filter(p => p[1] != null);
+    if (!pts.length) return;
+    b += `<path d="${pts.map(([i, v], j) => `${j ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')}" style="fill:none;stroke:${c};stroke-width:2.5"/>`;
+    pts.forEach(([i, v]) => { b += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="5" style="fill:${c};stroke:var(--ink-900);stroke-width:2"${tip(`${lab} ${v} at ${hist[i].as_of}`)}/>`; });
+    const [li, lv] = pts.at(-1);
+    b += `<text x="${x(li) + 10}" y="${y(lv) + 5}" style="fill:${c};font:600 14px var(--display)">${lab} ${Number(lv).toFixed(2)}</text>`;
+  });
+  hist.forEach((h, i) => { if (hist.length <= 8 || i % Math.ceil(hist.length / 8) === 0) b += `<text x="${x(i)}" y="${H - B + 16}" text-anchor="middle" class="ax">${esc((h.as_of || '').slice(2))}</text>`; });
+  el.innerHTML = svg(W, H, 'SPI and CPI at each progress update', b);
+}

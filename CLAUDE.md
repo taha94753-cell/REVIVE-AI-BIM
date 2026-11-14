@@ -10,7 +10,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Commands
 - Setup: `pip install -r requirements-dev.txt && python -m revive setup`
 - Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
-- Test: `python -m pytest -q` (must stay green; 75 tests)
+- Test: `python -m pytest -q` (must stay green; 85 tests)
 - Security scan: `bandit -r revive` (must report no issues)
 - Retrain: `python -m revive train --sensitivity`
 - External test: `python -m revive evaluate --file <xlsx>`
@@ -19,7 +19,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Architecture (data flow)
 `schema.py` → `data.py` → `features.py` → `modeling.py` → `inference.py` → `recovery.py`
 
-`evidence.py` builds the extension-of-time evidence pack (`/api/projects/{id}/evidence`, printable page `web/evidence.html`) and the early-warning record. `schedule_import.py` also reads MS Project XML through defusedxml (never parse uploads with the plain xml modules). `simulation.py` reports the criticality index (what drives the finish).
+`evidence.py` builds the extension-of-time evidence pack (`/api/projects/{id}/evidence`, printable page `web/evidence.html`) and the early-warning record. `schedule_import.py` also reads MS Project XML through defusedxml (never parse uploads with the plain xml modules). `simulation.py` reports the criticality index (what drives the finish). `schedule_analysis.py` reads the baseline plus the cost, resource and progress data the schedule file carried (`schedule_import.read_loading`) and reports S-curves, earned value (SPI, CPI, EAC), resource load, cash flow and quality checks; progress updates are dated snapshots in the `project_schedule` table (`/api/projects/{id}/schedule-analysis`, `/schedule-update`).
 `recovery.py` combines `scheduling.py` (CPM, forecast), `optimizer.py` (LP), `simulation.py` (Monte Carlo), `bim.py` (IFC) and `sustainability.py`. `weather.py` fetches Open-Meteo site weather and classifies lost days; `schedule_import.py` imports Primavera P6 `.xer` or CSV baseline schedules. `live.py` holds monitored projects, phone updates and the in-process SSE `Broker`; the phone page is `web/site.html` + `web/assets/js/site.js`. `server.py` exposes all of it under /api/*. The frontend lives in `web/assets/js/`:
 - `app.js`: state and rendering
 - `conn.js`: every API call goes through `api()`/`post()`, which raise `ApiError` (`.network` = server unreachable); the monitor reconnects by itself
@@ -54,6 +54,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 15. **Every state-changing request needs the X-Revive-Request header** (conn.js and site.js add it). Do not exempt routes from `CsrfGuard`.
 16. **Phones use the site token, never a row id.** `/api/site/<token>/*` is the only unauthenticated write path.
 17. **Inline scripts are allowed only by hash.** The CSP hashes the import maps at start-up; any other inline `<script>` will be blocked. Put code in `web/assets/js/`.
+19. **The baseline is fixed; updates are snapshots.** A later export of the programme goes through `/schedule-update` and is matched to the baseline by activity id. Only `/api/schedule/upload` replaces the baseline (and clears the updates). Schedule analysis never uses the ML model and never assumes a CPI: no cost loading or no actual cost means `cpi: null` with the reason.
 18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
 
 ## Design language (frontend)

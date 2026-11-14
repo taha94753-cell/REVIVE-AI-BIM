@@ -141,6 +141,49 @@
       </div>
       <details class="formulation"><summary>How the current delay is measured</summary><div id="dl-method"></div></details>
     </div>
+    <div id="sched" hidden>
+      <div class="sched-head"><h3>Schedule analysis</h3><p class="muted" id="sched-basis"></p></div>
+      <div class="dl-notes" id="sched-notes"></div>
+      <dl class="dl-kpis" id="sched-kpis"></dl>
+      <div class="dl-grid">
+        <div class="panel">
+          <div class="row-head"><h3>S-curves</h3><span class="fine" style="margin:0">Early and late dates</span></div>
+          <div id="sched-curve" class="chart"></div>
+          <p class="fine">The band between the two lines is where the project can sit and still finish on time. Earned work below the late line means the finish date is at risk.</p>
+        </div>
+        <div class="panel">
+          <div class="row-head"><h3>Resources by month</h3><span class="fine" style="margin:0" id="sched-res-note"></span></div>
+          <div id="sched-res" class="chart"></div>
+          <p class="fine" id="sched-res-fine"></p>
+        </div>
+      </div>
+      <div class="dl-grid">
+        <div class="panel">
+          <h3>Progress updates</h3>
+          <p class="muted">The baseline stays fixed. Each month, update the programme in P6 or MS Project to its data date, export it and upload it here. REVIVE reads % complete and actual cost per activity, measures them against the baseline and keeps every update.</p>
+          <form id="upd-form">
+            <div class="prog-top">
+              <label>Updated schedule (.xer, .xml, .csv)<input type="file" id="upd-file" accept=".xer,.xml,.csv" required></label>
+              <label>Status date<input type="date" id="upd-date"></label>
+            </div>
+            <div class="prog-top">
+              <label>Contract time elapsed (%)<input type="number" id="upd-elapsed" min="0" max="300" step="1" placeholder="worked out from the dates"></label>
+              <div class="form-actions" style="align-self:end"><button class="btn primary" type="submit" id="upd-go">Upload progress update</button></div>
+            </div>
+          </form>
+          <div id="sched-trend" class="chart"></div>
+          <div class="table-wrap"><table class="grid" id="sched-updates"><thead><tr><th>Status date</th><th class="n">Time</th><th class="n">Earned</th><th class="n">SPI</th><th class="n">CPI</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div id="sched-suggest"></div>
+        </div>
+        <div class="panel">
+          <h3>Schedule quality</h3>
+          <p class="muted" id="sched-q-note"></p>
+          <div class="table-wrap"><table class="grid" id="sched-quality"><thead><tr><th>Check</th><th class="n">Count</th><th class="n">Share</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+          <div id="sched-cash-wrap" hidden><h3 class="gap">Planned cash flow</h3><div id="sched-cash" class="chart"></div><p class="fine">Bars: planned cost per month on early dates. Dashed line: the same on late dates.</p></div>
+          <details class="formulation"><summary>How the schedule is analysed</summary><div id="sched-method"></div></details>
+        </div>
+      </div>
+    </div>
   </section>
 
 <section id="assess" class="sheet tabpanel" role="tabpanel" aria-labelledby="tab-assess" tabindex="-1" hidden>

@@ -80,7 +80,9 @@ export const del = path => api(path, { method: 'DELETE' });
 export const upload = (path, file, opts = {}) => {
   const fd = new FormData();
   fd.append('file', file);
-  return api(path, { method: 'POST', body: fd, timeout: 300000, ...opts });
+  const { fields = {}, ...rest } = opts;
+  Object.entries(fields).forEach(([k, v]) => { if (v != null && v !== '') fd.append(k, String(v)); });
+  return api(path, { method: 'POST', body: fd, timeout: 300000, ...rest });
 };
 /** Raw fetch with the same headers (used for file downloads). */
 export async function rawFetch(path, opts = {}) {
