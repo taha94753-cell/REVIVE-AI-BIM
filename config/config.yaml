@@ -18,6 +18,9 @@ data:
   raw_file: data/raw/AI-BIM_FYDP_120_projects_v3.xlsx
   raw_sheet: FORM ORDER (88 cols)
   clean_file: data/processed/projects_clean.csv
+  # Scenario rows whose origin could not be verified (added November 2026).
+  # Always loaded as hypothetical: they train, they are never scored.
+  extra_scenarios_file: data/processed/scenarios_extra.csv
   database: data/app.db
 
 training:
@@ -28,6 +31,10 @@ training:
   # the sensitivity table: `python -m revive train --sensitivity`).
   include_ongoing: false
   include_hypothetical: false
+  # true = the hypothetical scenario rows join the TRAINING side of every fold
+  # and of the final fit. They are never scored and stay flagged everywhere:
+  # all reported figures are measured on real completed projects only.
+  augment_with_hypothetical: true
   # core = the compact question set in schema.CORE_KEYS (10 questions at 25%,
   # 13 at 50%); all = every survey answer (35). The form follows this switch.
   feature_set: core
@@ -45,6 +52,20 @@ training:
   cv_folds: 5
   cv_repeats: 3
   random_state: 42
+  # Blended training rows (mixup) for the tree models: each is a weighted average
+  # of two projects of the same training fold, drawn more often from projects
+  # with a large overrun. Made inside each fold, so held-out projects never leak.
+  # Used by the no-progress-report forest; it hurts the linear model, which stays without.
+  blend:
+    multiplier: 2                  # blended rows per training row (0 = off)
+    tail_above_pct: 60             # "large overrun" for the weighting
+    tail_weight: 15
+  fallback_forest:            # no-progress-report model (SPI left blank)
+    n_estimators: 400
+    max_depth: 4
+    subsample: 0.8
+    colsample_bynode: 0.6
+    min_child_weight: 2
   xgb_regressor:              # shallow trees: small dataset, many weak signals
     n_estimators: 600
     max_depth: 2
@@ -132,6 +153,20 @@ schedule:
   # The baseline schedule is the backbone of the app; BIM is an optional visual layer.
   hours_per_day: 8                        # converts P6 .xer durations (hours) to days
   default_crash_cost_per_day_pkr: 150000  # VERIFY: used for imported P6 schedules that carry no crash data
+
+schedule_analysis:
+  working_days_per_month: 26   # period length when the contract duration is not known
+  min_cost_coverage: 0.5       # share of activities that must carry a budget before work is weighted by cost
+  max_periods: 120
+  top_resources: 6
+  # Schedule quality thresholds, after the DCMA 14-point assessment. VERIFY against the guideline you cite.
+  high_float_days: 44
+  long_activity_days: 44
+  open_ends_max_pct: 5
+  high_float_max_pct: 5
+  long_activity_max_pct: 5
+  critical_share_watch_pct: 40
+  gate_windows: {G25: [20, 32], G50: [44, 58]}   # elapsed % in which an update's SPI/CPI is offered to the forecast
 
 weather:
   provider: open-meteo        # free for non-commercial use, no API key (CC BY 4.0): https://open-meteo.com

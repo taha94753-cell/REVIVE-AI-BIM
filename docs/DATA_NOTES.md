@@ -142,3 +142,40 @@ None was adopted. The remaining gains are in the data, not the model:
 Collect completed projects and score them before merging:
 
     python -m revive evaluate --file data/raw/new_projects.xlsx
+
+
+## November 2026: augmentation and the no-progress-report model
+
+1. **Hypothetical rows now train, and are still never scored.** With
+   `training.augment_with_hypothetical: true` the 32 SYN rows join the training
+   side of every cross-validation fold and the final fit. The scored set is
+   unchanged: the 81 real completed projects. The rows keep their flag in the
+   dataset and the app. Effect on the linear model: better at 25% (unseen
+   company MAE 7.49 to 7.09), mixed at 50% (unseen company MAE 5.20 to 5.43,
+   high-risk AUC 0.913 to 0.890). Set the switch to false to go back.
+2. **No SPI, no problem.** Many contractors do not keep earned-value records.
+   When SPI is blank the app now uses a random forest trained without SPI or
+   CPI instead of imputing an average SPI. A linear model on those inputs is no
+   better than the median for an unseen contractor (MAE 9.9 against 9.75); the
+   forest is (see `no_progress_report` in the model card). It is weaker than
+   the standard model and the app says so on the forecast.
+3. **Blended training rows (mixup) for the tree models.** `training.blend` adds
+   rows that are weighted averages of two projects of the same training fold,
+   drawn more often from large overruns. They are made inside each fold, so no
+   held-out project leaks, and they are never scored. Random-fold R2 of the
+   forests rises sharply (Random Forest 0.71 to 0.90 at 25%, 0.81 to 0.93 at
+   50%; no-progress-report forest 0.64 to 0.86 and 0.71 to 0.87). The
+   unseen-company R2 hardly moves (0.46 to 0.49 and 0.59 to 0.63; fallback 0.35
+   to 0.38 and 0.44 to 0.38). Read that gap as: the gain is knowledge of
+   contractors already in the data, not of a new one. Always quote both. The
+   linear model gets worse with blended rows and does not use them.
+4. **45 extra scenario rows (`SCN-*`).** A workbook of 45 further projects arrived on
+   14 November 2026. Its origin could not be verified (written by a script minutes
+   before it was sent, project types spread evenly across all seven types, seven
+   overruns above 100% against two in the 81 real projects), so the rows are kept in
+   `data/processed/scenarios_extra.csv` and always loaded as hypothetical. 36 have an
+   outcome and join the training side. Effect, measured on the 81 real projects:
+   unseen-company R2 rises (linear 0.60 to 0.68 at 25%, 0.76 to 0.79 at 50%; Random
+   Forest 0.46 to 0.63 and 0.59 to 0.78), while the typical error gets worse in places
+   (linear 50% MAE 4.22 to 5.01; no-progress-report forest 5.34 to 7.02 and 5.46 to
+   6.35). Remove `data.extra_scenarios_file` from config.yaml and retrain to undo.

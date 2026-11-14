@@ -1,0 +1,74 @@
+ERMHDR	19.12
+%T	PROJECT
+%F	proj_id	last_recalc_date	plan_start_date
+%R	1	2026-06-10 00:00	2026-01-01 00:00
+%T	RSRC
+%F	rsrc_id	rsrc_name	rsrc_type
+%R	1	Carpenter	RT_Labor
+%R	2	Electrician	RT_Labor
+%R	3	Excavator	RT_Equip
+%R	4	Labour gang	RT_Labor
+%R	5	Mason	RT_Labor
+%R	6	Painter	RT_Labor
+%R	7	Plumber	RT_Labor
+%R	8	Steel fixer	RT_Labor
+%T	TASK
+%F	task_id	task_code	task_name	task_type	target_drtn_hr_cnt	remain_drtn_hr_cnt	status_code	complete_pct_type	phys_complete_pct
+%R	1	A100	Mobilisation	TT_Task	80	0	TK_Complete	CP_Phys	100
+%R	2	A110	Excavation	TT_Task	160	0	TK_Complete	CP_Phys	100
+%R	3	A120	Footings concrete	TT_Task	200	0	TK_Complete	CP_Phys	100
+%R	4	A130	Columns ground floor	TT_Task	160	0	TK_Complete	CP_Phys	100
+%R	5	A140	Slab first floor	TT_Task	200	0	TK_Complete	CP_Phys	100
+%R	6	A150	Columns first floor	TT_Task	160	75	TK_Active	CP_Phys	53
+%R	7	A160	Roof slab	TT_Task	200	200	TK_NotStart	CP_Phys	0
+%R	8	A170	Masonry walls	TT_Task	320	234	TK_Active	CP_Phys	27
+%R	9	A180	Electrical first fix	TT_Task	240	240	TK_NotStart	CP_Phys	0
+%R	10	A190	Plumbing first fix	TT_Task	240	240	TK_NotStart	CP_Phys	0
+%R	11	A200	Plaster and finishes	TT_Task	360	360	TK_NotStart	CP_Phys	0
+%R	12	A210	External works	TT_Task	240	240	TK_NotStart	CP_Phys	0
+%R	13	A220	Handover	TT_Task	0	0	TK_NotStart	CP_Phys	0
+%T	TASKPRED
+%F	task_id	pred_task_id	pred_type	lag_hr_cnt
+%R	2	1	PR_FS	0
+%R	3	2	PR_FS	0
+%R	4	3	PR_FS	0
+%R	5	4	PR_FS	0
+%R	6	5	PR_FS	0
+%R	7	6	PR_FS	0
+%R	8	5	PR_FS	0
+%R	9	8	PR_FS	0
+%R	10	8	PR_FS	0
+%R	11	9	PR_FS	0
+%R	11	10	PR_FS	0
+%R	11	7	PR_FS	0
+%R	12	7	PR_FS	0
+%R	13	11	PR_FS	0
+%R	13	12	PR_FS	0
+%T	TASKRSRC
+%F	task_id	rsrc_id	target_qty	target_cost	act_reg_qty	act_ot_qty	act_reg_cost	act_ot_cost	remain_qty
+%R	1	4	400	2000000	400	0	2240000	0	0
+%R	2	3	160	1263158	160	0	1414737	0	0
+%R	2	4	600	4736842	600	0	5305263	0	0
+%R	3	8	900	5250000	900	0	5880000	0	0
+%R	3	1	700	4083333	700	0	4573333	0	0
+%R	3	4	800	4666667	800	0	5226667	0	0
+%R	4	8	700	5600000	700	0	6272000	0	0
+%R	4	1	800	6400000	800	0	7168000	0	0
+%R	5	8	1100	6000000	1100	0	6720000	0	0
+%R	5	1	1300	7090909	1300	0	7941818	0	0
+%R	5	4	900	4909091	900	0	5498182	0	0
+%R	6	8	700	5600000	371	0	3324160	0	329
+%R	6	1	800	6400000	424	0	3799040	0	376
+%R	7	8	1100	6000000	0	0	0	0	1100
+%R	7	1	1300	7090909	0	0	0	0	1300
+%R	7	4	900	4909091	0	0	0	0	900
+%R	8	5	2400	6000000	648	0	1814400	0	1752
+%R	8	4	1600	4000000	432	0	1209600	0	1168
+%R	9	2	1200	8000000	0	0	0	0	1200
+%R	10	7	1100	7000000	0	0	0	0	1100
+%R	11	5	2200	7183673	0	0	0	0	2200
+%R	11	6	1500	4897959	0	0	0	0	1500
+%R	11	4	1200	3918367	0	0	0	0	1200
+%R	12	4	1400	5526316	0	0	0	0	1400
+%R	12	3	120	473684	0	0	0	0	120
+%E
