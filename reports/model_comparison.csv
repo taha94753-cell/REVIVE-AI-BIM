@@ -1,15 +1,19 @@
 gate,model,time_MAE,time_R2,risk_AUC,risk_F1,loco_time_MAE,loco_time_R2,loco_risk_AUC
 G25,Median baseline,9.75,,,,,,
-G25,"Linear, core questions (production)",6.37,0.811,0.883,0.684,7.49,0.499,0.865
-G25,"Linear, SPI only",6.81,0.742,,,7.55,0.582,
-G25,"XGBoost, all 33 answers",6.28,0.64,0.803,0.545,7.83,0.28,0.752
-G25,"XGBoost, core questions",6.57,0.633,0.822,0.636,7.73,0.289,0.817
-G25,Random Forest,5.96,0.666,0.897,0.75,7.0,0.358,0.887
-G25,SVM (RBF),6.9,0.251,0.836,0.564,7.76,0.077,0.822
+G25,"Linear, core questions (production)",6.05,0.777,0.864,0.718,6.92,0.68,0.845
+G25,"Linear, SPI only",6.38,0.753,,,6.5,0.738,
+G25,"Random forest, no SPI or CPI (fallback)",7.02,0.761,0.808,0.731,8.16,0.424,0.815
+G25,"XGBoost, all 33 answers",5.58,0.643,0.833,0.638,9.02,0.305,0.838
+G25,"XGBoost, core questions",5.4,0.717,0.827,0.667,7.08,0.465,0.853
+G25,Random Forest,5.3,0.782,0.871,0.682,6.27,0.633,0.888
+G25,"Random Forest, blended training rows",4.3,0.917,,,6.07,0.641,
+G25,SVM (RBF),6.6,0.485,0.848,0.718,7.59,0.284,0.868
 G50,Median baseline,9.75,,,,,,
-G50,"Linear, core questions (production)",4.23,0.909,0.913,0.763,5.2,0.739,0.89
-G50,"Linear, SPI only",3.99,0.911,,,4.56,0.828,
-G50,"XGBoost, all 36 answers",5.27,0.768,0.878,0.837,6.99,0.347,0.872
-G50,"XGBoost, core questions",4.72,0.791,0.891,0.791,6.59,0.382,0.879
-G50,Random Forest,4.53,0.732,0.922,0.829,6.34,0.382,0.907
-G50,SVM (RBF),6.41,0.172,0.852,0.634,7.31,0.106,0.866
+G50,"Linear, core questions (production)",5.01,0.829,0.881,0.762,5.27,0.79,0.857
+G50,"Linear, SPI only",3.64,0.873,,,3.76,0.856,
+G50,"Random forest, no SPI or CPI (fallback)",6.35,0.802,0.87,0.731,7.91,0.558,0.807
+G50,"XGBoost, all 36 answers",4.14,0.887,0.915,0.696,5.88,0.588,0.912
+G50,"XGBoost, core questions",3.86,0.898,0.903,0.696,5.35,0.766,0.909
+G50,Random Forest,3.84,0.906,0.915,0.81,5.15,0.784,0.896
+G50,"Random Forest, blended training rows",3.6,0.935,,,5.16,0.734,
+G50,SVM (RBF),5.56,0.546,0.865,0.773,5.99,0.402,0.901

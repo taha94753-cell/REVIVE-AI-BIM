@@ -262,6 +262,7 @@ function renderResult() {
     ${p.recovery_recommended ? `<div class="triggers"><strong>Recovery plan recommended</strong><ul>${(p.recovery_triggers.length ? p.recovery_triggers : [`Forecast band is ${band.name}`]).map(t => `<li>${esc(t)}</li>`).join('')}</ul><a class="btn mark" href="#recover">See the recovery plan</a></div>`
       : '<p class="note">No recovery trigger: health score, SPI and CPI are within limits.</p>'}
     ${tr ? `<p class="note">${esc(tr.note)} Out-of-fold forecast: ${fmt.pct(tr.oof_time_overrun_pct, 1)}; recorded overrun: ${fmt.pct(tr.actual_time_overrun_pct, 1)}.</p>` : ''}
+    ${p.mode_note ? `<p class="fine">${esc(p.mode_note)}</p>` : ''}
     ${p.missing_inputs.length ? `<p class="fine">${p.missing_inputs.length} answers left blank: ${esc(p.missing_inputs.slice(0, 4).join(', '))}${p.missing_inputs.length > 4 ? ' and others' : ''}.</p>` : ''}`;
 
   // animate from what was on screen to the new forecast

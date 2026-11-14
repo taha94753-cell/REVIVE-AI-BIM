@@ -65,6 +65,66 @@ def training_frame(df: pd.DataFrame | None = None) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+def augmentation_frame() -> pd.DataFrame:
+    """Hypothetical scenario rows added to the TRAINING side only
+    (training.augment_with_hypothetical). They are never scored: every
+    reported figure is measured on real completed projects."""
+    cfg = load_config()["training"]
+    if not cfg.get("augment_with_hypothetical", False) or cfg.get("include_hypothetical", False):
+        return pd.DataFrame()
+    df = load_clean()
+    df = df[df["is_hypothetical"].astype(bool) & df["time_overrun_pct"].notna()]
+    return df.reset_index(drop=True)
+
+
+def fallback_columns(columns) -> list[str]:
+    """Inputs of the no-progress-report model: everything except SPI and CPI."""
+    return [c for c in columns if not c.startswith(("spi_", "cpi_"))]
+
+
+def _fb_reg():
+    p = dict(load_config()["training"]["fallback_forest"])
+    return xgb.XGBRFRegressor(random_state=load_config()["training"]["random_state"], n_jobs=1, **p)
+
+
+def _fb_clf():
+    p = dict(load_config()["training"]["fallback_forest"])
+    return xgb.XGBRFClassifier(random_state=load_config()["training"]["random_state"], n_jobs=1, **p)
+
+
+def _with_extra(X, y, extra):
+    """Append the augmentation rows (same columns, target known) to a training fold."""
+    if extra is None:
+        return X, y
+    Xa, ya = extra
+    keep = ya.notna().to_numpy()
+    if not keep.any():
+        return X, y
+    return (pd.concat([X, Xa.loc[keep, list(X.columns)]], ignore_index=True),
+            pd.concat([y, ya[keep]], ignore_index=True))
+
+
+def blend_rows(X: pd.DataFrame, y: pd.Series, seed: int) -> tuple[pd.DataFrame, pd.Series]:
+    """Blended training rows (mixup, training.blend in config.yaml).
+    Each new row is a weighted average of two projects of the SAME training
+    fold, inputs and outcome alike, so nothing from a held-out project can
+    leak in. Projects with a large overrun are drawn more often, because the
+    data has only a couple of them and tree models cannot extrapolate.
+    Returns the fold with the blended rows appended."""
+    cfg = load_config()["training"].get("blend") or {}
+    n = int(cfg.get("multiplier", 0) * len(y))
+    if n <= 0:
+        return X, y
+    rng = np.random.default_rng(seed)
+    A, t = X.to_numpy(float), y.to_numpy(float)
+    w = np.where(t > cfg.get("tail_above_pct", 60), cfg.get("tail_weight", 1.0), 1.0)
+    i, j = rng.choice(len(t), n, p=w / w.sum()), rng.choice(len(t), n)
+    lam = rng.uniform(0.2, 0.8, n)
+    Xm = pd.DataFrame(lam[:, None] * A[i] + (1 - lam[:, None]) * A[j], columns=X.columns)
+    return (pd.concat([X, Xm], ignore_index=True),
+            pd.concat([y, pd.Series(lam * t[i] + (1 - lam) * t[j])], ignore_index=True))
+
+
 def targets(df: pd.DataFrame) -> dict:
     cfg = load_config()["training"]
     y_time = df["time_overrun_pct"].clip(upper=cfg["time_overrun_clip_pct"])
@@ -139,8 +199,9 @@ def _alt_models(kind: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None):
-    """Repeated k-fold, or leave-one-group-out when groups are given (one pass)."""
+def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None, extra=None, blend=False):
+    """Repeated k-fold, or leave-one-group-out when groups are given (one pass).
+    extra = (X, y) rows added to every training fold and never predicted."""
     if groups is not None:
         splits, repeats, folds = list(LeaveOneGroupOut().split(X, y, groups)), 1, None
     else:
@@ -148,14 +209,17 @@ def _cv_regression(make_model, X, y, repeats, folds, seed, groups=None):
     oof = np.zeros((repeats, len(y)))
     for i, (tr, te) in enumerate(splits):
         m = make_model()
-        m.fit(X.iloc[tr], y.iloc[tr])
+        Xtr, ytr = _with_extra(X.iloc[tr], y.iloc[tr], extra)
+        if blend:
+            Xtr, ytr = blend_rows(Xtr, ytr, seed + i)
+        m.fit(Xtr, ytr)
         oof[0 if folds is None else i // folds, te] = m.predict(X.iloc[te])
     per_rep = [dict(mae=mean_absolute_error(y, o), rmse=float(np.sqrt(mean_squared_error(y, o))),
                     r2=r2_score(y, o)) for o in oof]
     return _summarise(per_rep), oof.mean(axis=0)
 
 
-def _cv_classification(make_model, X, y, repeats, folds, seed, groups=None):
+def _cv_classification(make_model, X, y, repeats, folds, seed, groups=None, extra=None):
     if groups is not None:
         splits, repeats, folds = list(LeaveOneGroupOut().split(X, y, groups)), 1, None
     else:
@@ -163,10 +227,11 @@ def _cv_classification(make_model, X, y, repeats, folds, seed, groups=None):
     oof = np.zeros((repeats, len(y)))
     for i, (tr, te) in enumerate(splits):
         m = make_model()
-        if y.iloc[tr].nunique() < 2:          # a held-out company can leave one class only
-            oof[0 if folds is None else i // folds, te] = float(y.iloc[tr].mean())
+        Xtr, ytr = _with_extra(X.iloc[tr], y.iloc[tr], extra)
+        if ytr.nunique() < 2:                 # a held-out company can leave one class only
+            oof[0 if folds is None else i // folds, te] = float(ytr.mean())
             continue
-        m.fit(X.iloc[tr], y.iloc[tr])
+        m.fit(Xtr, ytr)
         oof[0 if folds is None else i // folds, te] = m.predict_proba(X.iloc[te])[:, 1]
     per_rep = []
     for o in oof:
@@ -243,6 +308,8 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
     tcfg = cfg["training"]
     df = training_frame()
     T = targets(df)
+    aug = augmentation_frame()
+    Ta = targets(aug) if len(aug) else None
     seed, folds, reps = tcfg["random_state"], tcfg["cv_folds"], tcfg["cv_repeats"]
     out_dir = models_dir()
     started = time.time()
@@ -250,6 +317,10 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "training_scope": {"include_ongoing": tcfg["include_ongoing"],
                            "include_hypothetical": tcfg["include_hypothetical"]},
+        "augmentation": {"hypothetical_rows_in_training": int(len(aug)),
+                         "blend": tcfg.get("blend") or {},
+                         "note": "Hypothetical scenario rows are added to the training side only. "
+                                 "Every score in this card is measured on real completed projects."},
         "dataset": _dataset_summary(df),
         "high_risk_threshold_pct": tcfg["high_risk_threshold_pct"],
         "model": model_kind(),
@@ -272,12 +343,19 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         X = encode(df, gate)
         gdir = out_dir / gate
         gdir.mkdir(exist_ok=True)
+        # augmentation rows for this gate, wide enough for the core and the all-answers comparisons
+        ex_t = ex_c = ex_r = None
+        if Ta is not None:
+            Xa = encode(aug, gate)
+            Xa_all = encode(aug, gate, feature_set="all")
+            Xa = pd.concat([Xa, Xa_all[[c for c in Xa_all.columns if c not in Xa.columns]]], axis=1)
+            ex_t, ex_c, ex_r = (Xa, Ta["time"]), (Xa, Ta["cost"]), (Xa, Ta["risk"])
         reg_params = tune_regressor(X, T["time"], seed) if tune else {}
         if verbose:
             print(f"[{gate}] {len(X)} projects x {X.shape[1]} encoded columns" + (f", tuned {reg_params}" if tune else ""))
 
         # ---- time overrun -----------------------------------------------
-        m_time, oof_time = _cv_regression(lambda: _reg(reg_params), X, T["time"], reps, folds, seed)
+        m_time, oof_time = _cv_regression(lambda: _reg(reg_params), X, T["time"], reps, folds, seed, extra=ex_t)
         resid = T["time"].to_numpy() - oof_time
         q_lo, q_hi = np.quantile(resid, [0.10, 0.90])
         base_mae = mean_absolute_error(T["time"], np.full(len(T["time"]), T["time"].median()))
@@ -285,29 +363,45 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
         # ---- cost overrun -----------------------------------------------
         cmask = T["cost"].notna().to_numpy()
         Xc, yc = X[cmask].reset_index(drop=True), T["cost"][cmask].reset_index(drop=True)
-        m_cost, oof_cost_part = _cv_regression(lambda: _reg(), Xc, yc, reps, folds, seed)
+        m_cost, oof_cost_part = _cv_regression(lambda: _reg(), Xc, yc, reps, folds, seed, extra=ex_c)
         oof_cost = np.full(len(X), np.nan)
         oof_cost[cmask] = oof_cost_part
         cres = yc.to_numpy() - oof_cost_part
         c_lo, c_hi = np.quantile(cres, [0.10, 0.90])
 
         # ---- high-risk classifier ---------------------------------------
-        m_risk, oof_prob = _cv_classification(lambda: _clf(), X, T["risk"], reps, folds, seed)
+        m_risk, oof_prob = _cv_classification(lambda: _clf(), X, T["risk"], reps, folds, seed, extra=ex_r)
         majority = max(T["risk"].mean(), 1 - T["risk"].mean())
 
         # ---- leave-one-company-out (does it work for an unseen contractor?) --
-        loco_time, _ = _cv_regression(lambda: _reg(reg_params), X, T["time"], 1, folds, seed, groups=groups)
-        loco_risk, _ = _cv_classification(lambda: _clf(), X, T["risk"], 1, folds, seed, groups=groups)
+        loco_time, _ = _cv_regression(lambda: _reg(reg_params), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+        loco_risk, _ = _cv_classification(lambda: _clf(), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
         spi_cols = [c for c in X.columns if c.startswith("spi_")]
         if not spi_cols:   # feature_set: all without EVM never happens, but stay safe
             spi_cols = list(X.columns[:1])
-        spi_rand, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], reps, folds, seed)
-        spi_loco, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], 1, folds, seed, groups=groups)
+        spi_rand, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], reps, folds, seed, extra=ex_t)
+        spi_loco, _ = _cv_regression(lambda: LinearModel("reg", signs=_signs()), X[spi_cols], T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+
+        # ---- no-progress-report model (used when SPI is left blank) ------
+        # A random forest on everything except SPI and CPI. A linear model on these
+        # inputs is no better than the median for an unseen contractor; the forest is.
+        fb_cols = fallback_columns(X.columns)
+        Xf, Xfc = X[fb_cols], Xc[fb_cols]
+        fb_time, fb_oof = _cv_regression(_fb_reg, Xf, T["time"], reps, folds, seed, extra=ex_t, blend=True)
+        fb_cost, fb_oof_cost = _cv_regression(_fb_reg, Xfc, yc, reps, folds, seed, extra=ex_c)
+        fb_risk, _ = _cv_classification(_fb_clf, Xf, T["risk"], reps, folds, seed, extra=ex_r)
+        fb_loco, _ = _cv_regression(_fb_reg, Xf, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=True)
+        fb_loco_risk, _ = _cv_classification(_fb_clf, Xf, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
+        fq_lo, fq_hi = np.quantile(T["time"].to_numpy() - fb_oof, [0.10, 0.90])
+        fc_lo, fc_hi = np.quantile(yc.to_numpy() - fb_oof_cost, [0.10, 0.90])
+        _fb_reg().fit(*blend_rows(*_with_extra(Xf, T["time"], ex_t), seed)).save_model(gdir / "time_noevm.json")
+        _fb_reg().fit(*_with_extra(Xfc, yc, ex_c)).save_model(gdir / "cost_noevm.json")
+        _fb_clf().fit(*_with_extra(Xf, T["risk"], ex_r)).save_model(gdir / "risk_noevm.json")
 
         # ---- final fits on every record ---------------------------------
-        final_time = _reg(reg_params).fit(X, T["time"])
-        final_cost = _reg().fit(Xc, yc)
-        final_risk = _clf().fit(X, T["risk"])
+        final_time = _reg(reg_params).fit(*_with_extra(X, T["time"], ex_t))
+        final_cost = _reg().fit(*_with_extra(Xc, yc, ex_c))
+        final_risk = _clf().fit(*_with_extra(X, T["risk"], ex_r))
         final_time.save_model(gdir / "time.json")
         final_cost.save_model(gdir / "cost.json")
         final_risk.save_model(gdir / "risk.json")
@@ -318,7 +412,10 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
                 "time_interval_residuals": [float(q_lo), float(q_hi)],
                 "time_residuals": [round(float(v), 2) for v in resid],
                 "cost_interval_residuals": [float(c_lo), float(c_hi)],
-                "time_params": reg_params, "n_train": int(len(X)), "n_train_cost": int(cmask.sum())}
+                "time_params": reg_params, "n_train": int(len(X)), "n_train_cost": int(cmask.sum()),
+                "fallback": {"columns": fb_cols,
+                             "time_interval_residuals": [float(fq_lo), float(fq_hi)],
+                             "cost_interval_residuals": [float(fc_lo), float(fc_hi)]}}
         (gdir / "meta.json").write_text(json.dumps(meta, indent=2))
 
         card["gates"][gate] = {
@@ -334,6 +431,15 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
                 "spi_only_linear": {k: round(v["mean"], 3) for k, v in spi_loco.items()},
             },
             "spi_only_linear": {k: round(v["mean"], 3) for k, v in spi_rand.items()},
+            "no_progress_report": {
+                "model": "random forest without SPI or CPI",
+                "time_overrun": {**_round(fb_time),
+                                 "interval_80pct_residuals": [round(float(fq_lo), 2), round(float(fq_hi), 2)]},
+                "cost_overrun": _round(fb_cost),
+                "high_risk": _round(fb_risk),
+                "leave_company_out": {"time_overrun": {k: round(v["mean"], 3) for k, v in fb_loco.items()},
+                                      "high_risk_auc": round(fb_loco_risk["auc"]["mean"], 3)},
+            },
             "top_drivers": glob["ranking"][:8],
         }
         oof_rows[f"{gate}_time"] = oof_time.round(2)
@@ -346,30 +452,37 @@ def train(compare: bool = True, tune: bool = False, verbose: bool = True) -> dic
             comparison.append(_comparison_row(gate, "Median baseline", {"mae": {"mean": base_mae, "std": 0}}, None))
             comparison.append(_comparison_row(gate, prod, m_time, m_risk, loco_time, loco_risk))
             comparison.append(_comparison_row(gate, "Linear, SPI only", spi_rand, None, spi_loco))
+            comparison.append(_comparison_row(gate, "Random forest, no SPI or CPI (fallback)",
+                                              fb_time, fb_risk, fb_loco, fb_loco_risk))
             # the previous design: XGBoost on every survey answer
             Xall = encode(df, gate, feature_set="all")
-            r, _ = _cv_regression(lambda: _xgb_reg(), Xall, T["time"], 1, folds, seed)
-            c, _ = _cv_classification(lambda: _xgb_clf(), Xall, T["risk"], 1, folds, seed)
-            rl, _ = _cv_regression(lambda: _xgb_reg(), Xall, T["time"], 1, folds, seed, groups=groups)
-            cl, _ = _cv_classification(lambda: _xgb_clf(), Xall, T["risk"], 1, folds, seed, groups=groups)
+            r, _ = _cv_regression(lambda: _xgb_reg(), Xall, T["time"], 1, folds, seed, extra=ex_t)
+            c, _ = _cv_classification(lambda: _xgb_clf(), Xall, T["risk"], 1, folds, seed, extra=ex_r)
+            rl, _ = _cv_regression(lambda: _xgb_reg(), Xall, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+            cl, _ = _cv_classification(lambda: _xgb_clf(), Xall, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
             comparison.append(_comparison_row(gate, f"XGBoost, all {len(_fields_of(Xall))} answers", r, c, rl, cl))
             if model_kind() == "linear":
-                r, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed)
-                c, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed)
-                rl, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed, groups=groups)
-                cl, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed, groups=groups)
+                r, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed, extra=ex_t)
+                c, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed, extra=ex_r)
+                rl, _ = _cv_regression(lambda: _xgb_reg(), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+                cl, _ = _cv_classification(lambda: _xgb_clf(), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
                 comparison.append(_comparison_row(gate, "XGBoost, core questions", r, c, rl, cl))
             for name, model in _alt_models("reg").items():
                 if name == "Ridge regression" and model_kind() == "linear":
                     continue
-                r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed)
+                r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, extra=ex_t)
                 c_model = _alt_models("clf")[{"Ridge regression": "Logistic regression"}.get(name, name)]
-                c, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed)
+                c, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, extra=ex_r)
                 # same unseen-company test as the production model, so every row is judged alike
-                rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups)
-                cl, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, groups=groups)
+                rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t)
+                cl, _ = _cv_classification(lambda: sklearn.base.clone(c_model), X, T["risk"], 1, folds, seed, groups=groups, extra=ex_r)
                 comparison.append(_comparison_row(gate, name if name != "Ridge regression" else "Linear (Ridge / Logistic)",
                                                   r, c, rl, cl))
+                if name == "Random Forest":
+                    # same forest with blended training rows (time model only; the classifier is unchanged)
+                    r, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], reps, folds, seed, extra=ex_t, blend=True)
+                    rl, _ = _cv_regression(lambda: sklearn.base.clone(model), X, T["time"], 1, folds, seed, groups=groups, extra=ex_t, blend=True)
+                    comparison.append(_comparison_row(gate, "Random Forest, blended training rows", r, None, rl))
 
     oof_rows.to_csv(out_dir / "oof_predictions.csv", index=False)
     if comparison:

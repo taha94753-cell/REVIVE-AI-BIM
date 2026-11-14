@@ -10,7 +10,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Commands
 - Setup: `pip install -r requirements-dev.txt && python -m revive setup`
 - Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
-- Test: `python -m pytest -q` (must stay green; 73 tests)
+- Test: `python -m pytest -q` (must stay green; 75 tests)
 - Security scan: `bandit -r revive` (must report no issues)
 - Retrain: `python -m revive train --sensitivity`
 - External test: `python -m revive evaluate --file <xlsx>`
@@ -35,7 +35,10 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
    - Performance figures come from `models/model_card.json` (cross-validated). Never report in-sample accuracy.
    - Never invent results.
    - When a dataset project is scored in the UI, the out-of-fold value is the honest one (the app already shows it).
-4. **Hypothetical data stays labelled.** 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs.
+4. **Hypothetical data stays labelled.** 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs. A further 45 rows in `data/processed/scenarios_extra.csv` (ids `SCN-*`) arrived in November 2026 without a verifiable source; `load_clean()` always loads them as hypothetical. Do not move them into the real set without the original survey responses.
+4c. **Hypothetical rows may train, never score.** `training.augment_with_hypothetical` adds the SYN rows to the training side of every fold and the final fit. Every reported figure is measured on real completed projects, and the rows stay flagged.
+4d. **Blank SPI switches to the no-progress-report model** (`*_noevm.json`, a random forest without SPI or CPI; `mode` in the prediction). Quote its own scores from `no_progress_report` in the model card, never the standard model's.
+4e. **Blended rows are made inside the training fold only** (`blend_rows`, `training.blend`). Never blend before splitting, and never quote a blended model's random-fold score without its unseen-company score.
 4a. **Report leave-one-company-out next to random-fold scores.** The model card has both; quote the unseen-company figure when asked whether it generalises. Keep the SPI-only baseline in the comparison.
 4b. **Keep the form short.** A new model input must beat the current core set under leave-one-company-out before it joins `CORE_KEYS`, and needs a direction in `CORE_DIRECTION`.
 5. **Never commit `data/raw/`.** It contains a private company/project key and an e-mail address.
