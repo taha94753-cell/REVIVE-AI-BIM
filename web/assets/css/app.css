@@ -96,15 +96,9 @@ table.grid{width:100%;border-collapse:collapse;font-size:15px}
 .grid .n{text-align:right}
 .grid tbody tr[data-id]{cursor:pointer}
 .grid tbody tr[data-id]:hover{background:rgba(214,226,240,.06)}
-#portfolio .table-wrap{max-height:560px}
-.proj b{font-weight:600;display:block}
-.proj small{color:var(--chalk-3)}
 .tag{font-size:11px;color:var(--mark);border:1px solid rgba(255,79,163,.5);border-radius:2px;padding:0 5px;margin-left:6px;vertical-align:2px}
 .chip{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--c);white-space:nowrap}
 .chip::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
-.barcell{display:flex;align-items:center;gap:10px;min-width:210px}
-.barcell i{display:block;height:8px;background:var(--c);border-radius:1px;min-width:2px}
-.barcell span{font-weight:500;min-width:52px}
 .toolbar{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .search{width:min(320px,100%)}
 
@@ -200,16 +194,8 @@ legend small{font:400 14px var(--text);color:var(--chalk-3)}
 .formulation pre{white-space:pre-wrap;font-size:14px;color:var(--chalk-2);margin:12px 0 0}
 
 /* impact */
-.impact{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0;border-top:1px solid var(--line-strong)}
-.impact div{padding:24px 20px 24px 0}
-.impact div+div{border-left:1px solid var(--line);padding-left:20px}
-.impact dt{color:var(--chalk-3);font-size:14px}
-.impact dd{margin:8px 0 0;font:700 54px/1 var(--display)}
-.impact dd small{display:block;font:400 14px var(--text);color:var(--chalk-2);margin-top:8px}
-.verify{color:var(--watch);font-size:13px}
 
 /* evidence */
-.ev-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;margin-bottom:54px}
 .row-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
 .row-head h3{margin:0}
 .stack{display:flex;height:22px;border-radius:2px;overflow:hidden;margin:10px 0 12px}
@@ -224,11 +210,11 @@ ul.plain b{color:var(--chalk);font-weight:500}
 .foot{border-top:1px solid var(--line-strong);padding:30px var(--gutter);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;color:var(--chalk-3);font-size:14px}
 
 @media (max-width:1080px){
-  .assess-grid,.explain,.rec-grid,.ev-grid{grid-template-columns:1fr}
+  .assess-grid,.explain,.rec-grid{grid-template-columns:1fr}
   .result{position:static}
   .controls{grid-template-columns:1fr 1fr}
-  .kpis,.impact{grid-template-columns:1fr 1fr}
-  .kpis div:nth-child(3),.impact div:nth-child(3){border-left:0;padding-left:0}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpis div:nth-child(3){border-left:0;padding-left:0}
 }
 @media (max-width:640px){
   .fields{grid-template-columns:1fr}
@@ -311,7 +297,6 @@ body.site{background-attachment:scroll}
 .check input{width:18px;min-height:18px;margin-top:2px;accent-color:var(--mark)}
 .site-wx{font-size:15px;color:var(--chalk-2);background:rgba(108,178,255,.07);border:1px solid rgba(108,178,255,.2);border-radius:var(--r-sm);padding:10px 12px;margin:0 0 10px}
 
-
 /* =====================================================================
    v1.1 additions: motion, connection state, overview, what-if, live board
    ===================================================================== */
@@ -366,11 +351,8 @@ body.site{background-attachment:scroll}
 .chart rect[data-tip]:hover,.chart circle[data-tip]:hover{filter:brightness(1.3) drop-shadow(0 0 4px rgba(230,238,241,.35))}
 .chart .ripple{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ripple 1.8s ease-out 3}
 @keyframes ripple{from{transform:scale(1);opacity:.9}to{transform:scale(3.4);opacity:0}}
-.chart .seg-arc{cursor:pointer;transition:opacity .25s,stroke-width .25s}
-.chart .seg-arc.dim{opacity:.25}
 .chart .pt{cursor:pointer;transition:opacity .35s,r .25s}
-.chart .pt.dim{opacity:.12}
-.chart .pt.sel,.chart .pt.hl{r:9;stroke:var(--chalk)!important;stroke-width:2.5!important}
+.chart .pt.sel{r:9;stroke:var(--chalk)!important;stroke-width:2.5!important}
 .chart.skeleton{min-height:220px;border-radius:6px;background:linear-gradient(100deg,rgba(214,226,240,.04) 30%,rgba(214,226,240,.12) 50%,rgba(214,226,240,.04) 70%);background-size:300% 100%;animation:shimmer 1.4s linear infinite}
 @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
 .stack i{transform-origin:left;animation:growX .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms);cursor:default}
@@ -395,7 +377,7 @@ body.site{background-attachment:scroll}
 .toast2 button.x{border:0;font-size:20px;line-height:1;padding:0 2px;opacity:.6}
 .toast2 .bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:currentColor;opacity:.25;transform-origin:left;animation:drain var(--ms,5s) linear forwards}
 .toast2.sticky .bar{display:none}
-.toast2 svg,.x svg,.card-x svg,.band-filter svg{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.toast2 svg,.x svg,.card-x svg{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .x svg{margin:auto;width:16px;height:16px}
 @keyframes drain{to{transform:scaleX(0)}}
 
@@ -405,25 +387,8 @@ body.site{background-attachment:scroll}
 .pop-in{animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
 
 /* ---- portfolio overview */
-.overview{display:grid;grid-template-columns:minmax(220px,.75fr) minmax(220px,.7fr) minmax(0,1.9fr);gap:30px;margin:0 0 34px;padding:22px;border:1px solid var(--line);background:rgba(16,20,26,.45);align-items:start}
-.ov-kpis{display:grid;grid-template-columns:1fr 1fr;gap:20px 18px;margin:0}
 .kpi{animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
-.ov-kpis dt{font-size:13px;color:var(--chalk-3);line-height:1.25}
-.ov-kpis dd{margin:6px 0 2px;font:700 40px/1 var(--display)}
-.ov-kpis small{font-size:12px;color:var(--chalk-3)}
-.ov-donut h3,.ov-map h3{font-size:20px}
-.ov-donut #donut{max-width:190px;margin:0 auto}
-.donut-legend{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
-.donut-legend button{width:100%;display:flex;align-items:center;gap:8px;font:inherit;font-size:14px;color:var(--chalk-2);background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 8px;cursor:pointer;transition:background .2s,border-color .2s}
-.donut-legend button:hover{background:rgba(214,226,240,.06)}
-.donut-legend button[aria-pressed=true]{border-color:var(--line-strong);color:var(--chalk);background:rgba(214,226,240,.08)}
-.donut-legend i{width:10px;height:10px;border-radius:50%;background:var(--c)}
-.donut-legend b{margin-left:auto;font:600 17px var(--display);color:var(--chalk)}
-.band-filter{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;padding:4px 6px 4px 12px;animation:pop .3s ease}
-.band-filter button{background:transparent;border:0;color:var(--chalk-2);font-size:18px;cursor:pointer;line-height:1}
-.rows-in tr{animation:rowin .45s ease both;animation-delay:var(--d,0ms)}
 @keyframes rowin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.barcell i{transform-origin:left;animation:growX .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0ms) + 150ms)}
 .grid tbody tr[data-id]{transition:background .15s}
 
 /* ---- assessment result */
@@ -463,10 +428,8 @@ body.site{background-attachment:scroll}
 .save-row{animation:rise .5s ease both}
 
 /* ---- recovery and impact */
-.kpis dd,.impact dd span{display:inline-block}
+.kpis dd{display:inline-block}
 #plan-table tbody tr{animation:rowin .45s ease both;animation-delay:var(--d,0ms)}
-#cost-compare{max-width:860px}
-.impact dd span{font:inherit}
 
 /* ---- BIM timeline */
 .play.on{background:var(--mark)}
@@ -497,9 +460,7 @@ body.site{background-attachment:scroll}
 .feed li{animation:rowin .4s ease both}
 .feed li.fresh{animation:arrive 1.8s ease-out,slidein .5s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes slidein{from{transform:translateX(-14px);opacity:0}to{transform:none;opacity:1}}
-
-@media (max-width:1180px){.overview{grid-template-columns:1fr 1fr}.ov-map{grid-column:1/-1}}
-@media (max-width:640px){.overview{grid-template-columns:1fr}.lb-cells{grid-template-columns:1fr}.toasts{right:10px;left:10px;width:auto}.conn-banner{top:60px}}
+@media (max-width:640px){.lb-cells{grid-template-columns:1fr}.toasts{right:10px;left:10px;width:auto}.conn-banner{top:60px}}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
 
 /* ---- phone page v1.1 */
@@ -527,7 +488,6 @@ body.site{background-attachment:scroll}
 #watchers{margin-top:12px}
 @media (max-width:1080px){.result{position:relative}}
 @media (min-width:1081px){.result{max-height:calc(100vh - 100px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}}
-
 
 /* =====================================================================
    v2: company workspace shell, tabs, project cards, current delay, dialogs
@@ -725,7 +685,6 @@ dialog.modal>form,dialog.modal>div{padding:24px 26px 22px}
 
 #windows svg{min-width:760px}
 
-
 /* =====================================================================
    v3 "site grade": graphite steel, construction yellow, variable type,
    animated sheet tabs with the REVIVE mark, 3D tilt cards
@@ -853,8 +812,8 @@ select option{background:var(--ink-800)}
 .wi input[type=range]::-webkit-slider-thumb,#scrub::-webkit-slider-thumb{background:#fff;border-color:var(--ink-900);box-shadow:0 0 0 1px var(--amber),0 2px 8px rgba(0,0,0,.6)}
 
 /* ---- surfaces: one steel-plate language for every card, panel and block */
-.panel,.card,.result,.dl-big,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.empty-state,.inspector,.conn-card,.titleblock{border-radius:var(--r)}
-.panel,.result,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation{background:var(--surface);border-color:var(--line);box-shadow:var(--hi),var(--shadow)}
+.panel,.card,.result,.dl-big,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.empty-state,.inspector,.conn-card,.titleblock{border-radius:var(--r)}
+.panel,.result,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation{background:var(--surface);border-color:var(--line);box-shadow:var(--hi),var(--shadow)}
 .table-wrap{border-radius:var(--r);border-color:var(--line);background:rgba(13,16,21,.6)}
 .grid th{font:500 13px var(--text);color:var(--chalk-3);background:rgba(21,26,33,.97)}
 .grid tbody tr[data-id]:hover{background:rgba(255,184,28,.05)}
@@ -862,7 +821,7 @@ legend{font:700 19px var(--display)}
 legend .step{border-color:var(--amber);color:var(--amber);font:700 14px var(--display)}
 .titleblock{overflow:hidden;font:500 11px var(--mono);background:rgba(13,16,21,.7)}
 .big,.dl-big .big{font-weight:800;font-variation-settings:"wdth" 72;letter-spacing:-.03em}
-.kpis dd,.impact dd,.ws-kpis dd,.dl-kpis dd,.ov-kpis dd,.metrics dd,.cg b,.lb-cells dd,.sim-big{font-weight:750;font-variation-settings:"wdth" 76;letter-spacing:-.015em}
+.kpis dd,.ws-kpis dd,.dl-kpis dd,.metrics dd,.cg b,.lb-cells dd,.sim-big{font-weight:750;font-variation-settings:"wdth" 76;letter-spacing:-.015em}
 .ws-kpis .kpi,.dl-kpis .kpi{position:relative;transition:background .3s}
 .ws-kpis .kpi:hover,.dl-kpis .kpi:hover{background:rgba(255,184,28,.035)}
 .chip{font-weight:500}
@@ -919,8 +878,7 @@ dialog.modal[open]{animation:dlgIn .45s var(--spring)}
   [data-tilt],[data-tilt] [data-z]{transform:none!important}
 }
 .dl-big{overflow:visible}
-@media (max-width:1080px){.dl-hero,.dl-grid,.assess-grid,.explain,.rec-grid,.ev-grid,.live-grid,.sim{grid-template-columns:minmax(0,1fr)}}
-
+@media (max-width:1080px){.dl-hero,.dl-grid,.assess-grid,.explain,.rec-grid,.live-grid,.sim{grid-template-columns:minmax(0,1fr)}}
 
 /* =====================================================================
    v4 "blueprint glass": the workspace sits on a drafting sheet (deep blueprint blue, setting-out grid and a
@@ -970,9 +928,9 @@ body.app::after{content:"";position:fixed;inset:-6%;z-index:-1;pointer-events:no
 .topbar,.tabs{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025)),rgba(6,18,40,.62);
   backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-bottom:1px solid rgba(200,225,255,.1)}
 .tabs{box-shadow:0 14px 34px -22px rgba(0,4,16,.9)}
-.panel,.result,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.table-wrap,.empty-state,.card:not(.proj-card):not(.new):not(.skeleton){
+.panel,.result,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.table-wrap,.empty-state,.card:not(.proj-card):not(.new):not(.skeleton){
   background:var(--glass);border:1px solid var(--glass-edge);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:var(--glass-hi),var(--glass-shadow)}
-.panel,.result,.overview,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.table-wrap,.empty-state,.card,.dl-big,.stage{border-radius:var(--r-lg)}
+.panel,.result,.sim,.controls,.live-link,.live-board,fieldset,.ws-kpis,.dl-kpis,.formulation,.table-wrap,.empty-state,.card,.dl-big,.stage{border-radius:var(--r-lg)}
 .empty-state{border-style:solid}
 fieldset>legend{float:left;width:100%;padding:0;margin:0 0 16px}   /* inside the glass, not notched into its edge */
 fieldset>legend+*{clear:both}
@@ -1005,8 +963,8 @@ dialog.modal,.conn-card{border-radius:26px}
   font-family:var(--ui);font-variation-settings:normal}
 :is(.panel,.card,.dl-big,.result,.ws-kpis,.dl-kpis,.overview) h3,legend,.inspector h4{font-weight:700;letter-spacing:-.022em}
 .big,.dl-big .big{font-family:var(--ui);font-weight:800;letter-spacing:-.055em}
-.kpis dd,.impact dd,.ws-kpis dd,.dl-kpis dd,.ov-kpis dd,.metrics dd,.cg b,.lb-cells dd,.sim-big{font-family:var(--ui);font-weight:750;font-variation-settings:normal;letter-spacing:-.035em}
-.ws-kpis dt,.dl-kpis dt,.metrics dt,.cg small,.kpis dt,.impact dt{font-family:var(--ui);font-weight:600;letter-spacing:.005em;color:var(--chalk-3)}
+.kpis dd,.ws-kpis dd,.dl-kpis dd,.metrics dd,.cg b,.lb-cells dd,.sim-big{font-family:var(--ui);font-weight:750;font-variation-settings:normal;letter-spacing:-.035em}
+.ws-kpis dt,.dl-kpis dt,.metrics dt,.cg small,.kpis dt{font-family:var(--ui);font-weight:600;letter-spacing:.005em;color:var(--chalk-3)}
 .proj-card h3{font-weight:750;letter-spacing:-.03em}
 .sheet-head h2,.ws-head h2,.pm-head h2,.conn-card h2{font-family:var(--ui);font-weight:800;font-variation-settings:normal;letter-spacing:-.045em}
 .proj-card .code{color:var(--amber-2);opacity:.85}

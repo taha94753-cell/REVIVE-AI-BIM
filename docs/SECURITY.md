@@ -30,11 +30,24 @@ Already good in v1.2 and kept: every SQL query is parameterised; the frontend es
 - **Plain HTTP on a LAN.** Cookies and phone tokens cross the network in clear text unless REVIVE sits behind HTTPS (a reverse proxy or a tunnel). For anything beyond a demo, put it behind HTTPS and set `security.cookie_secure: true`.
 - **One process, SQLite.** Right for a pilot or a defence; a hosted multi-company service needs Postgres, backups and a shared event bus (the live channel is in-process).
 - **IFC parsing runs in the server process.** The size cap limits abuse, but a crafted file could still exhaust memory; a production deployment would parse uploads in a separate worker.
-- **No e-mail verification or self-service password reset.** Admins add members; `python -m revive reset-password` resets a password from the server console.
+- **E-mail codes need a mail server.** Sign-up and password reset send a six-digit code. With `SMTP_HOST` set it is e-mailed; without it the code is printed in the server window and written to `data/outbox/account/`, which only suits a laptop install where the person signing up can see that window. Members added by an admin are not asked for a code (the admin vouches for them).
+- **Sign-up says when an e-mail is already registered** (asked for by the owner, for usability). That lets someone test whether an address has an account; sign-up is rate limited per network to keep it slow. The forgotten-password form gives the same answer for every address.
 - **Dependency vulnerabilities were not audited online** (the build machine had no access to the advisory database). Run `pip install pip-audit && pip-audit -r requirements-lock.txt` before deploying.
+
+## Account hardening (v2.1)
+| What | How | Test (`tests/test_account.py`) |
+|---|---|---|
+| E-mail confirmed before a workspace exists | `POST /api/auth/register` parks the sign-up (password already hashed) and sends a code; `POST /api/auth/verify` creates the company. Codes: six digits, stored as SHA-256 bound to the e-mail and purpose, 10 minutes, single use, dropped after five wrong tries, guesses and sends rate limited | `test_signup_needs_the_emailed_code`, `test_code_dies_after_five_wrong_tries_and_a_resend_replaces_it`, `test_expired_code_is_refused`, `test_codes_are_rate_limited` |
+| Forgotten password | `POST /api/auth/forgot` (same answer for every address) then `POST /api/auth/reset`; a reset signs the user out everywhere | `test_forgot_password_resets_and_signs_out_everywhere` |
+| Sign-in does not outlive the visit | Session cookie without Max-Age (ends with the browser); the server also ends a session after 30 idle minutes or 12 hours | `test_sign_in_ends_with_the_browser_and_after_idle_time` |
+| Bots | Hidden honeypot field on sign-up, on top of the rate limits and the e-mail code | `test_honeypot_field_gets_a_fake_success` |
+| Weak passwords | Common passwords and all-digit passwords refused | `test_registered_email_is_reported_and_weak_passwords_refused` |
+| Behind an HTTPS proxy the app believed it was on HTTP | `REVIVE_TRUST_PROXY=1` (set in `render.yaml` and the Space image): Secure cookie, HSTS, rate limits per real visitor. Off elsewhere, so a direct client cannot fake its address | `test_trusted_proxy_sets_secure_cookie_and_hsts_only_when_switched_on` |
+| Public pages | `/privacy`, `/terms`, a 404 page for people (JSON for the API), `robots.txt`, `sitemap.xml`; the `server` header is no longer sent | `test_public_pages_robots_sitemap_and_404` |
 
 ## Deploying safely
 1. Keep `security.allow_registration: true` only while companies are signing up; then set it to `false` and add companies with `python -m revive create-company`.
-2. Serve over HTTPS for anything outside a trusted network; set `cookie_secure: true` behind the proxy.
+2. Serve over HTTPS for anything outside a trusted network. Behind a single HTTPS proxy set `REVIVE_TRUST_PROXY=1`; never set it on a server that clients reach directly.
+2a. Set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` and `MAIL_FROM` (environment, never the repository) so codes reach people by e-mail, and `app.contact_email` in config.yaml for the privacy and terms pages.
 3. Leave `security.api_docs: false` on shared networks.
 4. Back up `data/app.db` and `data/workspaces/`. Never commit them (`.gitignore` already excludes them).

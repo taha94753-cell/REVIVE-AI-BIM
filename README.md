@@ -63,7 +63,8 @@ Run the doctor first. It checks Python, every package, the CBC solver, the model
 
 | What you see | Cause | Fix |
 |---|---|---|
-| Sent back to the landing page | Not signed in, or the session expired (7 days) | Sign in again |
+| Sent back to the landing page | Not signed in. A sign-in ends when the browser closes, after 30 minutes with the app closed, or after 12 hours | Sign in again |
+| No sign-up or reset code arrives | E-mail is not configured on the server | Read the code in the server window, or set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` |
 | "Request blocked ... CSRF protection" | A script or tool called the API without the `X-Revive-Request: 1` header | Add the header; the dashboard always sends it |
 | Phone says "This link is not valid" | The link was reissued on the Live sheet | Scan the new QR code |
 | "Waiting for the REVIVE server" panel, or "Server not reachable" banner | The Python server is not running: the black window was closed, the PC slept or restarted, or the browser restored an old tab | Double-click `run.bat`. The dashboard reconnects and catches up by itself; no reload needed |
@@ -205,7 +206,8 @@ revive/                   Python package
   schedule_import.py      Primavera P6 .xer and CSV baseline schedule import
   simulation.py           Monte Carlo finish-date risk
   store.py, alerts.py     saved assessments (SQLite), e-mail alerts to the owning company
-  auth.py                 companies, users, scrypt passwords, sessions
+  auth.py                 companies, users, scrypt passwords, sessions, e-mail codes
+  mailer.py               sign-up and password-reset e-mail (SMTP, or the server window)
   projects.py             company projects, per-project files and activity progress
   delay.py                current delay analysis (earned schedule, CPM update, windows)
   security.py             CSP and headers, CSRF guard, body limits, rate limiter

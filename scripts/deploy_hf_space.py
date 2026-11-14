@@ -60,7 +60,7 @@ def stage(dest: Path, subdomain: str) -> int:
     # (everywhere else, e.g. run.bat and docker compose, framing stays refused)
     docker = dest / "Dockerfile"
     docker.write_text(docker.read_text(encoding="utf-8").replace(
-        "ENV PYTHONDONTWRITEBYTECODE=1", "ENV REVIVE_EMBED_ORIGINS=https://huggingface.co PYTHONDONTWRITEBYTECODE=1", 1),
+        "ENV PYTHONDONTWRITEBYTECODE=1", "ENV REVIVE_EMBED_ORIGINS=https://huggingface.co REVIVE_TRUST_PROXY=1 PYTHONDONTWRITEBYTECODE=1", 1),
         encoding="utf-8")
     readme = dest / "README.md"
     readme.write_text(HEADER.format(subdomain=subdomain) + (ROOT / "README.md").read_text(encoding="utf-8"),

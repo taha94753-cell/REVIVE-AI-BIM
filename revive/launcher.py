@@ -19,7 +19,6 @@ import threading
 import time
 import urllib.request
 import webbrowser
-from pathlib import Path
 
 PACKAGES = ["numpy", "pandas", "sklearn", "xgboost", "shap", "pulp", "ifcopenshell", "fastapi",
             "uvicorn", "multipart", "segno", "yaml", "openpyxl", "matplotlib"]
@@ -103,7 +102,7 @@ def serve(host: str, port: int, reload: bool = False, open_browser: bool = False
     open_when_ready(port, open_browser)
     try:
         uvicorn.run("revive.server:app", host=host, port=port, reload=reload, workers=1,
-                    timeout_graceful_shutdown=2)
+                    timeout_graceful_shutdown=2, server_header=False)
     except OSError as exc:  # e.g. a race for the port, or a host the OS refuses
         print(f"\n[REVIVE] The server could not start: {exc}\nRun  python -m revive doctor  for a diagnosis.\n",
               flush=True)

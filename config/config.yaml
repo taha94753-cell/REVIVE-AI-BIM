@@ -10,6 +10,7 @@ app:
   name: REVIVE
   tagline: See the delay before it happens, and the cheapest way back.
   currency: PKR
+  contact_email: ""             # shown on the landing, privacy and terms pages when set (the server's operator)
   host: 0.0.0.0
   port: 8000
 
@@ -164,7 +165,15 @@ workspace:
 
 security:
   allow_registration: true      # false = only `python -m revive create-company` can add a company
-  session_days: 30              # sign-in lasts this long on a device
+  email_verification: true      # a new workspace confirms its e-mail with a one-time code (REVIVE_EMAIL_VERIFICATION=0 turns it off).
+                                # The code is e-mailed when SMTP_HOST is set; otherwise it is printed in the server window
+  code_minutes: 10              # how long a sign-up or password-reset code works (single use, five wrong tries)
+  session_hours: 12             # a sign-in never lasts longer than this
+  session_idle_minutes: 30      # ...and ends after this long without the app open. The cookie itself ends with the
+                                # browser session, so opening REVIVE again means signing in again
+  trust_proxy: false            # true (or REVIVE_TRUST_PROXY=1) ONLY when the server is reached solely through one HTTPS
+                                # reverse proxy (Render, a Space): then its X-Forwarded-Proto/For are believed, so the
+                                # cookie is Secure, HSTS is sent and rate limits count real visitors, not the proxy
   cookie_secure: auto           # auto = Secure cookie when served over HTTPS (set true behind an HTTPS proxy)
   embed_origins: []             # sites allowed to frame the app, e.g. [https://huggingface.co] for a Space.
                                 # REVIVE_EMBED_ORIGINS overrides it; set only on a hosted HTTPS demo
@@ -175,6 +184,8 @@ security:
   rate_limits:
     login_per_15min: 10         # per IP; plus 5 failed attempts per e-mail
     register_per_hour: 5        # per IP
+    codes_sent_per_hour: 10     # sign-up and reset e-mails per IP (plus 3 per e-mail per 10 minutes)
+    code_tries_per_15min: 20    # code guesses per IP and per e-mail
     site_updates_per_min: 30    # per phone link
     predict_per_min: 400        # what-if sliders fire many requests while dragging
     recovery_per_min: 240

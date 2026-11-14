@@ -6,14 +6,23 @@
   <title>REVIVE · Delay forecasting and recovery for construction projects</title>
   <meta property="og:title" content="REVIVE · Delay forecasting and recovery for construction projects">
   <meta property="og:description" content="See how late a project is today, where it is heading and the cheapest way back, from the baseline schedule you already have.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="REVIVE">
+  <meta property="og:url" content="https://revive-ai-bim.vercel.app/">
+  <meta property="og:image" content="https://revive-ai-bim.vercel.app/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="REVIVE: see the delay you have and the one coming. A lit ten storey tower at handover.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://revive-ai-bim.vercel.app/">
   <meta name="description" content="REVIVE measures how late a construction project is today, forecasts where it is heading, explains why, and finds the cheapest recovery on the baseline schedule and the BIM model.">
   <meta name="theme-color" content="#131209">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/landing.css?v=9.0.0">
+  <link rel="stylesheet" href="/assets/css/landing.css?v=9.1.0">
   <script type="importmap">{"imports": {"three": "/vendor/three/three.module.js"}}</script>
   <script src="/vendor/motion/motion.js?v=14.0.0" defer></script>
-  <script type="module" src="/assets/js/landing.js?v=9.0.0"></script>
+  <script type="module" src="/assets/js/landing.js?v=9.1.0"></script>
 </head>
 <body>
 <a class="skip" href="#start">Skip to sign in</a>
@@ -190,14 +199,39 @@
           <label>Work email<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
           <label>Password <small>10 characters or more</small><input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
           <div class="pw" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
           <button class="btn gold lg" type="submit">Create workspace</button>
           <p class="err" role="alert"></p>
+          <p class="fine">We email a one time code to confirm the address. By creating a workspace you accept the <a href="/terms">terms</a> and the <a href="/privacy">privacy notice</a>.</p>
+        </form>
+        <form id="f-verify" data-a="verify" data-tab="register" novalidate hidden>
+          <p class="auth-note" id="verify-note"></p>
+          <label>Code from the email<input name="code" required inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="6 digits"></label>
+          <button class="btn gold lg" type="submit">Confirm and open the workspace</button>
+          <p class="err" role="alert"></p>
+          <p class="auth-links"><button type="button" class="link" id="resend">Send a new code</button><button type="button" class="link" data-go="register">Use another email</button></p>
         </form>
         <form id="f-signin" data-a="signin" role="tabpanel" aria-labelledby="at-signin" novalidate hidden>
           <label>Email<input name="email" type="email" required maxlength="254" autocomplete="username"></label>
           <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
           <button class="btn gold lg" type="submit">Sign in</button>
           <p class="err" role="alert"></p>
+          <p class="auth-links"><button type="button" class="link" data-go="forgot">Forgot password?</button></p>
+        </form>
+        <form id="f-forgot" data-a="forgot" data-tab="signin" novalidate hidden>
+          <p class="auth-note">Enter the email of your account. If it is registered, we send a code to set a new password.</p>
+          <label>Email<input name="email" type="email" required maxlength="254" autocomplete="username"></label>
+          <button class="btn gold lg" type="submit">Send the code</button>
+          <p class="err" role="alert"></p>
+          <p class="auth-links"><button type="button" class="link" data-go="signin">Back to sign in</button></p>
+        </form>
+        <form id="f-reset" data-a="reset" data-tab="signin" novalidate hidden>
+          <p class="auth-note" id="reset-note"></p>
+          <label>Code from the email<input name="code" required inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="6 digits"></label>
+          <label>New password <small>10 characters or more</small><input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
+          <button class="btn gold lg" type="submit">Set the new password</button>
+          <p class="err" role="alert"></p>
+          <p class="auth-links"><button type="button" class="link" data-go="forgot">Send a new code</button><button type="button" class="link" data-go="signin">Back to sign in</button></p>
         </form>
         <div id="signed-in" hidden><p>Signed in as <b id="si-who"></b>.</p><a class="btn gold lg" href="/app">Open the workspace</a></div>
       </div>
@@ -208,8 +242,9 @@
 <footer class="foot">
   <div class="wrap">
     <span class="mark"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></span>
-    <nav aria-label="Footer"><a href="#how">How it works</a><a href="#evidence">Evidence</a><a href="#faq">Questions</a><a href="#start">Sign in</a></nav>
+    <nav aria-label="Footer"><a href="#how">How it works</a><a href="#evidence">Evidence</a><a href="#faq">Questions</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="#start">Sign in</a></nav>
     <p>Final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
+    <p id="contact" hidden>Contact: <a id="contact-link"></a></p>
     <p class="fine">Weather: Open Meteo (CC BY 4.0). 3D: Three.js. Animation: Motion. Type: Manrope (SIL OFL).</p>
   </div>
 </footer>

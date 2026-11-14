@@ -1,7 +1,7 @@
 """Every security fix has a test, so a later change cannot quietly undo it."""
 from fastapi.testclient import TestClient
 
-from conftest import PASSWORD, company_client, new_project
+from conftest import PASSWORD, new_project
 from revive import auth
 from revive.presets import PRESETS
 from revive.security import LIMITER

@@ -9,6 +9,8 @@ from pathlib import Path
 _TMP = tempfile.mkdtemp(prefix="revive_test_")
 os.environ.setdefault("REVIVE_DB", os.path.join(_TMP, "app.db"))
 os.environ.setdefault("REVIVE_WORKSPACES", os.path.join(_TMP, "workspaces"))
+# the suite signs companies up in one step; tests/test_account.py switches the e-mail code back on to test it
+os.environ.setdefault("REVIVE_EMAIL_VERIFICATION", "0")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 warnings.filterwarnings("ignore")
 

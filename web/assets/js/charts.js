@@ -15,12 +15,6 @@ const AC = (cls, extra) => ` class="${ANIM ? cls + ' ' : ''}${extra}"`;
 const tip = t => ` data-tip="${esc(t)}"`;
 const sgn = v => `${v > 0 ? '+' : ''}${Number(v).toFixed(1)}`;
 
-function hexMix(a, b, t) {
-  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [p(a), p(b)];
-  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
-}
-
 export const riskColor = level => ({ high: 'var(--crit)', medium: 'var(--watch)', low: 'var(--go)', complete: 'var(--concrete)' }[level] || 'var(--chalk-3)');
 
 // ---------------------------------------------------------------- SHAP waterfall
@@ -154,67 +148,6 @@ export function curve(el, pts, optimum) {
   el.innerHTML = svg(W, H, 'Cost of finishing earlier', b);
 }
 
-// ---------------------------------------------------------------- predicted vs actual
-export function scatter(el, pts) {
-  const W = 460, H = 400, L = 54, B = 46, T = 14, R = 16;
-  const vals = pts.flatMap(p => [p.actual, p.predicted]);
-  const lo = Math.min(-10, Math.floor(Math.min(...vals) / 10) * 10), hi = Math.max(60, Math.ceil(Math.max(...vals) / 10) * 10);
-  const x = lin(lo, hi, L, W - R), y = lin(lo, hi, H - B, T);
-  let b = '';
-  for (let v = Math.ceil(lo / 25) * 25; v <= hi; v += 25) {
-    b += `<line x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H - B}" class="gl"/><line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/>`;
-    b += `<text x="${x(v)}" y="${H - B + 16}" text-anchor="middle" class="ax">${v}</text><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="ax">${v}</text>`;
-  }
-  b += `<line x1="${x(lo)}" y1="${y(lo)}" x2="${x(hi)}" y2="${y(hi)}" style="stroke:var(--chalk-2);stroke-dasharray:4 4"/>`;
-  pts.forEach((p, i) => {
-    const done = p.status === 'Completed';
-    const t = `Actual ${p.actual.toFixed(1)}%, out-of-fold forecast ${p.predicted.toFixed(1)}%\nError ${sgn(p.predicted - p.actual)} pts. ${done ? 'Completed project' : p.hypothetical ? 'Hypothetical scenario' : 'Ongoing project (reported forecast)'}`;
-    b += `<circle cx="${x(p.actual).toFixed(1)}" cy="${y(p.predicted).toFixed(1)}" r="4"${A('pp', Math.min(700, i * 5))} style="${done ? 'fill:var(--chalk)' : 'fill:none;stroke:' + (p.hypothetical ? 'var(--mark)' : 'var(--chalk-2)') + ';stroke-width:1.5'};--d:${Math.min(700, i * 5)}ms"${tip(t)}/>`;
-  });
-  b += `<text x="${(L + W - R) / 2}" y="${H - 8}" text-anchor="middle" class="ax">Actual time overrun (%)</text>`;
-  b += `<text x="14" y="${(T + H - B) / 2}" transform="rotate(-90 14 ${(T + H - B) / 2})" text-anchor="middle" class="ax">Out-of-fold forecast (%)</text>`;
-  el.innerHTML = svg(W, H, 'Cross-validated forecast against actual overrun', b) +
-    '<p class="fine">Filled: completed projects. Hollow: ongoing projects (pink = hypothetical scenarios), whose "actual" is a reported forecast.</p>';
-}
-
-// ---------------------------------------------------------------- SHAP beeswarm
-export function beeswarm(el, swarm, n = 10) {
-  const rows = swarm.slice(0, n);
-  const W = 720, L = 250, R = 20, rh = 34, T = 10, H = T + rows.length * rh + 44;
-  const m = Math.max(...rows.flatMap(r => r.points.map(p => Math.abs(p[0])))) * 1.05 || 1;
-  const x = lin(-m, m, L, W - R);
-  let b = `<line x1="${x(0)}" x2="${x(0)}" y1="${T}" y2="${H - 40}" style="stroke:var(--line-strong)"/>`;
-  rows.forEach((r, i) => {
-    const cy = T + i * rh + rh / 2;
-    b += `<text x="${L - 12}" y="${cy + 4}" text-anchor="end" class="axl">${esc(trunc(r.label, 36))}</text>`;
-    const bins = {};
-    [...r.points].sort((a, c) => a[0] - c[0]).forEach(([s, v]) => {
-      const px = x(s), k = Math.round(px / 4); bins[k] = (bins[k] || 0) + 1;
-      const n2 = bins[k], off = (n2 % 2 ? 1 : -1) * Math.floor(n2 / 2) * 3.2;
-      const col = v == null ? 'rgba(111,140,156,.55)' : hexMix('#6CB2FF', '#F28C38', v);
-      b += `<circle cx="${px.toFixed(1)}" cy="${(cy + Math.max(-13, Math.min(13, off))).toFixed(1)}" r="2.6"${A('fd')} style="fill:${col};--d:${i * 60}ms"/>`;
-    });
-  });
-  b += `<text x="${(L + W - R) / 2}" y="${H - 22}" text-anchor="middle" class="ax">Effect on forecast time overrun (percentage points)</text>`;
-  b += `<rect x="${L}" y="${H - 12}" width="60" height="6" style="fill:#6CB2FF"/><text x="${L + 66}" y="${H - 6}" class="ax">low value</text>`;
-  b += `<rect x="${L + 150}" y="${H - 12}" width="60" height="6" style="fill:#F28C38"/><text x="${L + 216}" y="${H - 6}" class="ax">high value</text>`;
-  el.innerHTML = svg(W, H, 'TreeSHAP beeswarm of the main drivers', b);
-}
-
-// ---------------------------------------------------------------- horizontal bars
-export function hbars(el, items, { max = 1, label, value, color, text }) {
-  const W = 720, L = 330, R = 70, rh = 27, H = items.length * rh + 8;
-  const x = lin(0, max, L, W - R);
-  let b = '';
-  items.forEach((it, i) => {
-    const y = i * rh + 4;
-    b += `<text x="${L - 12}" y="${y + 15}" text-anchor="end" class="axl">${esc(trunc(label(it), 46))}</text>`;
-    b += `<rect x="${L}" y="${y + 5}" width="${Math.max(1, x(value(it)) - L)}" height="13"${A('gx')} style="fill:${color(it)};--d:${i * 45}ms"${tip(`${label(it)}: ${text(it)}`)}/>`;
-    b += `<text x="${x(value(it)) + 6}" y="${y + 16}" class="axl">${esc(text(it))}</text>`;
-  });
-  el.innerHTML = svg(W, H, 'Ranking', b);
-}
-
 // ---------------------------------------------------------------- live forecast trajectory
 export function trajectory(el, pts, bands) {
   if (!pts.length) { el.innerHTML = ''; return; }
@@ -296,58 +229,6 @@ export function weatherStrip(el, w) {
 }
 
 
-// ---------------------------------------------------------------- band donut (portfolio)
-export function donut(el, segs, { center = '', sub = '', active = null } = {}) {
-  const total = segs.reduce((t, s) => t + s.value, 0) || 1, r = 64, cx = 90, cy = 90;
-  let acc = 0, b = `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:none;stroke:var(--ink-700);stroke-width:20"/>`;
-  segs.forEach((s, i) => {
-    const len = 100 * s.value / total, gap = segs.length > 1 && s.value ? 0.6 : 0;
-    if (s.value) {
-      b += `<circle cx="${cx}" cy="${cy}" r="${r}" pathLength="100" transform="rotate(-90 ${cx} ${cy})" data-band="${esc(s.key)}"
-        class="seg-arc${active && active !== s.key ? ' dim' : ''}${ANIM ? ' arc' : ''}" style="fill:none;stroke:${s.color};stroke-width:${active === s.key ? 26 : 20};stroke-dasharray:${Math.max(0, len - gap).toFixed(2)} ${(100 - len + gap).toFixed(2)};stroke-dashoffset:${(-acc).toFixed(2)};--d:${i * 120}ms"
-        ${tip(`${s.label}: ${s.value} project${s.value === 1 ? '' : 's'} (${Math.round(100 * s.value / total)}%)\nClick to filter`)}/>`;
-    }
-    acc += len;
-  });
-  b += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" style="fill:var(--chalk);font:700 40px var(--display)">${esc(center)}</text>`;
-  b += `<text x="${cx}" y="${cy + 24}" text-anchor="middle" class="ax">${esc(sub)}</text>`;
-  el.innerHTML = svg(180, 180, 'Projects by forecast risk band', b);
-}
-
-// ---------------------------------------------------------------- portfolio risk map (SPI vs forecast)
-export function riskMap(el, rows, bands, { isDim = () => false, selected = null } = {}) {
-  const W = 640, H = 360, L = 50, R = 16, T = 14, B = 44;
-  const pts = rows.filter(r => r.spi != null && r.predicted_time_overrun_pct != null);
-  const ymax = Math.min(150, Math.max(60, Math.ceil(Math.max(...pts.map(p => p.predicted_time_overrun_pct), 0) / 10) * 10 + 10));
-  const ymin = Math.min(-10, Math.floor(Math.min(...pts.map(p => p.predicted_time_overrun_pct), 0) / 10) * 10);
-  const xs = pts.map(p => p.spi), xmin = Math.min(0.5, Math.floor(Math.min(...xs, 1) * 10) / 10), xmax = Math.max(1.2, Math.ceil(Math.max(...xs, 1) * 10) / 10);
-  const x = lin(xmin, xmax, L, W - R), y = lin(ymin, ymax, H - B, T);
-  let b = '', prev = ymin;
-  bands.forEach(bd => {
-    const top = Math.min(bd.max, ymax);
-    if (top > prev) b += `<rect x="${L}" y="${y(top)}" width="${W - R - L}" height="${y(prev) - y(top)}" style="fill:${bd.color};opacity:.06"/>` +
-      `<text x="${W - R - 6}" y="${y(top) + 14}" text-anchor="end" class="ax" style="fill:${bd.color};opacity:.85">${esc(bd.name)}</text>`;
-    prev = Math.max(prev, top);
-  });
-  for (let v = Math.ceil(ymin / 25) * 25; v <= ymax; v += 25) b += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="ax">${v}%</text>`;
-  for (let v = Math.ceil(xmin * 10) / 10; v <= xmax + 1e-9; v += 0.1) b += `<text x="${x(v)}" y="${H - B + 16}" text-anchor="middle" class="ax">${v.toFixed(1)}</text>`;
-  b += `<line x1="${x(1)}" x2="${x(1)}" y1="${T}" y2="${H - B}" style="stroke:var(--chalk-2);stroke-dasharray:4 4"/><text x="${x(1) - 6}" y="${T + 10}" text-anchor="end" class="ax">SPI 1.0 = on programme</text>`;
-  b += `<circle cx="${L + 10}" cy="${T + 8}" r="4.5" style="fill:var(--chalk-2)"/><text x="${L + 19}" y="${T + 12}" class="ax">real project</text>` +
-    `<circle cx="${L + 100}" cy="${T + 8}" r="4.5" style="fill:none;stroke:var(--chalk-2);stroke-width:1.8"/><text x="${L + 109}" y="${T + 12}" class="ax">hypothetical scenario</text>`;
-  b += `<text x="${(L + W - R) / 2}" y="${H - 8}" text-anchor="middle" class="ax">SPI at the checkpoint (lower = further behind)</text>`;
-  b += `<text x="13" y="${(T + H - B) / 2}" transform="rotate(-90 13 ${(T + H - B) / 2})" text-anchor="middle" class="ax">Cross-validated forecast overrun</text>`;
-  const sorted = [...pts].sort((a, c) => (isDim(c) - isDim(a)));
-  sorted.forEach((p, i) => {
-    const c = p.band?.color || 'var(--chalk-3)', dim = isDim(p), sel = selected === p.project_id;
-    const t = `${p.project_id}: ${p.project_type}, ${p.province}\n${p.status}, scored at ${p.gate === 'G50' ? '50%' : '25%'} of time\nSPI ${p.spi.toFixed(2)}, forecast ${sgn(p.predicted_time_overrun_pct)}%` +
-      (p.status === 'Completed' && p.actual_time_overrun_pct != null ? `, actual ${sgn(p.actual_time_overrun_pct)}%` : '') + (p.hypothetical ? '\nHypothetical scenario' : '') + '\nClick to open in the assessment';
-    const yy = y(Math.min(ymax, p.predicted_time_overrun_pct));
-    b += `<circle cx="${x(p.spi).toFixed(1)}" cy="${yy.toFixed(1)}" r="${sel ? 8 : 5.5}" data-id="${esc(p.project_id)}"${AC('pp', 'pt' + (dim ? ' dim' : '') + (sel ? ' sel' : ''), Math.min(900, i * 6))}
-      style="${p.hypothetical ? `fill:var(--ink-900);stroke:${c};stroke-width:2` : `fill:${c};stroke:var(--ink-900);stroke-width:1.2`};--d:${Math.min(900, i * 6)}ms"${tip(t)}/>`;
-  });
-  el.innerHTML = svg(W, H, 'Portfolio risk map: SPI against forecast overrun', b);
-}
-
 // ---------------------------------------------------------------- sparkline (live panel)
 export function sparkline(el, vals, { color = 'var(--chalk)', lo = null, hi = null, fmt = v => v.toFixed(1), better = 'down' } = {}) {
   const v = vals.filter(n => n != null && !Number.isNaN(n));
@@ -360,33 +241,6 @@ export function sparkline(el, vals, { color = 'var(--chalk)', lo = null, hi = nu
   b += `<path d="${d}" pathLength="1"${A('dr')} style="fill:none;stroke:${color};stroke-width:2"/>`;
   v.forEach((n, i) => { b += `<circle cx="${x(i).toFixed(1)}" cy="${y(n).toFixed(1)}" r="${i === v.length - 1 ? 4 : 2}"${i === v.length - 1 ? A('pp', 400) : ''} style="fill:${color};--d:400ms"${tip(`Update ${i + 1}: ${fmt(n)}`)}/>`; });
   el.innerHTML = svg(W, H, 'Trend across site updates', b);
-}
-
-// ---------------------------------------------------------------- cost of delay with and without the plan
-export function costCompare(el, o) {
-  const rows = [
-    { label: 'Accept the delay', parts: [['Liquidated damages', o.ld_before_pkr, 'var(--risk)']] },
-    { label: 'With the recovery plan', parts: [['Crash cost', o.crash_cost_pkr, 'var(--mark)'], ['Remaining damages', o.ld_after_pkr, 'var(--risk)']] },
-  ];
-  const tot = r => r.parts.reduce((t, p) => t + (p[1] || 0), 0);
-  const max = Math.max(1, ...rows.map(tot));
-  const W = 640, L = 190, R = 110, rh = 54, H = rows.length * rh + 26;
-  const x = lin(0, max, L, W - R);
-  const m = v => `PKR ${(v / 1e6).toFixed(1)} M`;
-  let b = '';
-  rows.forEach((r, i) => {
-    const yy = i * rh + 8; let acc = 0;
-    b += `<text x="${L - 12}" y="${yy + 22}" text-anchor="end" class="wf-label">${r.label}</text>`;
-    r.parts.forEach(([lab, v, c], j) => {
-      if (!v) return;
-      b += `<rect x="${x(acc)}" y="${yy + 6}" width="${Math.max(2, x(acc + v) - x(acc))}" height="24" rx="1.5"${A('gx')} style="fill:${c};--d:${i * 250 + j * 200}ms"${tip(`${lab}: ${m(v)}`)}/>`;
-      acc += v;
-    });
-    b += `<text x="${x(acc) + 8}" y="${yy + 24}" class="wf-num">${m(acc)}</text>`;
-  });
-  const save = tot(rows[0]) - tot(rows[1]);
-  b += `<text x="${L}" y="${H - 4}" class="ax">${save > 0 ? `Crash cost and liquidated damages only: the plan saves ${m(save)}. Site overheads avoided come on top (Net benefit above).` : 'No saving: at these rates, accelerating costs more than the damages it avoids.'}</text>`;
-  el.innerHTML = svg(W, H, 'Cost of the delay with and without the recovery plan', b);
 }
 
 // ================================================================ current delay sheet

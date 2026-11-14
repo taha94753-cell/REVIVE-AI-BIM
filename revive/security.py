@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import os
 import re
 import threading
 import time
@@ -27,6 +28,40 @@ CSRF_HEADER = b"x-revive-request"
 
 def sec_cfg() -> dict:
     return load_config().get("security") or {}
+
+
+def _flag(env: str, key: str, default: bool) -> bool:
+    """A security switch: the environment variable (1/0) wins over security.<key> in config.yaml."""
+    v = os.environ.get(env)
+    return v.strip().lower() in ("1", "true", "yes") if v is not None else bool(sec_cfg().get(key, default))
+
+
+def email_verification() -> bool:
+    """New workspaces confirm their e-mail with a one-time code (REVIVE_EMAIL_VERIFICATION, security.email_verification)."""
+    return _flag("REVIVE_EMAIL_VERIFICATION", "email_verification", True)
+
+
+def trust_proxy() -> bool:
+    """True only where REVIVE is reachable solely through one HTTPS reverse proxy (Render, a Hugging Face Space):
+    then X-Forwarded-Proto and the last X-Forwarded-For entry, both written by that proxy, are believed.
+    Leave it off when the server is reached directly, or a client could fake its address."""
+    return _flag("REVIVE_TRUST_PROXY", "trust_proxy", False)
+
+
+def is_https(scope) -> bool:
+    if scope.get("scheme") == "https":
+        return True
+    return trust_proxy() and (_header(scope, b"x-forwarded-proto") or "").split(",")[0].strip().lower() == "https"
+
+
+def client_addr(scope) -> str:
+    """The caller's address for rate limits: the socket peer, or behind a trusted proxy the entry it appended."""
+    if trust_proxy():
+        fwd = (_header(scope, b"x-forwarded-for") or "").split(",")[-1].strip()
+        if fwd:
+            return fwd[:64]
+    client = scope.get("client")
+    return (client[0] if client else "unknown")[:64]
 
 
 # ------------------------------------------------------------------ CSP
@@ -77,7 +112,7 @@ class SecurityHeaders:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope.get("path", "")
-        https = scope.get("scheme") == "https"
+        https = is_https(scope)
 
         async def send_h(msg):
             if msg["type"] == "http.response.start":
@@ -87,7 +122,8 @@ class SecurityHeaders:
                        (b"referrer-policy", b"no-referrer" if path.startswith(("/site", "/auth/link")) else b"same-origin"),
                        (b"permissions-policy", b"camera=(), microphone=(), geolocation=(), payment=(), usb=()"),
                        (b"cross-origin-opener-policy", b"same-origin"),
-                       (b"cross-origin-resource-policy", b"same-origin")]
+                       # the share image is the one file other sites (link previews) are meant to load
+                       (b"cross-origin-resource-policy", b"cross-origin" if path == "/assets/img/og.png" else b"same-origin")]
                 if not self.framable:          # embedding allowed only for the origins in the CSP frame-ancestors
                     add.append((b"x-frame-options", b"DENY"))
                 if b"content-security-policy" not in names:

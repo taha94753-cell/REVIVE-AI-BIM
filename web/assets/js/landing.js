@@ -333,6 +333,7 @@ async function overview() {
     $('#numbers-note').textContent = `Figures come from the trained model card. The survey holds ${d.records ?? d.projects} records, ${d.hypothetical || 0} of them hypothetical scenarios (labelled wherever they appear). The model is trained and tested on the ${d.projects} real completed projects only.`;
     $('#ev-rows').innerHTML = Object.entries(d.gates || {}).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50% of contract time' : 'At 25% of contract time'}</td>
       <td class="good">${v.mae.toFixed(1)}</td><td>${v.baseline_mae.toFixed(1)}</td><td>${v.r2.toFixed(2)}</td><td>${v.loco_r2 == null ? '\u2014' : v.loco_r2.toFixed(2)}</td><td>${v.auc.toFixed(2)}</td></tr>`).join('');
+    if (d.contact_email) { $('#contact-link').href = `mailto:${d.contact_email}`; $('#contact-link').textContent = d.contact_email; $('#contact').hidden = false; }
     if (!d.registration_open) { $('#reg-closed').hidden = false; $('#at-register').hidden = true; setAuth('signin'); }
   } catch {
     $('#ev-rows').innerHTML = '<tr><td colspan="6">The model card could not be loaded.</td></tr>';
@@ -461,12 +462,13 @@ function scrollMotion() {
 // =================================================================== sign in / create workspace
 const NEXT = new URLSearchParams(location.search).get('next') === 'app' ? '/app' : '/app#projects';
 
+/** Show one of the account forms. The two tabs stay on screen; the code and reset steps sit under the tab they belong to. */
 function setAuth(a) {
-  $$('.auth-tabs [role=tab]').forEach(b => { const on = b.dataset.a === a; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
-  const form = $(`#auth form[data-a="${a}"]`), was = form.hidden;
-  $$('#auth form').forEach(f => { f.hidden = f.dataset.a !== a; });
-  plate($('.auth-ind'), $(`.auth-tabs [data-a="${a}"]`));
-  if (was) enter(form, a === 'signin' ? 1 : -1, { distance: 20, duration: 0.3, stagger: 0.03 });
+  const form = $(`#auth form[data-a="${a}"]`), tab = form.dataset.tab || a, was = form.hidden;
+  $$('.auth-tabs [role=tab]').forEach(b => { const on = b.dataset.a === tab; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+  $$('#auth form').forEach(f => { f.hidden = f !== form; });
+  plate($('.auth-ind'), $(`.auth-tabs [data-a="${tab}"]`));
+  if (was) { enter(form, tab === 'signin' ? 1 : -1, { distance: 20, duration: 0.3, stagger: 0.03 }); $('input:not([tabindex])', form)?.focus({ preventScroll: true }); }
 }
 
 function strength(pw) {
@@ -478,25 +480,37 @@ function strength(pw) {
   return pw ? Math.max(1, s) : 0;
 }
 
-async function submit(form, path) {
-  const err = $('.err', form), btn = $('button[type=submit]', form);
-  err.textContent = '';
-  const body = Object.fromEntries(new FormData(form).entries());
-  if (Object.values(body).some(v => !String(v).trim())) { err.textContent = 'Fill in every field.'; return; }
+const say = (form, text, ok = false) => { const e = $('.err', form); e.textContent = text; e.classList.toggle('ok', ok); };
+let pendingEmail = '';     // the address a code was sent to (sign up or reset)
+
+/** POST one of the account forms. `extra` adds fields the form does not hold; `done(data)` runs on success. */
+async function submit(form, path, done, extra = {}) {
+  const btn = $('button[type=submit]', form);
+  say(form, '');
+  const body = { ...Object.fromEntries(new FormData(form).entries()), ...extra };
+  if (Object.entries(body).some(([k, v]) => k !== 'website' && !String(v).trim())) { say(form, 'Fill in every field.'); return; }
   btn.disabled = true; const label = btn.textContent; btn.textContent = 'One moment';
   try {
     const r = await fetch(path, { method: 'POST', headers: HDR, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
-      err.textContent = typeof d.detail === 'string' ? d.detail : 'Check the details and try again.';
+      say(form, typeof d.detail === 'string' ? d.detail : 'Check the details and try again.');
       if (M && !REDUCED) M.animate(form, { x: [0, -8, 7, -5, 3, 0] }, { duration: 0.45, ease: 'easeOut' });
       return;
     }
-    btn.textContent = 'Opening your workspace';
-    location.href = NEXT;
-  } catch { err.textContent = 'The REVIVE server is not reachable.'; }
-  finally { btn.disabled = false; if (btn.textContent === 'One moment') btn.textContent = label; }
+    done(d, body);
+  } catch { say(form, 'The REVIVE server is not reachable.'); }
+  finally { btn.disabled = false; btn.textContent = label; }
 }
+
+function openWorkspace(form) {
+  say(form, 'Opening your workspace', true);
+  location.href = NEXT;
+}
+
+const sentTo = (d, email) => d.delivery === 'console'
+  ? `Email is not set up on this server, so the code for ${email} is printed in the server window.`
+  : `We sent a 6 digit code to ${email}. It works for ${d.minutes || 10} minutes.`;
 
 async function wireAuth() {
   const tabs = () => $$('.auth-tabs [role=tab]');
@@ -504,8 +518,36 @@ async function wireAuth() {
   roving($('.auth-tabs'), tabs, { activate: t => setAuth(t.dataset.a) });
   new ResizeObserver(() => plate($('.auth-ind'), $('.auth-tabs [aria-selected=true]'), { instant: true })).observe($('.auth-tabs'));
   $$('[data-auth]').forEach(a => a.addEventListener('click', () => setAuth(a.dataset.auth)));
-  $('#f-register').addEventListener('submit', e => { e.preventDefault(); submit(e.target, '/api/auth/register'); });
-  $('#f-signin').addEventListener('submit', e => { e.preventDefault(); submit(e.target, '/api/auth/login'); });
+  $$('#auth [data-go]').forEach(b => b.addEventListener('click', () => setAuth(b.dataset.go)));
+  const on = (id, fn) => $(id).addEventListener('submit', e => { e.preventDefault(); fn(e.target); });
+  on('#f-signin', f => submit(f, '/api/auth/login', () => openWorkspace(f)));
+  on('#f-register', f => submit(f, '/api/auth/register', (d, body) => {
+    if (!d.verify) return openWorkspace(f);          // servers with e-mail confirmation switched off
+    pendingEmail = d.email || body.email;
+    $('#verify-note').textContent = sentTo(d, pendingEmail);
+    $('#f-verify').reset(); say($('#f-verify'), ''); setAuth('verify');
+  }));
+  on('#f-verify', f => submit(f, '/api/auth/verify', () => openWorkspace(f), { email: pendingEmail }));
+  $('#resend').addEventListener('click', async e => {
+    const f = $('#f-verify'), b = e.currentTarget;
+    b.disabled = true;
+    try {
+      const r = await fetch('/api/auth/resend', { method: 'POST', headers: HDR, body: JSON.stringify({ email: pendingEmail }) });
+      const d = await r.json().catch(() => ({}));
+      say(f, r.ok ? 'A new code is on its way. The earlier one no longer works.' : (typeof d.detail === 'string' ? d.detail : 'The code could not be sent.'), r.ok);
+    } catch { say(f, 'The REVIVE server is not reachable.'); }
+    finally { b.disabled = false; }
+  });
+  on('#f-forgot', f => submit(f, '/api/auth/forgot', (d, body) => {
+    pendingEmail = body.email.trim();
+    $('#reset-note').textContent = `If ${pendingEmail} has an account, a 6 digit code is on its way. It works for ${d.minutes || 10} minutes. Without email set up on this server, the code is printed in the server window.`;
+    $('#f-reset').reset(); say($('#f-reset'), ''); setAuth('reset');
+  }));
+  on('#f-reset', f => submit(f, '/api/auth/reset', () => {
+    $('#f-signin [name=email]').value = pendingEmail;
+    setAuth('signin');
+    say($('#f-signin'), 'Password changed. Sign in with the new one.', true);
+  }, { email: pendingEmail }));
   $('#f-register [name=password]').addEventListener('input', e => { $('.pw').dataset.s = String(strength(e.target.value)); });
   const q = new URLSearchParams(location.search);
   if (location.hash === '#start' && q.get('next')) setAuth('signin');

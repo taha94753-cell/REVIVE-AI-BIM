@@ -46,16 +46,6 @@ export function reveal(root = document) {
   $$('.reveal:not(.in)', root).forEach(el => revealIO.observe(el));
 }
 
-/** Run fn once, when el first becomes visible (charts animate when the reader reaches them). */
-export function whenVisible(el, fn) {
-  if (!el) return;
-  if (REDUCED || !('IntersectionObserver' in window)) { fn(); return; }
-  const r = el.getBoundingClientRect();
-  if (r.top < innerHeight && r.bottom > 0) { fn(); return; }
-  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); fn(); } }, { threshold: 0.05 });
-  io.observe(el);
-}
-
 // ---------------------------------------------------------------- tooltip for [data-tip]
 export function tooltips() {
   const tipEl = document.createElement('div');
