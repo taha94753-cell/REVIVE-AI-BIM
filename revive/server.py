@@ -38,7 +38,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Stre
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import __version__, alerts, auth, delay, live, projects, store, weather
+from . import __version__, alerts, auth, delay, live, mailer, projects, store, weather
 from .bim import BimModel, forget, get_bim
 from .config import ROOT, load_config, workspace_dir
 from .inference import get_predictor
@@ -48,12 +48,14 @@ from .presets import PRESETS
 from .recovery import element_properties, run_recovery
 from .scheduling import DAYS_PER_MONTH, cpm, load_schedule
 from .schema import LEAKAGE_EXCLUDED, public_schema
-from .security import (LIMITER, BodyLimit, CsrfGuard, SecurityHeaders, build_csp, embed_origins, inline_script_hashes, limit,
+from .security import (LIMITER, BodyLimit, CsrfGuard, SecurityHeaders, build_csp, client_addr, email_verification, embed_origins,
+                       inline_script_hashes, is_https, limit,
                        sec_cfg, upload_limit_bytes)
 
 WEB = ROOT / "web"
 PAGES = {"landing": WEB / "landing.html", "app": WEB / "app.html", "site": WEB / "site.html",
-         "evidence": WEB / "evidence.html"}
+         "evidence": WEB / "evidence.html", "privacy": WEB / "privacy.html", "terms": WEB / "terms.html",
+         "404": WEB / "404.html"}
 COOKIE = "revive_session"
 log = logging.getLogger("revive")
 
@@ -141,7 +143,7 @@ app.add_middleware(SecurityHeaders, csp=build_csp(inline_script_hashes(list(PAGE
 
 # ------------------------------------------------------------------ identity
 def client_ip(request: Request) -> str:
-    return (request.client.host if request.client else "unknown")[:64]
+    return client_addr(request.scope)
 
 
 def current_user(request: Request) -> dict:
@@ -194,24 +196,23 @@ def throttle(key: str, n: int, window_s: float, msg: str = "Too many requests. W
         raise HTTPException(429, msg)
 
 
-def _embedded_cookie(resp: Response, value: str, max_age: int) -> None:
+def _embedded_cookie(resp: Response, value: str, clear: bool = False) -> None:
     """Session cookie for a framed app, written by hand: Starlette only emits Partitioned on Python 3.14+.
     The token is url-safe base64, so it needs no quoting."""
-    expires = "; expires=Thu, 01 Jan 1970 00:00:00 GMT" if max_age == 0 else ""
-    resp.headers.append("set-cookie", f"{COOKIE}={value}; Max-Age={max_age}{expires}; Path=/; HttpOnly; Secure; "
-                                      "SameSite=None; Partitioned")
+    expires = "; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT" if clear else ""
+    resp.headers.append("set-cookie", f"{COOKIE}={value}{expires}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned")
 
 
 def _set_cookie(request: Request, resp: Response, token: str) -> None:
     if EMBED:
         # Shown inside another site's page (e.g. a Hugging Face Space): the browser only sends the session cookie
         # from inside that frame if it is SameSite=None and Secure; Partitioned (CHIPS) keeps it per embedding site.
-        _embedded_cookie(resp, token, int(auth.session_days() * 86400))
+        _embedded_cookie(resp, token)
         return
     mode = str(sec_cfg().get("cookie_secure", "auto")).lower()
-    secure = request.url.scheme == "https" if mode == "auto" else mode in ("true", "1", "yes")
-    resp.set_cookie(COOKIE, token, max_age=int(auth.session_days() * 86400), httponly=True, secure=secure,
-                    samesite="lax", path="/")
+    secure = is_https(request.scope) if mode == "auto" else mode in ("true", "1", "yes")
+    # no Max-Age: the cookie ends with the browser session, so opening REVIVE again means signing in again
+    resp.set_cookie(COOKIE, token, httponly=True, secure=secure, samesite="lax", path="/")
 
 
 # ------------------------------------------------------------------ request bodies (bounded)
@@ -224,6 +225,20 @@ class RegisterReq(BaseModel):
     company: Name
     name: Annotated[str, Field(min_length=1, max_length=80)]
     email: Annotated[str, Field(max_length=254)]
+    password: Annotated[str, Field(max_length=256)]
+    website: Annotated[str, Field(max_length=200)] = ""     # honeypot: people never see it, form-filling bots fill it
+
+
+class CodeReq(BaseModel):
+    email: Annotated[str, Field(max_length=254)]
+    code: Annotated[str, Field(min_length=4, max_length=12)]
+
+
+class EmailReq(BaseModel):
+    email: Annotated[str, Field(max_length=254)]
+
+
+class ResetReq(CodeReq):
     password: Annotated[str, Field(max_length=256)]
 
 
@@ -319,8 +334,10 @@ class Presence(BaseModel):
 
 # ------------------------------------------------------------------ public
 @app.get("/api/ping")
-def ping():
-    """Cheapest liveness check: the dashboard calls it to tell 'server down' from 'request failed'."""
+def ping(request: Request):
+    """Cheapest liveness check: the dashboard calls it to tell 'server down' from 'request failed'. The open
+    dashboard's heartbeat also counts as activity, so a session only idles out once the app is closed."""
+    auth.session_user(request.cookies.get(COOKIE))
     return {"app": "REVIVE", "version": __version__, "status": "ok", "time": time.time()}
 
 
@@ -350,6 +367,7 @@ def public_overview():
                       "loco_auc": (v.get("leave_company_out") or {}).get("high_risk_auc")}
                   for g, v in card.get("gates", {}).items()},
         "registration_open": bool(sec_cfg().get("allow_registration", True)),
+        "contact_email": (load_config().get("app") or {}).get("contact_email") or None,
     })
 
 
@@ -368,16 +386,87 @@ def register(req: RegisterReq, request: Request):
         raise HTTPException(403, "New company sign-up is closed on this server. Ask the administrator.")
     throttle(f"register:{client_ip(request)}", limit("register_per_hour", 5), 3600,
              "Too many sign-ups from this network. Try again later.")
+    if req.website.strip():                 # a bot filled the hidden field: answer like a normal sign-up, do nothing
+        return JSONResponse({"verify": True, "email": req.email.strip().lower()[:254], "delivery": "email"})
     try:
+        if email_verification():
+            email, code = auth.start_signup(req.company, req.name, req.email, req.password)
+            return JSONResponse({"verify": True, "email": email, "minutes": auth.code_minutes(),
+                                 "delivery": mailer.send_code(email, code, "signup", auth.code_minutes())})
         first = auth.company_count() == 0
         u = auth.register_company(req.company, req.name, req.email, req.password)
     except auth.AuthError as exc:
         raise HTTPException(400, str(exc)) from exc
-    if first:
+    return _signed_in(request, u, first)
+
+
+def _signed_in(request: Request, u: dict, first_company: bool = False) -> JSONResponse:
+    if first_company:
         _adopt_legacy(u["company_id"])
     resp = JSONResponse({"user": _public_user(u)})
     _set_cookie(request, resp, auth.create_session(u["id"], client_ip(request)))
     return resp
+
+
+def _code_throttle(request: Request, email: str) -> str:
+    """Six digits are only safe if guessing is slow: cap tries per network and per e-mail (the code itself dies
+    after five misses)."""
+    em = (email or "").strip().lower()[:254]
+    throttle(f"code-ip:{client_ip(request)}", limit("code_tries_per_15min", 20), 900,
+             "Too many attempts. Wait 15 minutes and try again.")
+    throttle(f"code-em:{em}", limit("code_tries_per_15min", 20), 900, "Too many attempts. Wait 15 minutes and try again.")
+    return em
+
+
+@app.post("/api/auth/verify")
+def verify_signup(req: CodeReq, request: Request):
+    """Second step of sign-up: the code from the e-mail creates the company and signs its admin in."""
+    em = _code_throttle(request, req.email)
+    try:
+        first = auth.company_count() == 0
+        u = auth.finish_signup(em, req.code)
+    except auth.AuthError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _signed_in(request, u, first)
+
+
+def _mail_throttle(request: Request, email: str) -> str:
+    em = (email or "").strip().lower()[:254]
+    throttle(f"mail-ip:{client_ip(request)}", limit("codes_sent_per_hour", 10), 3600,
+             "Too many codes requested from this network. Try again later.")
+    throttle(f"mail-em:{em}", 3, 600, "A code was sent a moment ago. Check your inbox, or wait a few minutes.")
+    return em
+
+
+@app.post("/api/auth/resend")
+def resend_code(req: EmailReq, request: Request):
+    em = _mail_throttle(request, req.email)
+    code = auth.resend_signup(em)
+    if code:
+        mailer.send_code(em, code, "signup", auth.code_minutes())
+    return {"sent": True}                   # the same answer whether or not a sign-up is waiting
+
+
+@app.post("/api/auth/forgot")
+def forgot_password(req: EmailReq, request: Request):
+    """Always the same answer, so this form cannot be used to find out who has an account."""
+    em = _mail_throttle(request, req.email)
+    code = auth.start_reset(em)
+    if code:
+        mailer.send_code(em, code, "reset", auth.code_minutes())
+    return {"sent": True, "minutes": auth.code_minutes()}
+
+
+@app.post("/api/auth/reset")
+def reset_password(req: ResetReq, request: Request):
+    em = _code_throttle(request, req.email)
+    try:
+        auth.finish_reset(em, req.code, req.password)
+    except auth.AuthError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    LIMITER.clear(f"login-fail:{em}")
+    log.warning("Password reset by e-mail code for %s from %s", em, client_ip(request))
+    return {"reset": True}
 
 
 @app.post("/api/auth/login")
@@ -401,7 +490,7 @@ def logout(request: Request):
     auth.end_session(request.cookies.get(COOKIE))
     resp = JSONResponse({"signed_out": True})
     if EMBED:   # a partitioned cookie is only removed by a cookie with the same attributes
-        _embedded_cookie(resp, '""', 0)
+        _embedded_cookie(resp, '""', clear=True)
     else:
         resp.delete_cookie(COOKIE, path="/")
     return resp
@@ -1134,6 +1223,44 @@ app.mount("/vendor", StaticFiles(directory=WEB / "vendor"), name="vendor")
 @app.get("/", include_in_schema=False)
 def landing():
     return FileResponse(PAGES["landing"])
+
+
+@app.get("/privacy", include_in_schema=False)
+def privacy_page():
+    return FileResponse(PAGES["privacy"])
+
+
+@app.get("/terms", include_in_schema=False)
+def terms_page():
+    return FileResponse(PAGES["terms"])
+
+
+def _site_base(request: Request) -> str:
+    return _public_url() or str(request.base_url).rstrip("/")
+
+
+@app.get("/robots.txt", include_in_schema=False)
+def robots(request: Request):
+    """Only the public pages are for search engines; the workspace, the API and phone links are not."""
+    return Response("User-agent: *\nAllow: /$\nAllow: /privacy\nAllow: /terms\nAllow: /assets/\nAllow: /vendor/\n"
+                    "Disallow: /app\nDisallow: /api/\nDisallow: /site/\nDisallow: /evidence/\nDisallow: /auth/\n"
+                    f"Sitemap: {_site_base(request)}/sitemap.xml\n", media_type="text/plain")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap(request: Request):
+    base = _site_base(request)
+    urls = "".join(f"<url><loc>{base}{p}</loc></url>" for p in ("/", "/privacy", "/terms"))
+    return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>',
+                    media_type="application/xml")
+
+
+@app.exception_handler(404)
+async def not_found(request: Request, exc):
+    """A page for people, JSON for the API. The reason given by a route (a wrong project id) is kept."""
+    if request.url.path.startswith("/api/") or "text/html" not in request.headers.get("accept", ""):
+        return JSONResponse({"detail": getattr(exc, "detail", None) or "Not Found"}, status_code=404)
+    return FileResponse(PAGES["404"], status_code=404)
 
 
 @app.get("/app", include_in_schema=False)

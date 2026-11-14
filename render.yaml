@@ -13,3 +13,7 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: REVIVE_TRUST_PROXY   # the service is only reachable through Render's HTTPS proxy: Secure cookie, HSTS, real visitor IPs
+        value: "1"
+      # To e-mail sign-up and password-reset codes, add SMTP_HOST, SMTP_USER, SMTP_PASSWORD and MAIL_FROM in the
+      # Render dashboard (never in this file). Without them the codes only appear in the service log.

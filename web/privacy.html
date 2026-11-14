@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · REVIVE</title>
+  <meta name="description" content="What REVIVE stores about you and your projects, why, and how to have it removed.">
+  <meta name="theme-color" content="#131209">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7.5' fill='%23FFC21A'/%3E%3Cg fill='none' stroke='%23111214' stroke-width='2.6' stroke-linecap='square'%3E%3Cpath d='M5.5 26h21M8 26V13M15 26V13M22 26v-6.5'/%3E%3Cpath stroke-width='2' d='M8 19.5h14M8 13h7'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2M22.8 4.6l2.8 2.6-2.6 2.9'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/landing.css?v=9.1.0">
+  <script type="module" src="/assets/js/legal.js?v=9.1.0"></script>
+</head>
+<body class="plain">
+<a class="skip" href="#main">Skip to the text</a>
+<header class="plain-top wrap">
+  <a class="mark" href="/" aria-label="REVIVE home"><svg class="rv" viewBox="0 0 32 32" aria-hidden="true"><rect class="rv-plate" width="32" height="32" rx="7.5"/><path class="rv-fl" d="M8 19.5h14M8 13h7"/><path class="rv-slab" d="M5.5 26h21"/><g class="rv-ring"><path class="rv-arc" pathLength="1" d="M18 13.2C19.2 9.6 21.8 7.6 25.4 7.2"/><path class="rv-head" d="M22.8 4.6l2.8 2.6-2.6 2.9"/></g><path class="rv-bar" d="M8 26V13"/><path class="rv-bar" d="M15 26V13"/><path class="rv-bar" d="M22 26v-6.5"/></svg><span>REVIVE</span></a>
+  <a class="btn sm" href="/#start">Sign in</a>
+</header>
+<main id="main" class="wrap">
+  <article class="legal">
+    <p class="eyebrow">Privacy notice</p>
+    <h1>What REVIVE keeps, and why.</h1>
+    <p class="muted">REVIVE is a final year design project of the NUST Institute of Civil Engineering. It runs on a server operated by the person or company that gave you its address. This page lists everything the software stores. <span data-contact hidden>Questions go to <a data-contact-link></a>.</span></p>
+
+    <h2>What is stored</h2>
+    <ul>
+      <li><b>Your account.</b> Company name, your name, your email address and your role. Your password is never stored: only a salted scrypt hash of it is kept.</li>
+      <li><b>Sign in records.</b> The time of your last sign in, and for each active session a hashed token and the network address it came from. A session ends when you close the browser, after 30 minutes without the app open, or after 12 hours.</li>
+      <li><b>One time codes.</b> The code emailed to confirm a new workspace or reset a password is kept as a hash for 10 minutes, then deleted.</li>
+      <li><b>Your projects.</b> Project details, forecast answers, saved assessments, the schedules and IFC models you upload, and progress you enter.</li>
+      <li><b>Site updates.</b> What a site engineer sends through a phone link: the name they type, their answers and the time. The phone needs no account.</li>
+    </ul>
+
+    <h2>What it is used for</h2>
+    <p>Only to run the workspace: to sign you in, to show your company its own projects, to compute delay, forecast and recovery, and to email the alerts and codes you ask for. Each company sees only its own data. Nothing is sold, shared for advertising or used to train the forecasting model.</p>
+
+    <h2>Cookies and storage on your device</h2>
+    <p>REVIVE sets one cookie, the session cookie that keeps you signed in. It is essential, so there is no cookie banner. Your browser also remembers small conveniences locally, such as the project you last opened; a phone remembers the reporter name and any update waiting to be sent. There are no analytics, no advertising and no tracking scripts, and every font and script is served by this server.</p>
+
+    <h2>Other services</h2>
+    <ul>
+      <li><b>Weather.</b> The server asks Open Meteo for the weather at a project's coordinates. No personal data is sent.</li>
+      <li><b>Email.</b> Codes and alerts go through the mail server the operator configured.</li>
+      <li><b>Hosting.</b> The operator's hosting provider processes the data on the operator's behalf.</li>
+    </ul>
+
+    <h2>Keeping and removing data</h2>
+    <p>A company admin can delete projects and remove team members at any time; removal signs that person out everywhere. To correct your details or delete a whole workspace, ask the operator of this server. <span data-contact hidden>Write to <a data-contact-link></a>.</span></p>
+
+    <h2>Security</h2>
+    <p>Passwords are hashed, sessions are short, every request that changes data is checked against cross site forgery, uploads are size capped and validated, and sign in, sign up and code entry are rate limited. No system is perfectly secure: use a password you use nowhere else.</p>
+
+    <h2>The research data</h2>
+    <p>The forecasting model was trained on anonymised survey records of completed construction projects. They contain no personal data. Hypothetical scenarios are labelled wherever they appear and are not used for training.</p>
+  </article>
+</main>
+<footer class="foot">
+  <div class="wrap">
+    <nav aria-label="Footer"><a href="/">Home</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/#start">Sign in</a></nav>
+    <p>Final year design project, NUST Institute of Civil Engineering. Forecasts support decisions; they do not replace the planning engineer.</p>
+  </div>
+</footer>
+</body>
+</html>

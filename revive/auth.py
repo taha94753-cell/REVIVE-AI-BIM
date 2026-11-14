@@ -6,7 +6,10 @@ Security choices (each one can be defended):
   * Passwords: scrypt (memory-hard KDF from the Python standard library), per-user random salt,
     parameters stored with the hash so they can be raised later. Never stored or logged in clear.
   * Sessions: 256-bit random token in an HttpOnly, SameSite=Lax cookie; only its SHA-256 is stored,
-    so a copied database does not hand out live sessions. Sessions expire (security.session_days).
+    so a copied database does not hand out live sessions. The cookie lasts until the browser closes, and the
+    server ends a session after security.session_idle_minutes without a request or security.session_hours in all.
+  * E-mail codes (sign-up and password reset): six digits, stored only as SHA-256 bound to the e-mail and the
+    purpose, valid for security.code_minutes, dropped after five wrong tries.
   * Roles: "admin" (manages the team, deletes projects) and "member".
   * Login throttling lives in security.py (per IP and per e-mail).
 """
@@ -15,6 +18,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import json
 import re
 import secrets
 import time
@@ -35,11 +39,18 @@ CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE TABLE IF NOT EXISTS admin_links (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, created_at REAL NOT NULL,
   expires_at REAL NOT NULL, used_at REAL);
+CREATE TABLE IF NOT EXISTS email_codes (email TEXT NOT NULL, purpose TEXT NOT NULL, code_hash TEXT NOT NULL,
+  payload TEXT, created_at REAL NOT NULL, expires_at REAL NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (email, purpose));
 """
 
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$")
 MIN_PASSWORD = 10
 SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1}
+MAX_CODE_TRIES = 5
+COMMON_PASSWORDS = {"password123", "password1234", "passwordpassword", "qwertyuiop", "qwertyuiop123", "qwerty123456",
+                    "iloveyou123", "1q2w3e4r5t", "1q2w3e4r5t6y", "letmein12345", "welcome12345", "administrator",
+                    "adminadmin", "admin123456", "abcdefghij", "abc123abc123", "changeme123", "pakistan123"}
 
 
 class AuthError(ValueError):
@@ -89,7 +100,7 @@ def check_password_policy(password: str, email: str = "") -> None:
         raise AuthError(f"Use a password of at least {MIN_PASSWORD} characters.")
     if len(password) > 256:
         raise AuthError("That password is too long.")
-    if len(set(password)) < 4:
+    if len(set(password)) < 4 or password.lower() in COMMON_PASSWORDS or password.isdigit():
         raise AuthError("That password is too easy to guess.")
     local = (email or "").split("@")[0].lower()
     if local and len(local) >= 4 and local in password.lower():
@@ -115,12 +126,18 @@ def _slug(name: str) -> str:
 
 
 # ------------------------------------------------------------------ companies and users
-def register_company(company: str, name: str, email: str, password: str) -> dict:
+EMAIL_TAKEN = "This email is already registered. Sign in, or use Forgot password."
+
+
+def register_company(company: str, name: str, email: str, password: str | None, pw_hash: str | None = None) -> dict:
+    """Pass the password, or pw_hash for a sign-up whose password was checked and hashed before the e-mail code."""
     company, name, email = _clean_name(company, "company name"), _clean_name(name, "your name", 80), norm_email(email)
-    check_password_policy(password, email)
+    if pw_hash is None:
+        check_password_policy(password, email)
+        pw_hash = hash_password(password)
     with _conn() as c:
         if c.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
-            raise AuthError("An account with this e-mail already exists. Sign in instead.")
+            raise AuthError(EMAIL_TAKEN)
         base, slug, i = _slug(company), _slug(company), 1
         while c.execute("SELECT 1 FROM companies WHERE slug = ?", (slug,)).fetchone():
             i += 1
@@ -128,7 +145,7 @@ def register_company(company: str, name: str, email: str, password: str) -> dict
         cid = c.execute("INSERT INTO companies (name, slug, created_at) VALUES (?,?,?)",
                         (company, slug, _now())).lastrowid
         uid = c.execute("INSERT INTO users (company_id, email, name, pw_hash, role, created_at) VALUES (?,?,?,?,?,?)",
-                        (cid, email, name, hash_password(password), "admin", _now())).lastrowid
+                        (cid, email, name, pw_hash, "admin", _now())).lastrowid
     return get_user(uid)
 
 
@@ -210,8 +227,8 @@ def _token_id(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def session_days() -> float:
-    return float((load_config().get("security") or {}).get("session_days", 7))
+def _sec(key: str, default: float) -> float:
+    return float((load_config().get("security") or {}).get(key, default))
 
 
 def create_session(user_id: int, ip: str | None = None) -> str:
@@ -220,7 +237,7 @@ def create_session(user_id: int, ip: str | None = None) -> str:
     with _conn() as c:
         c.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
         c.execute("INSERT INTO sessions (id, user_id, created_at, expires_at, last_seen, ip) VALUES (?,?,?,?,?,?)",
-                  (_token_id(token), int(user_id), now, now + session_days() * 86400, now, (ip or "")[:64]))
+                  (_token_id(token), int(user_id), now, now + _sec("session_hours", 12) * 3600, now, (ip or "")[:64]))
     return token
 
 
@@ -230,7 +247,9 @@ def session_user(token: str | None) -> dict | None:
     now = time.time()
     with _conn() as c:
         r = c.execute("SELECT user_id, expires_at, last_seen FROM sessions WHERE id = ?", (_token_id(token),)).fetchone()
-        if not r or r["expires_at"] < now:
+        if not r or r["expires_at"] < now or now - (r["last_seen"] or now) > _sec("session_idle_minutes", 30) * 60:
+            if r:
+                c.execute("DELETE FROM sessions WHERE id = ?", (_token_id(token),))
             return None
         if now - (r["last_seen"] or 0) > 300:
             c.execute("UPDATE sessions SET last_seen = ? WHERE id = ?", (now, _token_id(token)))
@@ -241,6 +260,87 @@ def end_session(token: str | None) -> None:
     if token:
         with _conn() as c:
             c.execute("DELETE FROM sessions WHERE id = ?", (_token_id(token),))
+
+
+# ------------------------------------------------------------------ e-mail codes (sign-up, password reset)
+def _code_hash(email: str, purpose: str, code: str) -> str:
+    return hashlib.sha256(f"{purpose}:{email}:{code}".encode("utf-8")).hexdigest()
+
+
+def code_minutes() -> int:
+    return int(_sec("code_minutes", 10))
+
+
+def _issue_code(c, email: str, purpose: str, payload: dict | None) -> str:
+    code, now = f"{secrets.randbelow(10 ** 6):06d}", time.time()
+    c.execute("DELETE FROM email_codes WHERE expires_at < ?", (now,))
+    c.execute("INSERT OR REPLACE INTO email_codes (email, purpose, code_hash, payload, created_at, expires_at, attempts) "
+              "VALUES (?,?,?,?,?,?,0)", (email, purpose, _code_hash(email, purpose, code),
+                                         json.dumps(payload) if payload else None, now, now + code_minutes() * 60))
+    return code
+
+
+def _redeem_code(email: str, purpose: str, code: str) -> dict:
+    """The stored payload if the code is right; AuthError otherwise. A code is single use and dies after five misses."""
+    bad = AuthError("That code is not right or has expired. Ask for a new one.")
+    with _conn() as c:
+        r = c.execute("SELECT code_hash, payload, expires_at, attempts FROM email_codes WHERE email = ? AND purpose = ?",
+                      (email, purpose)).fetchone()
+        if not r or r["expires_at"] < time.time():
+            raise bad
+        if not hmac.compare_digest(r["code_hash"], _code_hash(email, purpose, (code or "").strip())):
+            if r["attempts"] + 1 >= MAX_CODE_TRIES:
+                c.execute("DELETE FROM email_codes WHERE email = ? AND purpose = ?", (email, purpose))
+            else:
+                c.execute("UPDATE email_codes SET attempts = attempts + 1 WHERE email = ? AND purpose = ?", (email, purpose))
+            c.commit()            # the miss must be counted even though this request ends in an error
+            raise bad
+        if c.execute("DELETE FROM email_codes WHERE email = ? AND purpose = ? AND code_hash = ?",
+                     (email, purpose, r["code_hash"])).rowcount != 1:
+            raise bad             # two requests raced for the same code: only one wins
+    return json.loads(r["payload"]) if r["payload"] else {}
+
+
+def start_signup(company: str, name: str, email: str, password: str) -> tuple[str, str]:
+    """Check everything, park the sign-up (password already hashed) and return (email, code). No account exists yet."""
+    company, name, email = _clean_name(company, "company name"), _clean_name(name, "your name", 80), norm_email(email)
+    check_password_policy(password, email)
+    with _conn() as c:
+        if c.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+            raise AuthError(EMAIL_TAKEN)
+        return email, _issue_code(c, email, "signup", {"company": company, "name": name, "pw_hash": hash_password(password)})
+
+
+def resend_signup(email: str) -> str | None:
+    """A fresh code for a parked sign-up, or None when there is none to resend."""
+    email = (email or "").strip().lower()
+    with _conn() as c:
+        r = c.execute("SELECT payload FROM email_codes WHERE email = ? AND purpose = 'signup'", (email,)).fetchone()
+        return _issue_code(c, email, "signup", json.loads(r["payload"])) if r else None
+
+
+def finish_signup(email: str, code: str) -> dict:
+    email = (email or "").strip().lower()
+    p = _redeem_code(email, "signup", code)
+    return register_company(p["company"], p["name"], email, None, pw_hash=p["pw_hash"])
+
+
+def start_reset(email: str) -> str | None:
+    """A reset code if the e-mail has an account; None otherwise (the caller answers the same either way)."""
+    email = (email or "").strip().lower()
+    with _conn() as c:
+        if not c.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+            return None
+        return _issue_code(c, email, "reset", None)
+
+
+def finish_reset(email: str, code: str, password: str) -> None:
+    email = (email or "").strip().lower()
+    check_password_policy(password, email)      # before the code is spent, so a weak password does not burn it
+    _redeem_code(email, "reset", code)
+    u = user_by_email(email)
+    if u:
+        set_password(u["id"], password)         # also signs the user out everywhere
 
 
 def company_count() -> int:
