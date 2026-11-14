@@ -353,3 +353,8 @@ body.cockpit .del-err{min-height:20px;margin:8px 0 0;color:#B4232C;font-size:14p
 body.cockpit .btn.danger{background:#B4232C;color:#fff;border:0}
 body.cockpit .btn.danger:hover{background:#961B23}
 body.cockpit #del-form .form-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px}
+
+/* ---- delete a project: always on the card (hover-only controls do not exist on a phone), red only when aimed at */
+body.cockpit .card-x{opacity:1;width:32px;height:32px;display:grid;place-items:center;color:var(--chalk-2);background:var(--bg);border:0}
+body.cockpit .card-x svg{width:16px;height:16px;stroke-width:1.5}
+body.cockpit .card-x:hover,body.cockpit .card-x:focus-visible{color:#fff;background:#B4232C}
