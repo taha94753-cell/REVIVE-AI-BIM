@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from revive.data import load_clean
 from revive.features import encode, encode_one, gate_columns

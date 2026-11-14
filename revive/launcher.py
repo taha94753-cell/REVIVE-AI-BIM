@@ -19,7 +19,6 @@ import threading
 import time
 import urllib.request
 import webbrowser
-from pathlib import Path
 
 PACKAGES = ["numpy", "pandas", "sklearn", "xgboost", "shap", "pulp", "ifcopenshell", "fastapi",
             "uvicorn", "multipart", "segno", "yaml", "openpyxl", "matplotlib"]

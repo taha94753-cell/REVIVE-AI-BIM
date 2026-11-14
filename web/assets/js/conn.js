@@ -20,8 +20,6 @@ export const conn = { state: 'connecting', since: Date.now(), lastOk: 0, attempt
 // and runs the request on that project's own schedule and BIM model.
 let projectId = null;
 export const setProject = id => { projectId = id ? Number(id) : null; };
-export const currentProject = () => projectId;
-
 /** Headers every request carries: X-Revive-Request is the CSRF guard (a cross-site form cannot send it). */
 export function headers(extra = {}) {
   const h = { 'X-Revive-Request': '1', ...extra };
@@ -74,7 +72,6 @@ export async function api(path, opts = {}) {
   }
 }
 export const post = (path, body, opts = {}) => api(path, { method: 'POST', body: JSON.stringify(body), ...opts });
-export const patch = (path, body) => api(path, { method: 'PATCH', body: JSON.stringify(body) });
 export const del = path => api(path, { method: 'DELETE' });
 /** Multipart upload (IFC, schedule). timeout is long: large IFC models take a while to read. */
 export const upload = (path, file, opts = {}) => {

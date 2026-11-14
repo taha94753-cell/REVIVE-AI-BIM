@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-from .delay import CATEGORY_LABEL, EVENT_CLASS
+from .delay import CATEGORY_LABEL
 from .scheduling import DAYS_PER_MONTH
 
 WARNING_BANDS = ("At risk", "Critical")

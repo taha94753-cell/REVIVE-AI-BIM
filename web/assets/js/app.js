@@ -1,4 +1,4 @@
-// REVIVE dashboard controller: form -> /api/predict -> /api/recovery -> twin, charts, impact.
+// REVIVE dashboard controller: form -> /api/predict -> /api/recovery -> twin, charts.
 // conn.js keeps the link to the Python server healthy, live.js carries phone updates,
 // fx.js does the motion, charts.js draws every chart as SVG.
 import * as C from './charts.js';
@@ -12,8 +12,8 @@ import { trackGlass } from './glass.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const S = {
-  bimConnected: false, wxPinned: false, gate: 'G25', filter: 'all', query: '', band: null, mode: 'risk', sched: 'forecast',
-  t: 0, playing: false, sourceId: null, evGate: 'G25', seq: 0, booted: false, livePid: null, devices: 0, presenceAt: 0,
+  bimConnected: false, wxPinned: false, gate: 'G25', mode: 'risk', sched: 'forecast',
+  t: 0, playing: false, seq: 0, booted: false, livePid: null, devices: 0, presenceAt: 0,
   project: null, projects: [], tab: 'projects', wsSort: 'recent', wsQuery: '', delay: null,
 };
 const COL = { high: '#FF5468', medium: '#F5D547', low: '#34D399', complete: '#8E98A3', ghost: '#B4BCC6', mark: '#FF4FA3', idle: '#3A434F', progress: '#FFB81C', unlinked: '#4A5462' };
@@ -46,7 +46,6 @@ function buildForm() {
       <div class="fields">${g.fields.map(fieldHtml).join('')}</div>
     </fieldset>`).join('');
   $$('#form-groups input, #form-groups select').forEach(el => el.addEventListener('input', () => {
-    if (S.sourceId) { S.sourceId = null; $('#source-note').textContent = 'Edited: scored as a new project.'; }
     syncWhatIf();
     if ($('#auto-run').checked && S.prediction) scheduleRun(el.tagName === 'SELECT' ? 150 : 550, { base: true });
   }));
@@ -151,7 +150,6 @@ function onWhatIf(r) {
   r.classList.remove('unset');
   $(`#wo-${key}`).textContent = r.dataset.ordinal === '1' ? el.value : Number(r.value).toFixed(2);
   paintRange(r);
-  if (S.sourceId) { S.sourceId = null; }
   $('#source-note').textContent = 'What-if scenario: the sliders changed the inputs. "Back to the entered values" undoes it.';
   scheduleRun(90, { quick: true });
 }
@@ -169,7 +167,7 @@ async function runForecast(opts = {}) {
     S.inputs = readForm();
     if (!opts.quick || !S.baseInputs) S.baseInputs = { ...S.inputs };  // slider runs keep the reset point
     if (!opts.keepElapsed) S.elapsedPct = null;
-    const pred = await post('/predict', { inputs: S.inputs, gate: S.gate, source_project_id: S.sourceId });
+    const pred = await post('/predict', { inputs: S.inputs, gate: S.gate });
     if (seq !== S.seq) return;
     S.prevPrediction = S.prediction;
     S.prediction = pred;
@@ -318,8 +316,7 @@ async function runRecovery({ seq = null, quick = false } = {}) {
     if (seq != null && seq !== S.seq) return;
     S.recovery = rec;
     C.animate(!quick);
-    renderRecovery(); renderImpact(); setupTimeline(); paintTwin();
-    if (S.portfolio) markRiskMap();
+    renderRecovery(); setupTimeline(); paintTwin();
   } catch (e) { report(e); }
   finally { if (!quick) C.animate(true); }
 }
@@ -373,23 +370,6 @@ function renderRecovery() {
   }
   $('#formulation').innerHTML = `<pre>${esc(o.formulation.objective)}\nsubject to\n  ${o.formulation.constraints.map(esc).join('\n  ')}\n\nSolver: ${esc(o.formulation.solver)}</pre>
     <p class="fine">d = forecast remaining duration (baseline scaled by k = ${r.duration_scale_k} so the schedule finish matches the ML forecast), c = crash cost per day, u = crash limit, LD = liquidated damages per day, D = target completion, t0 = day ${r.t0_day} (checkpoint). Work done by the checkpoint follows Earned Schedule: ES = SPI x t0 = day ${r.earned_schedule_day}.</p>`;
-}
-
-function renderImpact() {
-  const s = S.recovery.sustainability, o = S.recovery.optimisation;
-  const items = [
-    ['Carbon avoided', s.co2_diesel_t_avoided, v => `${fmt.num(v, 1)} t`, `CO\u2082 from ${fmt.num(s.diesel_l_avoided)} litres of site diesel over ${fmt.num(s.days_recovered)} days`],
-    ['Site overheads avoided', s.overheads_pkr_avoided, fmt.pkr, 'Time-related costs not incurred'],
-    ['Net benefit of recovery', s.net_benefit_pkr, fmt.pkr, 'Damages and overheads avoided, less crash cost'],
-    s.rework_carbon_at_risk_t == null
-      ? ['Rework carbon at risk', null, () => '\u2014', 'Needs a BIM model to measure the structure']
-      : ['Rework carbon at risk', s.rework_carbon_at_risk_t, v => `${fmt.num(v, 1)} t`, `${(s.rework_share * 100).toFixed(1)}% of ${fmt.num(s.structure_embodied_t)} t embodied in the structure`],
-  ];
-  $('#impact-figs').innerHTML = items.map(([k, , , sub], i) => `<div><dt>${k}</dt><dd><span data-i="${i}"></span><small>${sub}</small></dd></div>`).join('');
-  items.forEach(([, v, f], i) => { const el = $(`#impact-figs span[data-i="${i}"]`); if (v == null) el.textContent = '\u2014'; else fx.countUp(el, v, f, 1100); });
-  if (o.status === 'Optimal') C.costCompare($('#cost-compare'), o); else $('#cost-compare').innerHTML = '';
-  $('#assumptions tbody').innerHTML = s.assumptions.map(a => `<tr><td>${esc(a.item)}</td><td class="n">${fmt.num(a.value, a.value < 10 ? 3 : 0)}</td><td>${esc(a.unit)}</td>
-    <td>${a.verify ? '<span class="verify">Verify and cite (config.yaml)</span>' : '<span class="muted">Measured from the IFC model</span>'}</td></tr>`).join('');
 }
 
 // ================================================================== twin
@@ -576,119 +556,8 @@ async function exportIfc() {
   } catch (e) { report(e); }
 }
 
-// ================================================================== portfolio
-async function loadPortfolio() {
-  S.portfolio = await api('/portfolio');
-  S.byId = Object.fromEntries(S.portfolio.dataset.map(r => [r.project_id, r]));
-  renderOverview();
-  renderPortfolio();
-}
-
-const bandColor = name => (S.schema.risk_bands.find(b => b.name === name) || {}).color || 'var(--chalk-3)';
-
-function matches(r) {
-  const q = S.query.toLowerCase();
-  if (S.filter === 'ongoing' && r.status !== 'Still ongoing') return false;
-  if (S.filter === 'completed' && r.status !== 'Completed') return false;
-  if (S.filter === 'risk' && !['At risk', 'Critical'].includes(r.band?.name)) return false;
-  if (S.band && r.band?.name !== S.band) return false;
-  return !q || `${r.project_type} ${r.province} ${r.project_id}`.toLowerCase().includes(q);
-}
-
-function renderOverview() {
-  const rows = S.portfolio.dataset, bands = S.schema.risk_bands;
-  const counts = bands.map(b => ({ key: b.name, label: b.name, color: b.color, value: rows.filter(r => r.band?.name === b.name).length }));
-  const risky = counts.filter(c => ['At risk', 'Critical'].includes(c.key)).reduce((t, c) => t + c.value, 0);
-  const vals = rows.map(r => r.predicted_time_overrun_pct).filter(Number.isFinite).sort((a, b) => a - b);
-  const med = vals.length ? (vals[Math.floor((vals.length - 1) / 2)] + vals[Math.ceil((vals.length - 1) / 2)]) / 2 : null;
-  const done = rows.filter(r => r.status === 'Completed').length;
-  const ov = $('#ov-kpis');
-  const kp = [
-    ['Projects in the dataset', rows.length, v => fmt.num(v), `${rows.filter(r => r.hypothetical).length} hypothetical, labelled`],
-    ['Median forecast overrun', med, v => fmt.pct(v, 1), 'cross-validated, out-of-fold'],
-    ['At risk or critical', risky, v => fmt.num(v), `${Math.round(100 * risky / Math.max(1, rows.length))}% of the portfolio`],
-    ['Completed with an outcome', done, v => fmt.num(v), `${rows.length - done} still ongoing`],
-  ];
-  ov.innerHTML = kp.map(([k, , , sub], i) => `<div class="kpi" style="--d:${i * 90}ms"><dt>${k}</dt><dd data-i="${i}"></dd><small>${sub}</small></div>`).join('');
-  fx.whenVisible(ov, () => kp.forEach(([, v, f], i) => fx.countUp(ov.querySelector(`dd[data-i="${i}"]`), v ?? 0, f, 1200)));
-  S.bandCounts = counts;
-  fx.whenVisible($('#donut'), () => renderDonut());
-  $('#donut-legend').innerHTML = counts.map(c => `<li><button type="button" data-band="${esc(c.key)}" aria-pressed="false"><i style="--c:${c.color}"></i>${esc(c.label)}<b>${c.value}</b></button></li>`).join('');
-  $$('#donut-legend button').forEach(b => b.addEventListener('click', () => toggleBand(b.dataset.band)));
-  fx.whenVisible($('#riskmap'), () => renderRiskMap());
-}
-
-function renderDonut() {
-  const risky = S.bandCounts.filter(c => ['At risk', 'Critical'].includes(c.key)).reduce((t, c) => t + c.value, 0);
-  const active = S.band;
-  const sel = active ? S.bandCounts.find(c => c.key === active) : null;
-  C.donut($('#donut'), S.bandCounts, { center: String(sel ? sel.value : risky), sub: sel ? sel.label.toLowerCase() : 'at risk or critical', active });
-  $$('#donut [data-band]').forEach(el => el.addEventListener('click', () => toggleBand(el.dataset.band)));
-  $$('#donut-legend button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.band === active)));
-}
-
-function toggleBand(name) {
-  S.band = S.band === name ? null : name;
-  C.animate(false); renderDonut(); C.animate(true);
-  renderPortfolio();
-}
-
-function renderRiskMap() {
-  $('#riskmap').classList.remove('skeleton');
-  C.riskMap($('#riskmap'), S.portfolio.dataset, S.schema.risk_bands, { isDim: r => !matches(r), selected: S.sourceId });
-  $$('#riskmap .pt').forEach(c => c.addEventListener('click', () => loadProject(c.dataset.id)));
-  S.mapDrawn = true;
-}
-
-function markRiskMap() {
-  if (!S.mapDrawn) return;
-  $$('#riskmap .pt').forEach(c => {
-    const r = S.byId[c.dataset.id];
-    c.classList.toggle('dim', !matches(r));
-    c.classList.toggle('sel', c.dataset.id === S.sourceId);
-  });
-}
-
-function renderPortfolio() {
-  const rows = S.portfolio.dataset.filter(matches);
-  const max = 120;
-  $('#band-filter').hidden = !S.band;
-  if (S.band) {
-    $('#band-filter').innerHTML = `<span class="chip" style="--c:${bandColor(S.band)}">${esc(S.band)}</span><button type="button" aria-label="Clear the band filter">${fx.CLOSE}</button>`;
-    $('#band-filter button').addEventListener('click', () => toggleBand(S.band));
-  }
-  const tb = $('#portfolio-table tbody');
-  tb.innerHTML = rows.map((r, i) => `<tr data-id="${r.project_id}" tabindex="0" style="--d:${Math.min(500, i * 14)}ms">
-    <td class="proj"><b>${esc(r.project_id)}${r.hypothetical ? '<span class="tag">hypothetical</span>' : ''}</b><small>${esc(r.project_type)}, ${esc(r.contract_value)}</small></td>
-    <td>${esc(r.province)}</td><td>${esc(r.status)}</td><td>${r.gate === 'G50' ? '50%' : '25%'}</td><td class="n">${fmt.num(r.spi, 2)}</td>
-    <td><div class="barcell" style="--c:${r.band?.color}"><span>${fmt.pct(r.predicted_time_overrun_pct)}</span><i style="width:${Math.max(0, Math.min(max, r.predicted_time_overrun_pct || 0)) / max * 140}px"></i><span class="chip" style="--c:${r.band?.color}">${esc(r.band?.name)}</span></div></td>
-    <td class="n">${r.status === 'Completed' ? fmt.pct(r.actual_time_overrun_pct) : '<span class="muted">open</span>'}</td></tr>`).join('')
-    || '<tr><td colspan="7" class="muted">No project matches these filters.</td></tr>';
-  tb.classList.remove('rows-in'); void tb.offsetWidth; tb.classList.add('rows-in');
-  $$('#portfolio-table tbody tr[data-id]').forEach(tr => {
-    tr.addEventListener('click', () => loadProject(tr.dataset.id));
-    tr.addEventListener('keydown', e => { if (e.key === 'Enter') loadProject(tr.dataset.id); });
-    tr.addEventListener('mouseenter', () => { const c = $(`#riskmap .pt[data-id="${tr.dataset.id}"]`); c?.classList.add('hl'); });
-    tr.addEventListener('mouseleave', () => { $$('#riskmap .pt.hl').forEach(c => c.classList.remove('hl')); });
-  });
-  markRiskMap();
-  const hyp = S.portfolio.dataset.filter(r => r.hypothetical).length;
-  $('#portfolio-note').textContent = `${rows.length} of ${S.portfolio.dataset.length} projects shown. ${hyp} records are hypothetical scenarios and are labelled. For ongoing projects the "actual" completion is still a forecast.`;
-}
-
-async function loadProject(id) {
-  try {
-    const d = await api(`/benchmark/${encodeURIComponent(id)}`);
-    fillForm(d.inputs); S.sourceId = id; S.presetName = id; $('#save-name').dataset.auto = '1';
-    setGate(d.inputs.spi_50 != null ? 'G50' : 'G25');
-    $('#source-note').textContent = `Loaded benchmark record ${id} as a worked example. Editing any answer scores it as a new project.`;
-    showTab('assess');
-    await runForecast({ base: true });
-  } catch (e) { report(e); }
-}
-
 function loadPreset(p) {
-  fillForm(p.inputs); setGate(p.gate); S.sourceId = null; S.presetName = p.name; $('#save-name').dataset.auto = '1';
+  fillForm(p.inputs); setGate(p.gate); S.presetName = p.name; $('#save-name').dataset.auto = '1';
   $('#source-note').textContent = `Example: ${p.name}. ${p.summary} Illustrative inputs, not a dataset record.`;
 }
 
@@ -780,7 +649,7 @@ async function applyLatest(latest, name, upd) {
   fillForm(latest.inputs); setGate(latest.prediction.gate);
   S.prevPrediction = S.prediction;
   Object.assign(S, { inputs: latest.inputs, baseInputs: { ...latest.inputs }, prediction: latest.prediction,
-    elapsedPct: upd?.summary?.elapsed_pct ?? null, sourceId: null, presetName: name });
+    elapsedPct: upd?.summary?.elapsed_pct ?? null, presetName: name });
   $('#save-name').dataset.auto = '1';
   $('#source-note').textContent = upd ? `Live: latest update from ${upd.reporter} on "${name}".` : `Live project "${name}".`;
   renderResult();
@@ -1017,54 +886,6 @@ function renderWeather() {
   $('#wx-note').textContent = `${w.location.name}: ${w.lost_past} likely lost days in the last ${w.past.length}, ${w.lost_forecast} in the ${w.forecast.length}-day forecast. A day counts as lost at ${r.rain_mm} mm of rain, ${r.wind_kmh} km/h wind, ${r.heat_c} \u00b0C heat or ${r.cold_c} \u00b0C frost risk. Source: ${w.source}.`;
 }
 
-// ================================================================== evidence
-function renderEvidence() {
-  const card = S.card, g = card.gates;
-  const lc = v => v.leave_company_out || null, f2 = x => (x == null ? '\u2014' : x.toFixed(2));
-  $('#metrics').innerHTML = `<thead><tr><th>Checkpoint</th><th class="n">Time error</th><th class="n">Guessing the median</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">High-risk AUC</th><th class="n">AUC, unseen company</th><th class="n">Cost R\u00b2</th></tr></thead><tbody>` +
-    Object.entries(g).map(([k, v]) => `<tr><td>${k === 'G50' ? 'At 50%' : 'At 25%'}</td><td class="n">${v.time_overrun.mae.mean.toFixed(1)} pts</td><td class="n">${v.time_overrun.baseline_median_mae.toFixed(1)} pts</td>
-      <td class="n">${v.time_overrun.r2.mean.toFixed(2)}</td><td class="n">${f2(lc(v)?.time_overrun?.r2)}</td><td class="n">${v.high_risk.auc.mean.toFixed(2)}</td><td class="n">${f2(lc(v)?.high_risk_auc)}</td><td class="n">${v.cost_overrun.r2.mean.toFixed(2)}</td></tr>`).join('') + '</tbody>';
-  $('#validation-note').textContent = `${card.validation} Trained ${card.trained_at.slice(0, 10)} on ${card.dataset.n_projects} real completed projects from ${(card.dataset.companies || []).length || 'several'} data sources, ${card.model === 'linear' ? 'with a sign-constrained linear model' : 'with XGBoost'} on ${card.feature_set === 'core' ? 'the core questions' : 'every answer'}. High risk means a time overrun above ${card.high_risk_threshold_pct}%.`;
-  if (card.model_comparison) {
-    $('#comparison').innerHTML = '<thead><tr><th>Checkpoint</th><th>Model</th><th class="n">Time error</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">AUC</th><th class="n">AUC, unseen company</th></tr></thead><tbody>' +
-      card.model_comparison.map(m => `<tr${/production/.test(m.model) ? ' class="prod"' : ''}><td>${m.gate === 'G50' ? '50%' : '25%'}</td><td>${esc(m.model)}</td><td class="n">${m.time_MAE.toFixed(1)}</td><td class="n">${f2(m.time_R2)}</td><td class="n">${f2(m.loco_time_R2)}</td><td class="n">${f2(m.risk_AUC)}</td><td class="n">${f2(m.loco_risk_AUC)}</td></tr>`).join('') + '</tbody>';
-  }
-  if (card.sensitivity) {
-    $('#sensitivity').innerHTML = '<thead><tr><th>Data used</th><th>At</th><th class="n">n</th><th class="n">Time error</th><th class="n">Median guess</th><th class="n">R\u00b2</th><th class="n">R\u00b2, unseen company</th><th class="n">AUC</th></tr></thead><tbody>' +
-      card.sensitivity.map(s => `<tr><td>${esc(s.scope)}</td><td>${s.gate === 'G50' ? '50%' : '25%'}</td><td class="n">${s.n}</td><td class="n">${s.time_MAE.toFixed(1)}</td><td class="n">${s.baseline_MAE.toFixed(1)}</td><td class="n">${s.time_R2.toFixed(2)}</td><td class="n">${f2(s.loco_time_R2)}</td><td class="n">${f2(s.risk_AUC)}</td></tr>`).join('') + '</tbody>';
-  }
-  $('#excluded').innerHTML = Object.entries(card.excluded_for_leakage).map(([k, v]) => `<li><b>${esc(k)}</b>: ${esc(v)}</li>`).join('');
-  const n = card.dataset.n_projects, G = card.gates, spiOnly = G.G25?.leave_company_out?.spi_only_linear?.r2;
-  $('#limits').innerHTML = [
-    `The model is trained on ${n} real completed projects from three contractors and a few external records: a pilot study, not a model for the whole industry. Hypothetical scenarios and ongoing projects are kept out of training and labelled wherever they appear.`,
-    `For a company it has never seen, the time forecast explains about ${Math.round((G.G25?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% of the variation at 25% and ${Math.round((G.G50?.leave_company_out?.time_overrun?.r2 ?? 0) * 100)}% at 50%. SPI alone transfers about as well${spiOnly != null ? ` (${spiOnly.toFixed(2)} at 25%)` : ''}: the other questions mainly give the forecast its reasons.`,
-    `The cost forecast at 25% is barely better than the average (R\u00b2 ${G.G25?.cost_overrun?.r2?.mean?.toFixed(2)}); treat it as indicative. At 50% it is usable (R\u00b2 ${G.G50?.cost_overrun?.r2?.mean?.toFixed(2)}).`,
-    'Contract and site information alone does not predict overrun in this data; the signal appears once first-quarter events and earned value are known. REVIVE therefore forecasts at 25% and 50% of contract time, not at award.',
-    'SPI dominates the explanation. If SPI values were back-calculated from the final delay, performance is optimistic; the robustness table shows results without SPI and CPI.',
-    'The recovery and digital twin use one linked case-study schedule. Crash rates, liquidated damages and carbon factors are inputs to verify for each real project.',
-    'Performance is cross-validated. The next step is an external test on newly collected projects: python -m revive evaluate --file new.xlsx',
-  ].map(t => `<li>${esc(t)}</li>`).join('');
-  $$('[data-evgate]').forEach(el => {
-    el.innerHTML = Object.keys(g).map(k => `<button type="button" data-g="${k}" aria-pressed="${k === S.evGate}">${k === 'G50' ? '50%' : '25%'}</button>`).join('');
-    el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.evGate = b.dataset.g; renderEvidence(); renderInsightCharts(); }));
-  });
-}
-
-function renderInsightCharts() {
-  const ins = S.insights;
-  if (!ins) return;
-  if (ins.oof) fx.whenVisible($('#scatter'), () => C.scatter($('#scatter'), ins.oof[S.evGate]));
-  if (ins.drivers) fx.whenVisible($('#beeswarm'), () => C.beeswarm($('#beeswarm'), ins.drivers[S.evGate].beeswarm));
-  const famColor = { Client: '#6CB2FF', Contractor: '#E9C46A', 'Design & supervision': '#43C59E', External: '#F28C38' };
-  fx.whenVisible($('#rii'), () => C.hbars($('#rii'), ins.rii, { max: 1, label: r => `${r.rank}. ${r.label}`, value: r => r.rii, color: r => famColor[r.family], text: r => r.rii.toFixed(2) }));
-  const comp = ins.composition, fixed = { 'Hypothetical scenarios': '#FF4FA3', 'External sources': '#B4BCC6', Unlabelled: '#5C6673' }, spare = ['#6CB2FF', '#43C59E', '#E9C46A', '#F28C38'];
-  const palette = comp.by_source.map((s, i) => fixed[s.label] || spare[i % spare.length]);
-  const total = comp.by_source.reduce((s, x) => s + x.n, 0);
-  $('#composition').innerHTML = `<div class="stack">${comp.by_source.map((s, i) => `<i style="width:${(100 * s.n / total).toFixed(2)}%;background:${palette[i]};--d:${i * 120}ms" data-tip="${esc(s.label)}: ${s.n} records"></i>`).join('')}</div>
-    <ul class="stack-legend">${comp.by_source.map((s, i) => `<li><i style="--c:${palette[i]}"></i>${esc(s.label)}: ${s.n}</li>`).join('')}</ul>
-    <p class="fine">${comp.n_with_outcome} records have a completion date. Median time overrun ${comp.median_time_overrun_pct}%, median cost overrun ${comp.median_cost_overrun_pct}%. ${Math.round(comp.share_over_10pct * 100)}% of projects overran by more than 10%, which is why REVIVE forecasts the size of the overrun rather than a yes/no delay label.</p>`;
-}
-
 // ================================================================== connection UI
 function showConnState(state) {
   $('#conn').dataset.state = state;
@@ -1073,7 +894,7 @@ function showConnState(state) {
     if (S.booted) { $('#conn-banner').hidden = false; S.wasOffline = true; }
   } else if (state === 'online') {
     $('#conn-banner').hidden = true;
-    if (S.card) $('#status').textContent = 'Connected';
+    if (S.schema) $('#status').textContent = 'Connected';
     if (S.booted && S.wasOffline) {
       S.wasOffline = false;
       toast('Reconnected to the REVIVE server.', 'ok');
@@ -1089,7 +910,6 @@ async function resync() {
     if (S.livePid) await followLive(S.livePid);
     channel.catchUp();
     if (S.prediction && !S.recovery) await runRecovery();
-    if (!S.portfolio) await loadPortfolio();
     await loadProjects();
   } catch (e) { report(e); }
 }
@@ -1097,8 +917,7 @@ async function resync() {
 // ================================================================== tabs (hash routing: #delay, #assess, ...)
 const TABS = ['projects', 'delay', 'assess', 'live', 'twin', 'recover'];
 const TAB_HINT = { projects: 'Every project and where it stands', delay: 'How late the project is today', assess: 'Where it is heading, and why',
-  live: 'Phone updates from site', twin: 'The forecast on the building', recover: 'The cheapest way back', impact: 'Time, cost and carbon',
-  portfolio: 'The survey projects', evidence: 'How far the numbers can be trusted' };
+  live: 'Phone updates from site', twin: 'The forecast on the building', recover: 'The cheapest way back' };
 
 /** Previous and next sheet at the foot of each sheet: the workflow reads in order without the rail. */
 function sheetNav() {
@@ -1281,7 +1100,7 @@ async function openProject(id, { tab = null } = {}) {
     renderSwitcher(); setTitleblocks();
     $$('.proj-card').forEach(c => c.classList.toggle('current', Number(c.dataset.id) === p.id));
     // forecast form: the project's saved inputs, else what its details already tell us
-    S.sourceId = null; S.presetName = p.name; $('#save-name').value = p.name; $('#save-name').dataset.auto = '1';
+    S.presetName = p.name; $('#save-name').value = p.name; $('#save-name').dataset.auto = '1';
     if (p.location) { setLocation(p.location); S.wxPinned = true; }
     await refreshBimSummary();
     loadTwins();
@@ -1613,12 +1432,6 @@ function wire() {
   });
   $('#save-btn').addEventListener('click', saveAssessment);
   $('#save-name').addEventListener('input', e => { e.target.dataset.auto = '0'; });
-  $$('#filters button').forEach(b => b.addEventListener('click', () => {
-    S.filter = b.dataset.f;
-    $$('#filters button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    renderPortfolio();
-  }));
-  $('#search').addEventListener('input', e => { S.query = e.target.value; renderPortfolio(); });
   $$('.hud-modes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
   $('#scrub').addEventListener('input', e => { S.t = Number(e.target.value); S.scrubbing = true; if (S.mode !== 'build') setMode('build'); updateReadout(); paintTwin(); });
   $('#scrub').addEventListener('change', () => { S.scrubbing = false; });
@@ -1679,8 +1492,8 @@ function wire() {
 
 // ================================================================== init
 async function init() {
-  const [me, schema, card, presets] = await Promise.all([api('/auth/me'), api('/schema'), api('/model-card'), api('/presets')]);
-  Object.assign(S, { user: me.user, schema, card, presets });
+  const [me, schema, presets] = await Promise.all([api('/auth/me'), api('/schema'), api('/presets')]);
+  Object.assign(S, { user: me.user, schema, presets });
   $('#user-initials').textContent = initials(me.user.name);
   $('#user-company').textContent = me.user.company_name;
   $('#user-email').textContent = `${me.user.name} \u00b7 ${me.user.email} \u00b7 ${me.user.role}`;
@@ -1692,9 +1505,6 @@ async function init() {
   renderClusterIdle();
   await initWeather();
   $('#preset-select').innerHTML = '<option value="">Choose</option>' + presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-  renderEvidence();
-  loadPortfolio().catch(report);
-  api('/insights').then(ins => { S.insights = ins; renderInsightCharts(); }).catch(report);
   await loadProjects();
   channel.start();
   await loadLiveList();
