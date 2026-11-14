@@ -114,6 +114,8 @@ def test_saved_models_respect_the_declared_directions():
     for gate in load_config()["gates"]:
         for kind in ("time", "cost", "risk"):
             d = json.loads((models_dir() / gate / f"{kind}.json").read_text())
+            if d.get("format") != "revive-linear-1":
+                continue          # sign constraints belong to the linear model
             for col, w in zip(d["columns"], d["coef"]):
                 assert w * CORE_DIRECTION.get(col, 0) >= -1e-9, (gate, kind, col, w)
 
@@ -139,3 +141,29 @@ def test_hypothetical_rows_train_but_are_never_scored():
     for g in card["gates"].values():
         assert g["n_projects"] == card["dataset"]["n_projects"]
         assert "leave_company_out" in g["no_progress_report"]
+
+
+def test_forest_contributions_add_up_exactly_and_survive_json(tmp_path):
+    from revive.forest import ForestModel
+    from revive.modeling import load_model
+    rng = np.random.default_rng(3)
+    X = pd.DataFrame({"a": rng.normal(size=80), "b": rng.normal(size=80), "c": rng.normal(size=80)})
+    X.loc[::9, "b"] = np.nan                                   # blanks are filled with the training median
+    y = 30 + 12 * X["a"] - 8 * X["b"].fillna(0) + rng.normal(scale=2, size=80)
+    for kind, target in (("reg", y), ("clf", (y > 30).astype(int))):
+        m = ForestModel(kind, n_estimators=40).fit(X, target)
+        base, c = m.contributions(X)
+        pred = m.predict(X) if kind == "reg" else m.predict_proba(X)[:, 1]
+        assert np.allclose(base + c.sum(axis=1), pred, atol=1e-6)
+        assert np.abs(c[:, 0]).mean() > np.abs(c[:, 2]).mean()   # the real driver outweighs the noise column
+        m.save_model(tmp_path / f"{kind}.json")
+        again = load_model(tmp_path / f"{kind}.json", kind)
+        assert np.allclose((again.predict(X) if kind == "reg" else again.predict_proba(X)[:, 1]), pred, atol=1e-4)
+
+
+def test_production_forecast_parts_add_up():
+    from revive.inference import get_predictor
+    p = get_predictor()
+    out = p.predict(p.inputs_for(p.dataset["project_id"].iloc[0]))
+    total = out["explanation"]["base_value"] + sum(c["shap"] for c in out["explanation"]["contributions"])
+    assert out["mode"] == "standard" and abs(total - out["time_overrun_pct"]) < 0.5 and out["actions"] is not None

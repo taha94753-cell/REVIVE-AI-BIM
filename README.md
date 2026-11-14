@@ -189,8 +189,8 @@ E-mail alerts: set `alerts.enabled: true` and the environment variables `SMTP_HO
 
 | Checkpoint | Time-overrun error | Guessing the median | R² | R², unseen company | High-risk AUC | AUC, unseen company |
 |---|---|---|---|---|---|---|
-| 25% of contract time | 6.4 pts | 9.8 pts | 0.81 | 0.50 | 0.88 | 0.86 |
-| 50% of contract time | 4.2 pts | 9.8 pts | 0.91 | 0.74 | 0.91 | 0.89 |
+| 25% of contract time | 4.3 pts | 9.8 pts | 0.92 | 0.64 | 0.88 | 0.89 |
+| 50% of contract time | 3.6 pts | 9.8 pts | 0.94 | 0.73 | 0.92 | 0.90 |
 
 "Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Augmented records (scenario rows, not verified projects; `is_hypothetical` in the data) join the training side and are never scored. Ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
 

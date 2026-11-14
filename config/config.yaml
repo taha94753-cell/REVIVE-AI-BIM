@@ -37,10 +37,16 @@ training:
   # core = the compact question set in schema.CORE_KEYS (10 questions at 25%,
   # 13 at 50%); all = every survey answer (35). The form follows this switch.
   feature_set: core
-  # linear = ridge / logistic regression with exact additive explanations;
-  # xgboost = gradient-boosted trees with TreeSHAP. Linear generalises better
-  # to an unseen contractor on this dataset (see docs/DATA_NOTES.md).
-  model: linear
+  # forest  = random forest, the time model trained with blended rows (training.blend). Lowest error
+  #           on random folds and on an unseen contractor; exact decision-path contributions.
+  # linear  = sign-constrained ridge / logistic regression. Slightly higher R2 on an unseen
+  #           contractor at 25%; kept in the model comparison as the simple baseline.
+  # xgboost = gradient-boosted trees with TreeSHAP.
+  # See docs/DATA_NOTES.md before changing this.
+  model: forest
+  forest:                          # production random forest (revive/forest.py), same settings as the comparison row
+    n_estimators: 400
+    min_samples_leaf: 2
   linear:
     alpha: 3.0                     # ridge penalty (time and cost)
     C: 0.5                         # inverse penalty (high-risk classifier)
