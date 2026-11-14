@@ -1,8 +1,12 @@
 {
-  "trained_at": "2026-10-21T19:09:20+00:00",
+  "trained_at": "2026-11-14T07:41:04+00:00",
   "training_scope": {
     "include_ongoing": false,
     "include_hypothetical": false
+  },
+  "augmentation": {
+    "hypothetical_rows_in_training": 32,
+    "note": "Hypothetical scenario rows are added to the training side only. Every score in this card is measured on real completed projects."
   },
   "dataset": {
     "n_projects": 81,
@@ -75,7 +79,7 @@
     "B8a/B8b": "award date mainly identifies the data batch, not a cause"
   },
   "versions": {
-    "python": "3.12.3",
+    "python": "3.13.18",
     "xgboost": "3.4.1",
     "scikit-learn": "1.9.1",
     "shap": "0.54.1"
@@ -87,114 +91,179 @@
       "n_encoded_columns": 10,
       "time_overrun": {
         "mae": {
-          "mean": 6.373,
-          "std": 0.162
+          "mean": 6.032,
+          "std": 0.099
         },
         "rmse": {
-          "mean": 8.694,
-          "std": 0.198
+          "mean": 9.266,
+          "std": 0.151
         },
         "r2": {
-          "mean": 0.811,
-          "std": 0.009
+          "mean": 0.785,
+          "std": 0.007
         },
         "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -10.28,
-          9.93
+          -9.84,
+          7.58
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 4.374,
-          "std": 0.128
+          "mean": 4.672,
+          "std": 0.032
         },
         "rmse": {
-          "mean": 6.133,
-          "std": 0.297
+          "mean": 5.83,
+          "std": 0.064
         },
         "r2": {
-          "mean": 0.163,
-          "std": 0.081
+          "mean": 0.246,
+          "std": 0.016
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.883,
-          "std": 0.006
+          "mean": 0.866,
+          "std": 0.008
         },
         "f1": {
-          "mean": 0.684,
-          "std": 0.0
+          "mean": 0.707,
+          "std": 0.016
         },
         "accuracy": {
-          "mean": 0.852,
-          "std": 0.0
+          "mean": 0.86,
+          "std": 0.006
         },
         "precision": {
-          "mean": 0.929,
-          "std": 0.0
+          "mean": 0.932,
+          "std": 0.002
         },
         "recall": {
-          "mean": 0.542,
-          "std": 0.0
+          "mean": 0.569,
+          "std": 0.02
         },
         "positives": 24,
         "majority_class_accuracy": 0.704
       },
       "leave_company_out": {
         "time_overrun": {
-          "mae": 7.486,
-          "rmse": 14.152,
-          "r2": 0.499
+          "mae": 7.092,
+          "rmse": 12.684,
+          "r2": 0.598
         },
-        "high_risk_auc": 0.865,
+        "high_risk_auc": 0.86,
         "spi_only_linear": {
-          "mae": 7.545,
-          "rmse": 12.934,
-          "r2": 0.582
+          "mae": 6.699,
+          "rmse": 11.733,
+          "r2": 0.656
         }
       },
       "spi_only_linear": {
-        "mae": 6.807,
-        "rmse": 10.156,
-        "r2": 0.742
+        "mae": 6.327,
+        "rmse": 10.807,
+        "r2": 0.708
+      },
+      "no_progress_report": {
+        "model": "random forest without SPI or CPI",
+        "time_overrun": {
+          "mae": {
+            "mean": 6.264,
+            "std": 0.106
+          },
+          "rmse": {
+            "mean": 12.03,
+            "std": 0.103
+          },
+          "r2": {
+            "mean": 0.638,
+            "std": 0.006
+          },
+          "interval_80pct_residuals": [
+            -5.52,
+            8.97
+          ]
+        },
+        "cost_overrun": {
+          "mae": {
+            "mean": 4.495,
+            "std": 0.223
+          },
+          "rmse": {
+            "mean": 6.12,
+            "std": 0.341
+          },
+          "r2": {
+            "mean": 0.166,
+            "std": 0.093
+          }
+        },
+        "high_risk": {
+          "auc": {
+            "mean": 0.808,
+            "std": 0.011
+          },
+          "f1": {
+            "mean": 0.737,
+            "std": 0.0
+          },
+          "accuracy": {
+            "mean": 0.877,
+            "std": 0.0
+          },
+          "precision": {
+            "mean": 1.0,
+            "std": 0.0
+          },
+          "recall": {
+            "mean": 0.583,
+            "std": 0.0
+          }
+        },
+        "leave_company_out": {
+          "time_overrun": {
+            "mae": 7.791,
+            "rmse": 16.153,
+            "r2": 0.347
+          },
+          "high_risk_auc": 0.689
+        }
       },
       "top_drivers": [
         {
-          "key": "spi_25",
-          "label": "SPI at 25% of time",
-          "mean_abs_shap": 6.205
-        },
-        {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 3.888
+          "mean_abs_shap": 5.806
+        },
+        {
+          "key": "spi_25",
+          "label": "SPI at 25% of time",
+          "mean_abs_shap": 5.288
         },
         {
           "key": "duration_setting",
           "label": "How the duration was set",
-          "mean_abs_shap": 2.315
-        },
-        {
-          "key": "cert_25",
-          "label": "Value certified at 25% of time",
-          "mean_abs_shap": 1.976
-        },
-        {
-          "key": "variations_q1",
-          "label": "Variation orders so far",
-          "mean_abs_shap": 1.434
+          "mean_abs_shap": 2.224
         },
         {
           "key": "planned_months",
           "label": "Original contract duration",
-          "mean_abs_shap": 1.206
+          "mean_abs_shap": 1.66
+        },
+        {
+          "key": "cert_25",
+          "label": "Value certified at 25% of time",
+          "mean_abs_shap": 1.622
+        },
+        {
+          "key": "variations_q1",
+          "label": "Variation orders so far",
+          "mean_abs_shap": 1.085
         },
         {
           "key": "funding",
           "label": "Funding committed at award",
-          "mean_abs_shap": 0.575
+          "mean_abs_shap": 0.409
         },
         {
           "key": "design_status",
@@ -209,53 +278,53 @@
       "n_encoded_columns": 13,
       "time_overrun": {
         "mae": {
-          "mean": 4.234,
-          "std": 0.128
+          "mean": 4.225,
+          "std": 0.053
         },
         "rmse": {
-          "mean": 6.043,
-          "std": 0.15
+          "mean": 7.211,
+          "std": 0.065
         },
         "r2": {
-          "mean": 0.909,
-          "std": 0.005
+          "mean": 0.87,
+          "std": 0.002
         },
         "baseline_median_mae": 9.75,
         "interval_80pct_residuals": [
-          -7.28,
-          5.46
+          -6.61,
+          4.66
         ]
       },
       "cost_overrun": {
         "mae": {
-          "mean": 2.416,
-          "std": 0.042
+          "mean": 2.46,
+          "std": 0.026
         },
         "rmse": {
           "mean": 2.919,
-          "std": 0.043
+          "std": 0.037
         },
         "r2": {
           "mean": 0.811,
-          "std": 0.006
+          "std": 0.005
         }
       },
       "high_risk": {
         "auc": {
-          "mean": 0.913,
-          "std": 0.003
+          "mean": 0.89,
+          "std": 0.007
         },
         "f1": {
-          "mean": 0.763,
-          "std": 0.025
+          "mean": 0.756,
+          "std": 0.008
         },
         "accuracy": {
-          "mean": 0.877,
-          "std": 0.017
+          "mean": 0.872,
+          "std": 0.006
         },
         "precision": {
-          "mean": 0.894,
-          "std": 0.067
+          "mean": 0.873,
+          "std": 0.022
         },
         "recall": {
           "mean": 0.667,
@@ -266,62 +335,127 @@
       },
       "leave_company_out": {
         "time_overrun": {
-          "mae": 5.204,
-          "rmse": 10.219,
-          "r2": 0.739
+          "mae": 5.429,
+          "rmse": 9.892,
+          "r2": 0.755
         },
-        "high_risk_auc": 0.89,
+        "high_risk_auc": 0.867,
         "spi_only_linear": {
-          "mae": 4.564,
-          "rmse": 8.284,
-          "r2": 0.828
+          "mae": 4.655,
+          "rmse": 8.724,
+          "r2": 0.81
         }
       },
       "spi_only_linear": {
-        "mae": 3.987,
-        "rmse": 5.964,
-        "r2": 0.911
+        "mae": 4.185,
+        "rmse": 7.539,
+        "r2": 0.858
+      },
+      "no_progress_report": {
+        "model": "random forest without SPI or CPI",
+        "time_overrun": {
+          "mae": {
+            "mean": 6.049,
+            "std": 0.237
+          },
+          "rmse": {
+            "mean": 10.821,
+            "std": 0.25
+          },
+          "r2": {
+            "mean": 0.707,
+            "std": 0.014
+          },
+          "interval_80pct_residuals": [
+            -5.52,
+            8.59
+          ]
+        },
+        "cost_overrun": {
+          "mae": {
+            "mean": 4.667,
+            "std": 0.234
+          },
+          "rmse": {
+            "mean": 6.455,
+            "std": 0.227
+          },
+          "r2": {
+            "mean": 0.074,
+            "std": 0.065
+          }
+        },
+        "high_risk": {
+          "auc": {
+            "mean": 0.856,
+            "std": 0.009
+          },
+          "f1": {
+            "mean": 0.727,
+            "std": 0.016
+          },
+          "accuracy": {
+            "mean": 0.864,
+            "std": 0.01
+          },
+          "precision": {
+            "mean": 0.901,
+            "std": 0.048
+          },
+          "recall": {
+            "mean": 0.611,
+            "std": 0.02
+          }
+        },
+        "leave_company_out": {
+          "time_overrun": {
+            "mae": 6.897,
+            "rmse": 14.978,
+            "r2": 0.439
+          },
+          "high_risk_auc": 0.787
+        }
       },
       "top_drivers": [
         {
           "key": "spi_50",
           "label": "SPI at 50% of time",
-          "mean_abs_shap": 7.113
-        },
-        {
-          "key": "spi_25",
-          "label": "SPI at 25% of time",
-          "mean_abs_shap": 2.613
+          "mean_abs_shap": 5.731
         },
         {
           "key": "late_payments_q1",
           "label": "IPCs paid more than 30 days late",
-          "mean_abs_shap": 2.032
+          "mean_abs_shap": 3.307
         },
         {
-          "key": "funding",
-          "label": "Funding committed at award",
-          "mean_abs_shap": 1.156
+          "key": "spi_25",
+          "label": "SPI at 25% of time",
+          "mean_abs_shap": 1.629
         },
         {
-          "key": "planned_months",
-          "label": "Original contract duration",
-          "mean_abs_shap": 1.024
+          "key": "duration_setting",
+          "label": "How the duration was set",
+          "mean_abs_shap": 1.116
         },
         {
           "key": "cert_25",
           "label": "Value certified at 25% of time",
-          "mean_abs_shap": 0.995
+          "mean_abs_shap": 1.022
         },
         {
-          "key": "variations_q1",
-          "label": "Variation orders so far",
-          "mean_abs_shap": 0.625
+          "key": "funding",
+          "label": "Funding committed at award",
+          "mean_abs_shap": 0.782
         },
         {
-          "key": "subcontractor_q1",
-          "label": "Subcontractor performance",
-          "mean_abs_shap": 0.597
+          "key": "cert_50",
+          "label": "Value certified at 50% of time",
+          "mean_abs_shap": 0.707
+        },
+        {
+          "key": "planned_months",
+          "label": "Original contract duration",
+          "mean_abs_shap": 0.667
         }
       ]
     }
@@ -341,68 +475,79 @@
     {
       "gate": "G25",
       "model": "Linear, core questions (production)",
-      "time_MAE": 6.37,
-      "time_R2": 0.811,
-      "risk_AUC": 0.883,
-      "risk_F1": 0.684,
-      "loco_time_MAE": 7.49,
-      "loco_time_R2": 0.499,
-      "loco_risk_AUC": 0.865
+      "time_MAE": 6.03,
+      "time_R2": 0.785,
+      "risk_AUC": 0.866,
+      "risk_F1": 0.707,
+      "loco_time_MAE": 7.09,
+      "loco_time_R2": 0.598,
+      "loco_risk_AUC": 0.86
     },
     {
       "gate": "G25",
       "model": "Linear, SPI only",
-      "time_MAE": 6.81,
-      "time_R2": 0.742,
+      "time_MAE": 6.33,
+      "time_R2": 0.708,
       "risk_AUC": NaN,
       "risk_F1": NaN,
-      "loco_time_MAE": 7.55,
-      "loco_time_R2": 0.582,
+      "loco_time_MAE": 6.7,
+      "loco_time_R2": 0.656,
       "loco_risk_AUC": NaN
     },
     {
       "gate": "G25",
+      "model": "Random forest, no SPI or CPI (fallback)",
+      "time_MAE": 6.26,
+      "time_R2": 0.638,
+      "risk_AUC": 0.808,
+      "risk_F1": 0.737,
+      "loco_time_MAE": 7.79,
+      "loco_time_R2": 0.347,
+      "loco_risk_AUC": 0.689
+    },
+    {
+      "gate": "G25",
       "model": "XGBoost, all 33 answers",
-      "time_MAE": 6.28,
-      "time_R2": 0.64,
-      "risk_AUC": 0.803,
-      "risk_F1": 0.545,
-      "loco_time_MAE": 7.83,
-      "loco_time_R2": 0.28,
-      "loco_risk_AUC": 0.752
+      "time_MAE": 5.3,
+      "time_R2": 0.778,
+      "risk_AUC": 0.826,
+      "risk_F1": 0.638,
+      "loco_time_MAE": 6.89,
+      "loco_time_R2": 0.47,
+      "loco_risk_AUC": 0.812
     },
     {
       "gate": "G25",
       "model": "XGBoost, core questions",
-      "time_MAE": 6.57,
-      "time_R2": 0.633,
-      "risk_AUC": 0.822,
-      "risk_F1": 0.636,
-      "loco_time_MAE": 7.73,
-      "loco_time_R2": 0.289,
-      "loco_risk_AUC": 0.817
+      "time_MAE": 5.53,
+      "time_R2": 0.803,
+      "risk_AUC": 0.827,
+      "risk_F1": 0.653,
+      "loco_time_MAE": 6.16,
+      "loco_time_R2": 0.501,
+      "loco_risk_AUC": 0.857
     },
     {
       "gate": "G25",
       "model": "Random Forest",
-      "time_MAE": 5.96,
-      "time_R2": 0.666,
-      "risk_AUC": 0.897,
-      "risk_F1": 0.75,
-      "loco_time_MAE": 7.0,
-      "loco_time_R2": 0.358,
-      "loco_risk_AUC": 0.887
+      "time_MAE": 5.22,
+      "time_R2": 0.707,
+      "risk_AUC": 0.847,
+      "risk_F1": 0.744,
+      "loco_time_MAE": 5.92,
+      "loco_time_R2": 0.459,
+      "loco_risk_AUC": 0.893
     },
     {
       "gate": "G25",
       "model": "SVM (RBF)",
-      "time_MAE": 6.9,
-      "time_R2": 0.251,
-      "risk_AUC": 0.836,
-      "risk_F1": 0.564,
-      "loco_time_MAE": 7.76,
-      "loco_time_R2": 0.077,
-      "loco_risk_AUC": 0.822
+      "time_MAE": 6.15,
+      "time_R2": 0.481,
+      "risk_AUC": 0.798,
+      "risk_F1": 0.683,
+      "loco_time_MAE": 6.94,
+      "loco_time_R2": 0.216,
+      "loco_risk_AUC": 0.879
     },
     {
       "gate": "G50",
@@ -418,69 +563,80 @@
     {
       "gate": "G50",
       "model": "Linear, core questions (production)",
-      "time_MAE": 4.23,
-      "time_R2": 0.909,
-      "risk_AUC": 0.913,
-      "risk_F1": 0.763,
-      "loco_time_MAE": 5.2,
-      "loco_time_R2": 0.739,
-      "loco_risk_AUC": 0.89
+      "time_MAE": 4.22,
+      "time_R2": 0.87,
+      "risk_AUC": 0.89,
+      "risk_F1": 0.756,
+      "loco_time_MAE": 5.43,
+      "loco_time_R2": 0.755,
+      "loco_risk_AUC": 0.867
     },
     {
       "gate": "G50",
       "model": "Linear, SPI only",
-      "time_MAE": 3.99,
-      "time_R2": 0.911,
+      "time_MAE": 4.19,
+      "time_R2": 0.858,
       "risk_AUC": NaN,
       "risk_F1": NaN,
-      "loco_time_MAE": 4.56,
-      "loco_time_R2": 0.828,
+      "loco_time_MAE": 4.66,
+      "loco_time_R2": 0.81,
       "loco_risk_AUC": NaN
     },
     {
       "gate": "G50",
+      "model": "Random forest, no SPI or CPI (fallback)",
+      "time_MAE": 6.05,
+      "time_R2": 0.707,
+      "risk_AUC": 0.856,
+      "risk_F1": 0.727,
+      "loco_time_MAE": 6.9,
+      "loco_time_R2": 0.439,
+      "loco_risk_AUC": 0.787
+    },
+    {
+      "gate": "G50",
       "model": "XGBoost, all 36 answers",
-      "time_MAE": 5.27,
-      "time_R2": 0.768,
-      "risk_AUC": 0.878,
-      "risk_F1": 0.837,
-      "loco_time_MAE": 6.99,
-      "loco_time_R2": 0.347,
-      "loco_risk_AUC": 0.872
+      "time_MAE": 4.12,
+      "time_R2": 0.851,
+      "risk_AUC": 0.895,
+      "risk_F1": 0.723,
+      "loco_time_MAE": 5.4,
+      "loco_time_R2": 0.506,
+      "loco_risk_AUC": 0.887
     },
     {
       "gate": "G50",
       "model": "XGBoost, core questions",
-      "time_MAE": 4.72,
-      "time_R2": 0.791,
-      "risk_AUC": 0.891,
-      "risk_F1": 0.791,
-      "loco_time_MAE": 6.59,
-      "loco_time_R2": 0.382,
-      "loco_risk_AUC": 0.879
+      "time_MAE": 4.15,
+      "time_R2": 0.852,
+      "risk_AUC": 0.902,
+      "risk_F1": 0.739,
+      "loco_time_MAE": 5.1,
+      "loco_time_R2": 0.522,
+      "loco_risk_AUC": 0.886
     },
     {
       "gate": "G50",
       "model": "Random Forest",
-      "time_MAE": 4.53,
-      "time_R2": 0.732,
-      "risk_AUC": 0.922,
+      "time_MAE": 3.79,
+      "time_R2": 0.811,
+      "risk_AUC": 0.898,
       "risk_F1": 0.829,
-      "loco_time_MAE": 6.34,
-      "loco_time_R2": 0.382,
-      "loco_risk_AUC": 0.907
+      "loco_time_MAE": 4.9,
+      "loco_time_R2": 0.593,
+      "loco_risk_AUC": 0.897
     },
     {
       "gate": "G50",
       "model": "SVM (RBF)",
-      "time_MAE": 6.41,
-      "time_R2": 0.172,
-      "risk_AUC": 0.852,
-      "risk_F1": 0.634,
-      "loco_time_MAE": 7.31,
-      "loco_time_R2": 0.106,
-      "loco_risk_AUC": 0.866
+      "time_MAE": 5.61,
+      "time_R2": 0.454,
+      "risk_AUC": 0.838,
+      "risk_F1": 0.739,
+      "loco_time_MAE": 6.34,
+      "loco_time_R2": 0.245,
+      "loco_risk_AUC": 0.9
     }
   ],
-  "training_seconds": 23.7
+  "training_seconds": 26.6
 }

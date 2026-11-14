@@ -73,7 +73,13 @@ class Predictor:
             cost_m = load_model(gdir / "cost.json", "reg")
             risk_m = load_model(gdir / "risk.json", "clf")
             meta = json.loads((gdir / "meta.json").read_text())
+            fallback = None
+            if meta.get("fallback") and (gdir / "time_noevm.json").exists():
+                fallback = {"time": load_model(gdir / "time_noevm.json", "reg"),
+                            "cost": load_model(gdir / "cost_noevm.json", "reg"),
+                            "risk": load_model(gdir / "risk_noevm.json", "clf"), **meta["fallback"]}
             self.gates[gate] = {
+                "fallback": fallback,
                 "time": time_m, "cost": cost_m, "risk": risk_m, "meta": meta,
                 "global": json.loads((gdir / "shap_global.json").read_text()),
             }
@@ -87,8 +93,10 @@ class Predictor:
     # ------------------------------------------------------------------
     @staticmethod
     def choose_gate(inputs: dict) -> str:
-        v = inputs.get("spi_50")
-        return "G50" if v not in (None, "") else "G25"
+        # no SPI at all: the certified value at 50% still says which gate the project is at
+        if any(inputs.get(k) not in (None, "") for k in ("spi_50", "cert_50")):
+            return "G50"
+        return "G25"
 
     def _explain(self, model, X, inputs, top=8) -> dict:
         base, sv = contributions(model, X)
@@ -110,11 +118,21 @@ class Predictor:
         gate = gate or self.choose_gate(inputs)
         g = self.gates[gate]
         X = encode_one(inputs, gate)
-        t = float(g["time"].predict(X)[0])
-        c = float(g["cost"].predict(X)[0])
-        p = float(g["risk"].predict_proba(X)[0, 1])
-        lo, hi = g["meta"]["time_interval_residuals"]
-        clo, chi = g["meta"]["cost_interval_residuals"]
+        # No SPI for this gate: use the no-progress-report model instead of imputing an average SPI.
+        no_spi = inputs.get("spi_50" if gate == "G50" else "spi_25") in (None, "")
+        fb = g.get("fallback") if no_spi else None
+        if fb:
+            X = X[fb["columns"]]
+            time_m, cost_m, risk_m = fb["time"], fb["cost"], fb["risk"]
+            lo, hi = fb["time_interval_residuals"]
+            clo, chi = fb["cost_interval_residuals"]
+        else:
+            time_m, cost_m, risk_m = g["time"], g["cost"], g["risk"]
+            lo, hi = g["meta"]["time_interval_residuals"]
+            clo, chi = g["meta"]["cost_interval_residuals"]
+        t = float(time_m.predict(X)[0])
+        c = float(cost_m.predict(X)[0])
+        p = float(risk_m.predict_proba(X)[0, 1])
 
         spi = _num(inputs.get("spi_50" if gate == "G50" else "spi_25"))
         cpi = _num(inputs.get("cpi_50" if gate == "G50" else "cpi_25"))
@@ -137,10 +155,14 @@ class Predictor:
             "recovery_triggers": recovery_triggers(phs["score"], spi, cpi),
             "planned_months": planned,
             "forecast_months": round(forecast_months, 1) if forecast_months else None,
-            "explanation": self._explain(g["time"], X, inputs),
-            "cost_explanation": self._explain(g["cost"], X, inputs, top=5),
+            "explanation": self._explain(time_m, X, inputs),
+            "cost_explanation": self._explain(cost_m, X, inputs, top=5),
             "missing_inputs": missing,
+            "mode": "no_progress_report" if fb else "standard",
         }
+        if fb:
+            result["mode_note"] = ("No SPI was given, so this forecast comes from the no-progress-report model. "
+                                   "It is less precise than a forecast with SPI, most of all for a contractor it has not seen.")
         result["recovery_recommended"] = bool(result["recovery_triggers"]) or result["band"]["name"] in ("At risk", "Critical")
         result["actions"] = actions_for(result["explanation"])
         if source_project_id and not self.oof.empty:
@@ -168,8 +190,8 @@ class Predictor:
             in_training = pred is not None
             prob = _safe(r.get(f"{gate}_prob"))
             if not in_training:
-                # Not used for training (ongoing or hypothetical): the production model never saw
-                # it, so its plain prediction is already an out-of-sample forecast.
+                # No out-of-fold value (ongoing or hypothetical). An ongoing project was never
+                # seen by the model; a hypothetical row may have been (see "seen_in_fit" below).
                 X = encode_one({f["key"]: r.get(f["key"]) for f in FIELDS}, gate)
                 pred = _safe(float(self.gates[gate]["time"].predict(X)[0]))
                 prob = _safe(float(self.gates[gate]["risk"].predict_proba(X)[0, 1]))
@@ -184,6 +206,9 @@ class Predictor:
                 "actual_time_overrun_pct": _safe(r.get("time_overrun_pct")),
                 "band": risk_band(pred) if pred is not None else None,
                 "hypothetical": bool(r.get("is_hypothetical")), "source_group": r.get("source_group"),
+                # hypothetical rows used as training augmentation: their prediction is in-sample
+                "seen_in_fit": in_training or (bool(r.get("is_hypothetical")) and
+                                               self.card.get("augmentation", {}).get("hypothetical_rows_in_training", 0) > 0),
             })
         return rows
 

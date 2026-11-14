@@ -116,3 +116,26 @@ def test_saved_models_respect_the_declared_directions():
             d = json.loads((models_dir() / gate / f"{kind}.json").read_text())
             for col, w in zip(d["columns"], d["coef"]):
                 assert w * CORE_DIRECTION.get(col, 0) >= -1e-9, (gate, kind, col, w)
+
+
+def test_blank_spi_uses_the_no_progress_report_model():
+    from revive.inference import get_predictor
+    p = get_predictor()
+    inputs = p.inputs_for(p.dataset["project_id"].iloc[0])
+    assert p.predict(dict(inputs))["mode"] == "standard"
+    for k in ("spi_25", "spi_50", "cpi_25", "cpi_50"):
+        inputs[k] = None
+    out = p.predict(inputs)
+    assert out["mode"] == "no_progress_report" and out["mode_note"]
+    assert not any(c["key"].startswith(("spi_", "cpi_")) for c in out["explanation"]["contributions"])
+    total = out["explanation"]["base_value"] + sum(c["shap"] for c in out["explanation"]["contributions"])
+    assert abs(total - out["time_overrun_pct"]) < 0.5
+
+
+def test_hypothetical_rows_train_but_are_never_scored():
+    card = json.loads((models_dir() / "model_card.json").read_text())
+    assert card["augmentation"]["hypothetical_rows_in_training"] > 0
+    assert card["dataset"]["hypothetical"] == 0          # the scored set is real projects only
+    for g in card["gates"].values():
+        assert g["n_projects"] == card["dataset"]["n_projects"]
+        assert "leave_company_out" in g["no_progress_report"]

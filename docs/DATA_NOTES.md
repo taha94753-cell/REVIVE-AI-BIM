@@ -142,3 +142,20 @@ None was adopted. The remaining gains are in the data, not the model:
 Collect completed projects and score them before merging:
 
     python -m revive evaluate --file data/raw/new_projects.xlsx
+
+
+## November 2026: augmentation and the no-progress-report model
+
+1. **Hypothetical rows now train, and are still never scored.** With
+   `training.augment_with_hypothetical: true` the 32 SYN rows join the training
+   side of every cross-validation fold and the final fit. The scored set is
+   unchanged: the 81 real completed projects. The rows keep their flag in the
+   dataset and the app. Effect on the linear model: better at 25% (unseen
+   company MAE 7.49 to 7.09), mixed at 50% (unseen company MAE 5.20 to 5.43,
+   high-risk AUC 0.913 to 0.890). Set the switch to false to go back.
+2. **No SPI, no problem.** Many contractors do not keep earned-value records.
+   When SPI is blank the app now uses a random forest trained without SPI or
+   CPI instead of imputing an average SPI. A linear model on those inputs is no
+   better than the median for an unseen contractor (MAE 9.9 against 9.75); the
+   forest is (see `no_progress_report` in the model card). It is weaker than
+   the standard model and the app says so on the forecast.
