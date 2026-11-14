@@ -92,6 +92,18 @@ The landing page (`/`) explains the product and holds the sign-up and sign-in fo
 | Benchmark | The anonymised training dataset with cross-validated forecasts (formerly "Portfolio"); open a record as a worked example. |
 | Evidence | Cross-validated and leave-one-company-out metrics, model comparison against an SPI-only baseline and the old XGBoost design, robustness, predicted against actual, SHAP beeswarm, delay-cause ranking and limitations. |
 
+### Schedule analysis and progress updates
+
+The Current delay sheet also analyses the schedule itself, without the machine-learning model:
+
+- **From the baseline** (P6 `.xer`, MS Project `.xml` or CSV): early and late S-curves, resource load per month, planned cash flow and schedule quality checks (open ends, float, long activities, critical share).
+- **From each progress update**: SPI, SPI(t), CPI, cost variance and forecast cost at completion.
+- **CPI needs a cost-loaded schedule and actual cost.** Without them the app shows SPI only and says why; it never assumes a CPI.
+
+The schedule is not static. The baseline stays fixed; each month, update the programme to its data date, export it and use **Upload progress update**. REVIVE matches it to the baseline by activity ID, keeps every update, plots SPI and CPI over time, and re-measures the current delay from the latest one. If the programme itself was revised (activities added, removed or re-timed), the app says so; upload it as a new baseline when the revision is formal.
+
+A CSV update needs only `id` and `pct_complete` (plus `actual_cost_pkr` for CPI), with the same activity IDs as the baseline.
+
 ## Commands
 
 | Command | Purpose |
@@ -178,10 +190,10 @@ E-mail alerts: set `alerts.enabled: true` and the environment variables `SMTP_HO
 
 | Checkpoint | Time-overrun error | Guessing the median | R² | R², unseen company | High-risk AUC | AUC, unseen company |
 |---|---|---|---|---|---|---|
-| 25% of contract time | 6.4 pts | 9.8 pts | 0.81 | 0.50 | 0.88 | 0.86 |
-| 50% of contract time | 4.2 pts | 9.8 pts | 0.91 | 0.74 | 0.91 | 0.89 |
+| 25% of contract time | 4.3 pts | 9.8 pts | 0.92 | 0.64 | 0.88 | 0.89 |
+| 50% of contract time | 3.6 pts | 9.8 pts | 0.94 | 0.73 | 0.92 | 0.90 |
 
-"Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Hypothetical scenarios and ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
+"Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Augmented records (scenario rows, not verified projects; `is_hypothetical` in the data) join the training side and are never scored. Ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
 
 ## Repository layout
 

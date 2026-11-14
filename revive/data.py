@@ -160,4 +160,13 @@ def ingest(file: str | Path | None = None, sheet: str | None = None, save: bool 
 
 
 def load_clean() -> pd.DataFrame:
-    return pd.read_csv(path(load_config()["data"]["clean_file"]))
+    """The cleaned survey table plus, when present, the extra scenario rows
+    (data.extra_scenarios_file). Those rows are always flagged hypothetical:
+    they can train a model but are never scored as real projects."""
+    df = pd.read_csv(path(load_config()["data"]["clean_file"]))
+    extra = load_config()["data"].get("extra_scenarios_file")
+    if extra and path(extra).exists():
+        more = pd.read_csv(path(extra))
+        more["is_hypothetical"], more["source_group"] = True, "SYN"
+        df = pd.concat([df, more[~more["project_id"].isin(df["project_id"])]], ignore_index=True)
+    return df

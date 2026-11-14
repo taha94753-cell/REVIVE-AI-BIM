@@ -1,7 +1,7 @@
 # CLAUDE.md — working on REVIVE
 
 REVIVE is a final-year design project (NUST, civil engineering). It is an AI-BIM decision-support app that:
-- forecasts construction time/cost overrun at 25% or 50% of contract time with sign-constrained linear models on 10/13 core questions (`schema.CORE_KEYS`, `CORE_DIRECTION`), trained on the 81 real completed projects, and explains each forecast as exact per-answer contributions with owned actions (`actions.py`);
+- forecasts construction time/cost overrun at 25% or 50% of contract time with a random forest (`forest.py`, `training.model: forest`; the time model is trained with blended rows) on 10/13 core questions (`schema.CORE_KEYS`), scored on the 81 real completed projects, and explains each forecast as exact per-answer SHAP contributions with owned actions (`actions.py`). The sign-constrained linear model (`linear.py`, `CORE_DIRECTION`) stays in the comparison as the simple baseline and is one config line away;
 - links the forecast to an IFC model through the schedule (IfcOpenShell);
 - optimises recovery with a linear programme (PuLP/CBC).
 
@@ -10,7 +10,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Commands
 - Setup: `pip install -r requirements-dev.txt && python -m revive setup`
 - Run: `python -m revive serve --reload` then open http://localhost:8000 (API docs at /docs)
-- Test: `python -m pytest -q` (must stay green; 83 tests)
+- Test: `python -m pytest -q` (must stay green; 97 tests)
 - Security scan: `bandit -r revive` (must report no issues)
 - Retrain: `python -m revive train --sensitivity`
 - External test: `python -m revive evaluate --file <xlsx>`
@@ -19,7 +19,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 ## Architecture (data flow)
 `schema.py` → `data.py` → `features.py` → `modeling.py` → `inference.py` → `recovery.py`
 
-`evidence.py` builds the extension-of-time evidence pack (`/api/projects/{id}/evidence`, printable page `web/evidence.html`) and the early-warning record. `schedule_import.py` also reads MS Project XML through defusedxml (never parse uploads with the plain xml modules). `simulation.py` reports the criticality index (what drives the finish).
+`evidence.py` builds the extension-of-time evidence pack (`/api/projects/{id}/evidence`, printable page `web/evidence.html`) and the early-warning record. `schedule_import.py` also reads MS Project XML through defusedxml (never parse uploads with the plain xml modules). `simulation.py` reports the criticality index (what drives the finish). `schedule_analysis.py` reads the baseline plus the cost, resource and progress data the schedule file carried (`schedule_import.read_loading`) and reports S-curves, earned value (SPI, CPI, EAC), resource load, cash flow and quality checks; progress updates are dated snapshots in the `project_schedule` table (`/api/projects/{id}/schedule-analysis`, `/schedule-update`).
 `recovery.py` combines `scheduling.py` (CPM, forecast), `optimizer.py` (LP), `simulation.py` (Monte Carlo), `bim.py` (IFC) and `sustainability.py`. `weather.py` fetches Open-Meteo site weather and classifies lost days; `schedule_import.py` imports Primavera P6 `.xer` or CSV baseline schedules. `live.py` holds monitored projects, phone updates and the in-process SSE `Broker`; the phone page is `web/site.html` + `web/assets/js/site.js`. `server.py` exposes all of it under /api/*. The frontend lives in `web/assets/js/`:
 - `app.js`: state and rendering
 - `conn.js`: every API call goes through `api()`/`post()`, which raise `ApiError` (`.network` = server unreachable); the monitor reconnects by itself
@@ -35,7 +35,11 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
    - Performance figures come from `models/model_card.json` (cross-validated). Never report in-sample accuracy.
    - Never invent results.
    - When a dataset project is scored in the UI, the out-of-fold value is the honest one (the app already shows it).
-4. **Hypothetical data stays labelled.** 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs.
+4. **Hypothetical data stays labelled.** In the UI and docs the label is "augmented records" (scenario rows, not verified projects); the data field is still `is_hypothetical`. 32 records (`source_group == "SYN"`) are hypothetical scenarios. Keep the flag visible in the UI and docs. A further 45 rows in `data/processed/scenarios_extra.csv` (ids `SCN-*`) arrived in November 2026 without a verifiable source; `load_clean()` always loads them as hypothetical. Do not move them into the real set without the original survey responses.
+4c. **Hypothetical rows may train, never score.** `training.augment_with_hypothetical` adds the SYN rows to the training side of every fold and the final fit. Every reported figure is measured on real completed projects, and the rows stay flagged.
+4d. **Blank SPI switches to the no-progress-report model** (`*_noevm.json`, a random forest without SPI or CPI; `mode` in the prediction). Quote its own scores from `no_progress_report` in the model card, never the standard model's.
+4e. **Blended rows are made inside the training fold only** (`blend_rows`, `training.blend`). Never blend before splitting, and never quote a blended model's random-fold score without its unseen-company score.
+4f. **Models are stored as JSON, never pickled.** The forest is saved as tree arrays (`revive-forest-1`). Its contributions are path-dependent TreeSHAP values computed by `shap` from those arrays.
 4a. **Report leave-one-company-out next to random-fold scores.** The model card has both; quote the unseen-company figure when asked whether it generalises. Keep the SPI-only baseline in the comparison.
 4b. **Keep the form short.** A new model input must beat the current core set under leave-one-company-out before it joins `CORE_KEYS`, and needs a direction in `CORE_DIRECTION`.
 5. **Never commit `data/raw/`.** It contains a private company/project key and an e-mail address.
@@ -53,6 +57,7 @@ The backend is FastAPI; the frontend is plain HTML/CSS/JS with vendored Three.js
 17. **Inline scripts are allowed only by hash.** The CSP hashes the import maps at start-up; any other inline `<script>` will be blocked. Put code in `web/assets/js/`.
 19. **Accounts.** A new workspace exists only after the e-mailed code is confirmed (`auth.start_signup` / `finish_signup`; `REVIVE_EMAIL_VERIFICATION=0` only in tests). Codes and reset codes go through `mailer.send_code` and are stored hashed. The session cookie has no Max-Age and sessions idle out (`security.session_idle_minutes`): do not add "remember me". The forgotten-password answer must stay identical for known and unknown addresses. `REVIVE_TRUST_PROXY` is for hosted deployments behind one HTTPS proxy only.
 20. **Public pages.** The public address is https://revive-ai-bim.vercel.app: `og:url`, `og:image` and the canonical link in `web/landing.html` name it in full (link previews need absolute URLs), so change them if the address changes. `web/assets/img/og.png` (1200 x 630) is the share image. `/privacy`, `/terms` and `web/404.html` use `landing.css` (`body.plain`, `.legal`) and `legal.js`; when what REVIVE stores changes, update `web/privacy.html` in the same change.
+21. **The baseline is fixed; updates are snapshots.** A later export of the programme goes through `/schedule-update` and is matched to the baseline by activity id. Only `/api/schedule/upload` replaces the baseline (and clears the updates). Schedule analysis never uses the ML model and never assumes a CPI: no cost loading or no actual cost means `cpi: null` with the reason.
 18. **Current delay never uses the ML model.** It is the independent cross-check; keep it deterministic and keep its "indicative, not forensic" wording.
 
 ## Design language (frontend)

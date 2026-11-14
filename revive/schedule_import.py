@@ -18,6 +18,14 @@ Supported
           - links: same simplification as P6 (non-FS as FS, lags ignored, both counted in the report);
             links to summary rows are dropped and counted
           - parsed with defusedxml, so an uploaded file cannot expand entities or reach the network
+Cost, resources and progress (read_loading)
+  The same files often carry more than logic. When present, these are read too:
+  * .xer  TASKRSRC and PROJCOST (budget and actual cost, resource units), RSRC (names, types),
+          TASK status (% complete, actual dates, remaining duration), PROJECT (data date)
+  * .xml  Task Cost / ActualCost / PercentComplete / actual dates, Resources and Assignments,
+          StatusDate. MS Project stores money x100 in this format, so costs are divided by 100.
+  * .csv  optional columns budget_cost_pkr, actual_cost_pkr, pct_complete, resources ("Mason:120;Crane:16")
+  Nothing is invented: a file with no cost loading yields no CPI, and the analysis says so.
 The imported schedule is written as a CSV next to the upload so it can be reviewed
 and edited, and every element in an IFC model can link to it by WBS_Code = activity id.
 """
@@ -54,6 +62,37 @@ def _read_text(p: Path) -> str:
 
 
 def parse_xer(text: str) -> tuple[list[Activity], dict]:
+    acts, report, _ = _xer_full(text)
+    return acts, report
+
+
+def _day(v) -> str | None:
+    """'2024-03-01 08:00' or '2024-03-01T08:00:00' -> '2024-03-01' (None when blank or not a date)."""
+    v = (v or "").strip()[:10]
+    return v if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v) else None
+
+
+def _xer_pct(t: dict, rs: list[dict]) -> float | None:
+    status = t.get("status_code") or ""
+    if status == "TK_Complete":
+        return 100.0
+    if status == "TK_NotStart":
+        return 0.0
+    kind = t.get("complete_pct_type") or ""
+    if kind == "CP_Phys" and t.get("phys_complete_pct") not in (None, ""):
+        return max(0.0, min(100.0, _f(t.get("phys_complete_pct"))))
+    if kind == "CP_Units":
+        done = sum(_f(r.get("act_reg_qty")) + _f(r.get("act_ot_qty")) for r in rs)
+        left = sum(_f(r.get("remain_qty")) for r in rs)
+        if done + left > 0:
+            return round(100.0 * done / (done + left), 1)
+    target, remain = _f(t.get("target_drtn_hr_cnt")), _f(t.get("remain_drtn_hr_cnt"))
+    if status == "TK_Active" and target > 0:
+        return round(max(0.0, min(100.0, 100.0 * (target - remain) / target)), 1)
+    return None
+
+
+def _xer_full(text: str) -> tuple[list[Activity], dict, dict]:
     tables: dict[str, list[dict]] = {}
     cur, fields = None, None
     for line in text.splitlines():
@@ -94,6 +133,40 @@ def parse_xer(text: str) -> tuple[list[Activity], dict]:
                      weather_sensitive=any(w in name.lower() for w in WEATHER_WORDS))
         by_tid[t.get("task_id")] = a
         acts.append(a)
+    # ---- cost, resources and progress carried by the same file
+    rsrc = {r.get("rsrc_id"): r for r in tables.get("RSRC", [])}
+    by_task: dict[str, list[dict]] = {}
+    for r in tables.get("TASKRSRC", []):
+        by_task.setdefault(r.get("task_id"), []).append(r)
+    expenses: dict[str, list[dict]] = {}
+    for r in tables.get("PROJCOST", []):
+        expenses.setdefault(r.get("task_id"), []).append(r)
+    kinds = {"RT_Labor": "labour", "RT_Equip": "equipment", "RT_Mat": "material"}
+    load = {}
+    for t in tasks:
+        a = by_tid.get(t.get("task_id"))
+        if a is None:
+            continue
+        rs, ex = by_task.get(t.get("task_id"), []), expenses.get(t.get("task_id"), [])
+        res = []
+        for r in rs:
+            info = rsrc.get(r.get("rsrc_id"), {})
+            res.append({"name": (info.get("rsrc_name") or info.get("rsrc_short_name") or "Unnamed resource").strip()[:60],
+                        "type": kinds.get(info.get("rsrc_type") or "", "other"),
+                        "units": round(_f(r.get("target_qty")), 2), "cost": round(_f(r.get("target_cost")), 2)})
+        load[a.id] = {
+            "budget": round(sum(_f(r.get("target_cost")) for r in rs) + sum(_f(e.get("target_cost")) for e in ex), 2),
+            "actual_cost": round(sum(_f(r.get("act_reg_cost")) + _f(r.get("act_ot_cost")) for r in rs)
+                                 + sum(_f(e.get("act_cost")) for e in ex), 2),
+            "pct": _xer_pct(t, rs), "actual_start": _day(t.get("act_start_date")),
+            "actual_finish": _day(t.get("act_end_date")),
+            "remaining": round(_f(t.get("remain_drtn_hr_cnt")) / hpd, 2), "resources": res}
+    proj = (tables.get("PROJECT") or [{}])[0]
+    starts = [d for d in (_day(t.get("target_start_date")) for t in tasks) if d]
+    ends = [d for d in (_day(t.get("target_end_date")) for t in tasks) if d]
+    loading = {"data_date": _day(proj.get("last_recalc_date")),
+               "start": _day(proj.get("plan_start_date")) or (min(starts) if starts else None),
+               "finish": max(ends) if ends else None, "activities": load}
     non_fs = lags = dropped = links = 0
     for r in tables.get("TASKPRED", []):
         succ, pred = by_tid.get(r.get("task_id")), by_tid.get(r.get("pred_task_id"))
@@ -114,7 +187,7 @@ def parse_xer(text: str) -> tuple[list[Activity], dict]:
               "warnings": ["Crash limits and crash costs are defaults from config.yaml: calibrate them with the planner."]}
     if non_fs or lags:
         report["warnings"].append(f"{int(non_fs)} non-FS links were treated as FS and {int(lags)} lags were ignored.")
-    return acts, report
+    return acts, report, loading
 
 
 _MSPDI_DURATION = re.compile(
@@ -132,6 +205,19 @@ def mspdi_days(value: str | None, minutes_per_day: float = 480) -> float:
 
 
 def parse_mspdi(text: str) -> tuple[list[Activity], dict]:
+    acts, report, _ = _mspdi_full(text)
+    return acts, report
+
+
+def _mspdi_hours(value: str | None) -> float:
+    m = _MSPDI_DURATION.match((value or "").strip())
+    if not m:
+        return 0.0
+    d, h, mi, s = (float(x or 0) for x in m.groups())
+    return round(d * 8 + h + mi / 60 + s / 3600, 2)
+
+
+def _mspdi_full(text: str) -> tuple[list[Activity], dict, dict]:
     try:
         root = SafeET.fromstring(text.encode("utf-8"))
     except Exception as exc:  # malformed XML or a blocked construct (entities, DTDs)
@@ -173,6 +259,32 @@ def parse_mspdi(text: str) -> tuple[list[Activity], dict]:
         acts.append(a)
     if not acts:
         raise ValueError("The MS Project file has only summary rows; no activities to schedule.")
+    # ---- cost, resources and progress carried by the same file (money is stored x100 in MSPDI)
+    money = lambda el, tag: round(_f(get(el, tag)) / 100.0, 2)
+    names = {get(r, "UID"): (get(r, "Name") or "Unnamed resource", {"0": "material", "1": "labour", "2": "cost"}.get(get(r, "Type"), "other"))
+             for r in root.findall(f"{ns}Resources/{ns}Resource")}
+    assigned: dict[str, list[dict]] = {}
+    for asg in root.findall(f"{ns}Assignments/{ns}Assignment"):
+        nm, kind = names.get(get(asg, "ResourceUID"), ("", "other"))
+        if not nm or get(asg, "ResourceUID").startswith("-"):
+            continue
+        assigned.setdefault(get(asg, "TaskUID"), []).append(
+            {"name": nm[:60], "type": kind, "units": _mspdi_hours(get(asg, "Work")), "cost": money(asg, "Cost")})
+    load = {}
+    for t in tasks:
+        a = by_uid.get(get(t, "UID"))
+        if a is None:
+            continue
+        pct = get(t, "PercentComplete")
+        load[a.id] = {"budget": money(t, "Cost"), "actual_cost": money(t, "ActualCost"),
+                      "pct": max(0.0, min(100.0, _f(pct))) if pct != "" else None,
+                      "actual_start": _day(get(t, "ActualStart")), "actual_finish": _day(get(t, "ActualFinish")),
+                      "remaining": mspdi_days(get(t, "RemainingDuration"), mpd) if get(t, "RemainingDuration") else None,
+                      "resources": assigned.get(get(t, "UID"), [])}
+    starts = [d for d in (_day(get(t, "Start")) for t in tasks if get(t, "UID") in by_uid) if d]
+    ends = [d for d in (_day(get(t, "Finish")) for t in tasks if get(t, "UID") in by_uid) if d]
+    loading = {"data_date": _day(get(root, "StatusDate")), "start": _day(get(root, "StartDate")) or (min(starts) if starts else None),
+               "finish": max(ends) if ends else None, "activities": load}
     links = non_fs = lags = summary_links = 0
     for t in tasks:
         succ = by_uid.get(get(t, "UID"))
@@ -200,7 +312,7 @@ def parse_mspdi(text: str) -> tuple[list[Activity], dict]:
     if summary_links:
         report["warnings"].append(f"{int(summary_links)} links to or from summary tasks were dropped; "
                                   "link the activities underneath instead.")
-    return acts, report
+    return acts, report, loading
 
 
 def import_schedule(upload: Path) -> tuple[Path, dict]:
@@ -215,3 +327,35 @@ def import_schedule(upload: Path) -> tuple[Path, dict]:
     acts = load_schedule(upload)
     return upload, {"format": "CSV", "activities": len(acts), "links": sum(len(a.preds) for a in acts),
                     "planned_days": round(cpm(acts)["finish"], 1), "warnings": []}
+
+
+def _csv_loading(upload: Path) -> dict:
+    """Optional columns of the REVIVE CSV layout: budget_cost_pkr, actual_cost_pkr, pct_complete, resources."""
+    import csv
+    load = {}
+    with open(upload, newline="", encoding="utf-8-sig") as fh:
+        for row in csv.DictReader(fh):
+            res = []
+            for part in (row.get("resources") or "").split(";"):
+                name, _, units = part.partition(":")
+                if name.strip():
+                    res.append({"name": name.strip()[:60], "type": "labour", "units": round(_f(units), 2), "cost": 0.0})
+            pct = (row.get("pct_complete") or "").strip()
+            load[(row.get("id") or "").strip()] = {
+                "budget": round(_f(row.get("budget_cost_pkr")), 2), "actual_cost": round(_f(row.get("actual_cost_pkr")), 2),
+                "pct": max(0.0, min(100.0, _f(pct))) if pct else None, "actual_start": None, "actual_finish": None,
+                "remaining": None, "resources": res}
+    return {"data_date": None, "start": None, "finish": None, "activities": load}
+
+
+def read_loading(upload: Path) -> tuple[list[Activity], dict]:
+    """Activities plus whatever cost, resource and progress data the file carries (see the module note)."""
+    upload = Path(upload)
+    ext = upload.suffix.lower()
+    if ext == ".xer":
+        acts, _, loading = _xer_full(_read_text(upload))
+    elif ext == ".xml":
+        acts, _, loading = _mspdi_full(_read_text(upload))
+    else:
+        acts, loading = load_schedule(upload), _csv_loading(upload)
+    return acts, loading
