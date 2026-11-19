@@ -15,7 +15,7 @@ REVIVE measures how late a construction project is **today** (current delay, fro
 It runs on two things only: the **baseline schedule** (Primavera P6 `.xer` or CSV) and **site reports** (the assessment form and phone updates, with live weather). A **BIM model is optional**. When one is connected, the same forecast and recovery are drawn on the IFC model and written back into it; when it is not, everything else works unchanged.
 
 ```
-Survey / project records ──► anonymised dataset ──► sign-constrained linear models on 10/13 core questions (time, cost, high-risk) ──► exact contributions
+Survey / project records ──► anonymised dataset ──► random forests on 10/13 core questions (time, cost, high-risk) ──► TreeSHAP contributions
                                                           │
 IFC model (Revit export) ──► IfcOpenShell ──► floor area, storeys, concrete ──► model inputs
           │                                               │
@@ -182,7 +182,7 @@ Elements without `WBS_Code` fall back to the `ifc_storey` + `ifc_types` rules in
 
 ## Configuration
 
-Every threshold and assumption lives in `config/config.yaml`: risk bands, health-score weights, recovery triggers, liquidated-damages default, crash limits, carbon factors, training scope, question set (`feature_set`), model family (`model: linear | xgboost`) and their settings. Lines marked `VERIFY` are assumptions you must check against a cited source before quoting them.
+Every threshold and assumption lives in `config/config.yaml`: risk bands, health-score weights, recovery triggers, liquidated-damages default, crash limits, carbon factors, training scope, question set (`feature_set`), model family (`model: forest | linear | xgboost`) and their settings. Lines marked `VERIFY` are assumptions you must check against a cited source before quoting them.
 
 E-mail alerts: set `alerts.enabled: true` and the environment variables `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_TO`. Without them, alerts are written to `data/outbox/` as `.eml` files, which is fine for a demo.
 
@@ -193,7 +193,7 @@ E-mail alerts: set `alerts.enabled: true` and the environment variables `SMTP_HO
 | 25% of contract time | 4.3 pts | 9.8 pts | 0.92 | 0.64 | 0.88 | 0.89 |
 | 50% of contract time | 3.6 pts | 9.8 pts | 0.94 | 0.73 | 0.92 | 0.90 |
 
-"Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Augmented records (scenario rows, not verified projects; `is_hypothetical` in the data) join the training side and are never scored. Ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
+"Unseen company" is leave-one-company-out: trained on the other contractors, tested on the held-out one. Augmented records (scenario rows, not verified projects; `is_hypothetical` in the data) join the training side and are never scored. Blended rows (mixup) are added inside each training fold for the time model. The R² of 0.92 / 0.94 depends on these training rows, mainly through two capped extreme projects; quote MAE first and always give the unseen-company figure. Ongoing projects are not used for training. Read `docs/DATA_NOTES.md` before quoting any number: it compares this design with SPI alone and with the earlier XGBoost model on all answers, and explains why the 25% cost forecast is indicative only.
 
 ## Repository layout
 
@@ -204,7 +204,8 @@ revive/                   Python package
   data.py                 workbook -> anonymised dataset + targets
   features.py             answers -> model matrix (same code for training and the web form)
   modeling.py             repeated CV, leave-one-company-out, baselines, final fit, SHAP, sensitivity
-  linear.py               sign-constrained ridge / logistic models with exact contributions, saved as JSON
+  forest.py               production random forest, stored as JSON tree arrays, TreeSHAP contributions
+  linear.py               sign-constrained ridge / logistic models (comparison baseline), saved as JSON
   actions.py              forecast drivers -> reasons with an owner and one action
   inference.py            prediction, 80% range, contributions and actions per project, health score
   scheduling.py           CPM, Earned Schedule status, ML-driven forecast
