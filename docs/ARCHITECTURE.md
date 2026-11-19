@@ -12,7 +12,8 @@
 - **Targets:**
   - `time_overrun_pct = (C4 − C1) / (C2 − C1) − 1`, where C1 is commencement, C2 the original completion and C4 the actual or reported completion. Training clips this at 150%.
   - `cost_overrun_pct = C7 / C6 − 1`, clipped to −40..100%.
-  - High risk = time overrun > 40% (36 of 121 projects).
+  - High risk = time overrun > 40% (24 of the 81 real completed projects).
+- **Records (167):** 81 real completed projects (the only scored set), 7 real ongoing, 2 real without a usable outcome, and 77 augmented records (32 original scenarios `SYN`, 45 November 2026 records `SCN-*` of unverified origin). 68 augmented records have an outcome and join the training side only; see `docs/DATA_NOTES.md`.
 
 ## 2. Checkpoints (gates)
 Each gate uses only information that exists at that point:
@@ -25,27 +26,39 @@ Each gate uses only information that exists at that point:
 An award-only model was tested and **had no predictive value** (cross-validated R² ≈ −0.1). That is why there is no "at award" forecast.
 
 ## 3. Models
-Production (since October 2026, `training.model: linear`) uses sign-constrained ridge (time, cost) and logistic (high risk) models on the core questions; see `docs/DATA_NOTES.md` for why. The XGBoost design below is the alternative family (`training.model: xgboost`) and one of the comparators.
+Production (since 14 November 2026, `training.model: forest`, `revive/forest.py`) is a **random forest** on the core questions (10 at G25, 13 at G50; `schema.CORE_KEYS`). This matches the statistical report, Revision 2 (14 November 2026).
 
-Three XGBoost models are trained per gate:
-- time overrun: regression with a pseudo-Huber loss;
+Three forests are trained per gate:
+- time overrun: regression;
 - cost overrun: regression;
-- high risk: classifier.
+- high risk: classifier (time overrun > 40%).
 
-Settings: shallow trees (depth 2, 600 rounds, learning rate 0.03) suit 121 records. Missing answers stay missing (NaN); XGBoost learns a default branch, so nothing is imputed.
+Settings (`training.forest`): 400 trees, at least 2 records per leaf. A missing answer is filled with the training median of that input. Models are stored as JSON tree arrays (`revive-forest-1`), never pickled.
 
-**Validation:** 5-fold cross-validation repeated 3 times. Every project is predicted by models that never saw it (out-of-fold). The final models are then refitted on all records. Comparators on the same folds, each also scored leave-one-company-out:
+**Training data** (training side only, never scored):
+- **Augmented records** (`training.augment_with_hypothetical: true`): the 68 augmented records with an outcome join the training side of every fold and the final fit.
+- **Blended rows** (`training.blend`, time model only): each training fold gains 2 rows per training row, each a weighted average of two records of that fold (inputs and outcome together, mixup). Records with an overrun above 60% are drawn 15 times as often. Rows are made inside the fold, so a held-out project is never part of a blend.
+
+**No-progress-report model:** when SPI is blank, a second forest without SPI or CPI is used (`*_noevm.json`, `training.fallback_forest`). Quote its own scores (`no_progress_report` in the model card).
+
+**Validation:** 5-fold cross-validation repeated 3 times over the 81 real completed projects. Every project is predicted by models that never saw it (out-of-fold). The final models are then refitted on all records. Comparators on the same folds, each also scored leave-one-company-out:
 - median baseline;
-- Random Forest;
-- SVM (RBF);
-- Ridge / logistic regression.
+- linear model on SPI only;
+- sign-constrained ridge / logistic regression on the core questions (`training.model: linear`, the earlier production model);
+- XGBoost on all answers and on the core questions (`training.model: xgboost`);
+- random forest without blended rows;
+- SVM (RBF).
+
+Always quote random-fold and leave-one-company-out scores together. On an unseen company the linear and SPI-only models transfer as well as or better than the forest (`model_comparison` in the model card).
 
 **80% range:** the 10th and 90th percentiles of the out-of-fold residuals, added to each forecast (empirical, split-conformal style).
 
 ## 4. Explanation (TreeSHAP)
-`shap.TreeExplainer` gives exact Shapley values for tree ensembles. Contributions of one-hot columns are summed per question. The result:
+Each contribution is a path-dependent TreeSHAP value, computed by `shap` from the stored tree arrays (`forest.py`). Contributions of one-hot columns are summed per question. The result:
 
 base value (average prediction) + Σ contributions = this project's forecast, in percentage points.
+
+The base value is the average prediction over the forest's training data (about 52.5% for time). The blended rows weight it towards large overruns, so it sits above the real-project mean (39.6%), and an ordinary project shows mostly negative contributions. The forest has no direction constraints, so a minor input can push the forecast the unexpected way; read an explanation before acting on it.
 
 The API test asserts this additivity.
 
